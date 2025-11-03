@@ -16,7 +16,7 @@ This utility automates the entire first-mile experience — from credential inpu
 | 🪵 Logging for Debugging   | Saves all raw logs under `~/.browserstack/bstack_onboarding.log` for support and debugging purposes.     |
 | 🖥️ (Planned) UI Framework Picker | Allows customers to select their preferred test framework via an interactive UI.                      |
 
-## How to Use
+## How to Use?
 
 You can either run the script directly from the web or clone the repository and run it locally.
 
@@ -24,7 +24,7 @@ You can either run the script directly from the web or clone the repository and 
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/http-heading/browserstack-now.git
+    git clone https://github.com/BrowserStackCE/browserstack-now.git
     ```
 2.  Navigate to the directory:
     ```bash
@@ -60,4 +60,21 @@ To run the onboarding utility on Windows without cloning, execute the following 
 ```powershell
 iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/http-heading/browserstack-now/main/windows.ps1'))
 ```
+
+## Identifying and sharing the log files
+
+The NOW framework creates the log files in this folder. To seek assistance from the BrowserStack team after running this Github repository, please share a zip of the logs with the BrowserStack team in toucn with you.
+
+### NOW Framework Logs 
+
+#### macOS / Linux
 ```
+$HOME/.browserstack/NOW/logs
+```
+
+#### Windows
+```
+$HOME/.browserstack/NOW/logs
+```
+
+

@@ -624,7 +624,7 @@ is_domain_private() {
   domain=${CX_TEST_URL#*://}  # remove protocol
   domain=${domain%%/*}  # remove everything after first "/"
   log_msg_to "Website domain: $domain"
-  export NOW_WEB_DOMAIN="$domain"
+  export NOW_WEB_DOMAIN="$CX_TEST_URL"
 
 # Resolve domain using Cloudflare DNS
 IP_ADDRESS=$(dig +short "$domain" @1.1.1.1 | head -n1)
@@ -650,14 +650,11 @@ setup_web_java() {
   TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
 
   mkdir -p "$WORKSPACE_DIR/$PROJECT_FOLDER"
-
+  rm -rf $TARGET_DIR
   # === 1️⃣ Clone Repo ===
-  if [ ! -d "$TARGET_DIR" ]; then
     log_msg_to "📦 Cloning repo $REPO into $TARGET_DIR" "$GLOBAL" "$WEB_LOG_FILE"
     git clone https://github.com/browserstackCE/now-testng-browserstack.git "$TARGET_DIR" >> "$WEB_LOG_FILE" 2>&1 || true
-  else
-    log_msg_to "📂 Repo $REPO already exists at $TARGET_DIR, skipping clone." "$GLOBAL" "$WEB_LOG_FILE"
-  fi
+
 
   cd "$TARGET_DIR" || return 1
   # validate_prereqs || return 1
@@ -722,12 +719,9 @@ setup_web_python() {
   REPO="now-pytest-browserstack"
   TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
 
-  if [ ! -d "$TARGET_DIR" ]; then
     git clone https://github.com/browserstackCE/$REPO.git "$TARGET_DIR" >> "$WEB_LOG_FILE" 2>&1 || true
     log_msg_to "✅ Cloned repository: $REPO into $TARGET_DIR" "$PRE_RUN_LOG_FILE"
-  else
-    log_msg_to "ℹ️ Repository already exists at: $TARGET_DIR (skipping clone)"
-  fi
+
 
   cd "$TARGET_DIR" || return 1
 
@@ -808,12 +802,8 @@ setup_web_js() {
   mkdir -p "$WORKSPACE_DIR/$PROJECT_FOLDER"
 
   # === 1️⃣ Clone Repo ===
-  if [ ! -d "$TARGET_DIR" ]; then
     log_msg_to "📦 Cloning repo $REPO (branch tra) into $TARGET_DIR" "$GLOBAL" "$WEB_LOG_FILE"
     git clone -b tra https://github.com/browserstack/$REPO.git "$TARGET_DIR" >> "$WEB_LOG_FILE" 2>&1 || true
-  else
-    log_msg_to "📂 Repo $REPO already exists at $TARGET_DIR, skipping clone." "$GLOBAL" "$WEB_LOG_FILE"
-  fi
 
   cd "$TARGET_DIR" || return 1
   validate_prereqs || return 1
@@ -1052,12 +1042,8 @@ setup_mobile_python() {
   TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
 
   # Clone repo if not present
-  if [ ! -d "$TARGET_DIR" ]; then
     git clone https://github.com/browserstack/$REPO.git "$TARGET_DIR"
     log_msg_to "✅ Cloned repository: $REPO into $TARGET_DIR" "$PRE_RUN_LOG_FILE"
-  else
-    log_msg_to "ℹ️ Repository already exists at: $TARGET_DIR (skipping clone)" "$PRE_RUN_LOG_FILE"
-  fi
 
   cd "$TARGET_DIR" || return 1
 
@@ -1196,12 +1182,8 @@ setup_mobile_java() {
   REPO="browserstack-examples-appium-testng"
   TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
 
-  if [ ! -d "$TARGET_DIR" ]; then
     git clone https://github.com/BrowserStackCE/$REPO.git "$TARGET_DIR"
     log_msg_to "✅ Cloned repository: $REPO into $TARGET_DIR" "$GLOBAL" "$MOBILE_LOG_FILE"
-  else
-    log_msg_to "ℹ️ Repository already exists at: $TARGET_DIR (skipping clone)" "$GLOBAL" "$MOBILE_LOG_FILE"
-  fi
 
   # Update pom.xml → browserstack-java-sdk version to LATEST
   pom_file="$TARGET_DIR/pom.xml"
