@@ -34,7 +34,7 @@ You can either run the script directly from the web or clone the repository and 
 
     **macOS / Linux**
     ```bash
-    bash mac_os.sh
+    bash mac.sh
     ```
 
     **Windows**
