@@ -1,817 +1,1261 @@
-# BrowserStack Onboarding Script - Windows PowerShell version
+#requires -version 5.0
+<#
+  BrowserStack Onboarding (PowerShell 5.0, GUI)
+  - Full parity port of macOS bash
+  - Uses WinForms for GUI prompts
+  - Logs to %USERPROFILE%\.browserstack\NOW\logs
+#>
 
-param(
-    [Alias("zlogs")][Switch]$ShowLogs = $false
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+# ===== Global Variables =====
+$WORKSPACE_DIR = Join-Path $env:USERPROFILE ".browserstack"
+$PROJECT_FOLDER = "NOW"
+
+$GLOBAL_DIR = Join-Path $WORKSPACE_DIR $PROJECT_FOLDER
+$LOG_DIR     = Join-Path $GLOBAL_DIR "logs"
+$GLOBAL_LOG  = Join-Path $LOG_DIR "global.log"
+$WEB_LOG     = Join-Path $LOG_DIR "web_run_result.log"
+$MOBILE_LOG  = Join-Path $LOG_DIR "mobile_run_result.log"
+
+# Clear/prepare logs
+if (!(Test-Path $LOG_DIR)) { New-Item -ItemType Directory -Path $LOG_DIR | Out-Null }
+'' | Out-File -FilePath $GLOBAL_LOG -Encoding UTF8
+'' | Out-File -FilePath $WEB_LOG -Encoding UTF8
+'' | Out-File -FilePath $MOBILE_LOG -Encoding UTF8
+
+# Script state
+$BROWSERSTACK_USERNAME = ""
+$BROWSERSTACK_ACCESS_KEY = ""
+$TEST_TYPE = ""     # Web / App / Both
+$TECH_STACK = ""    # Java / Python / JS
+[double]$PARALLEL_PERCENTAGE = 1.00
+
+$WEB_PLAN_FETCHED = $false
+$MOBILE_PLAN_FETCHED = $false
+[int]$TEAM_PARALLELS_MAX_ALLOWED_WEB = 0
+[int]$TEAM_PARALLELS_MAX_ALLOWED_MOBILE = 0
+
+# URL handling
+$DEFAULT_TEST_URL = "https://bstackdemo.com"
+$CX_TEST_URL = $DEFAULT_TEST_URL
+
+# App handling
+$APP_URL = ""
+$APP_PLATFORM = ""  # ios | android | all
+
+# Chosen Python command tokens (set during validation when Python is selected)
+$PY_CMD = @()
+
+# ===== Error patterns (placeholders to match your original arrays) =====
+$WEB_SETUP_ERRORS   = @("")
+$WEB_LOCAL_ERRORS   = @("")
+$MOBILE_SETUP_ERRORS= @("")
+$MOBILE_LOCAL_ERRORS= @("")
+
+# ===== Example Platform Templates =====
+$WEB_PLATFORM_TEMPLATES = @(
+  "Windows|10|Chrome",
+  "Windows|10|Firefox",
+  "Windows|11|Edge",
+  "Windows|11|Chrome",
+  "Windows|8|Chrome",
+  "OS X|Monterey|Safari",
+  "OS X|Monterey|Chrome",
+  "OS X|Ventura|Chrome",
+  "OS X|Big Sur|Safari",
+  "OS X|Catalina|Firefox"
 )
 
-#================================================================================
-#region Custom UI Function
-#================================================================================
+# Mobile tiers (kept for parity)
+$MOBILE_TIER1 = @(
+  "ios|iPhone 15|17",
+  "ios|iPhone 15 Pro|17",
+  "ios|iPhone 16|18",
+  "android|Samsung Galaxy S25|15",
+  "android|Samsung Galaxy S24|14"
+)
+$MOBILE_TIER2 = @(
+  "ios|iPhone 14 Pro|16",
+  "ios|iPhone 14|16",
+  "ios|iPad Air 13 2025|18",
+  "android|Samsung Galaxy S23|13",
+  "android|Samsung Galaxy S22|12",
+  "android|Samsung Galaxy S21|11",
+  "android|Samsung Galaxy Tab S10 Plus|15"
+)
+$MOBILE_TIER3 = @(
+  "ios|iPhone 13 Pro Max|15",
+  "ios|iPhone 13|15",
+  "ios|iPhone 12 Pro|14",
+  "ios|iPhone 12 Pro|17",
+  "ios|iPhone 12|17",
+  "ios|iPhone 12|14",
+  "ios|iPhone 12 Pro Max|16",
+  "ios|iPhone 13 Pro|15",
+  "ios|iPhone 13 Mini|15",
+  "ios|iPhone 16 Pro|18",
+  "ios|iPad 9th|15",
+  "ios|iPad Pro 12.9 2020|14",
+  "ios|iPad Pro 12.9 2020|16",
+  "ios|iPad 8th|16",
+  "android|Samsung Galaxy S22 Ultra|12",
+  "android|Samsung Galaxy S21|12",
+  "android|Samsung Galaxy S21 Ultra|11",
+  "android|Samsung Galaxy S20|10",
+  "android|Samsung Galaxy M32|11",
+  "android|Samsung Galaxy Note 20|10",
+  "android|Samsung Galaxy S10|9",
+  "android|Samsung Galaxy Note 9|8",
+  "android|Samsung Galaxy Tab S8|12",
+  "android|Google Pixel 9|15",
+  "android|Google Pixel 6 Pro|13",
+  "android|Google Pixel 8|14",
+  "android|Google Pixel 7|13",
+  "android|Google Pixel 6|12",
+  "android|Vivo Y21|11",
+  "android|Vivo Y50|10",
+  "android|Oppo Reno 6|11"
+)
+$MOBILE_TIER4 = @(
+  "ios|iPhone 15 Pro Max|17",
+  "ios|iPhone 15 Pro Max|26",
+  "ios|iPhone 15|26",
+  "ios|iPhone 15 Plus|17",
+  "ios|iPhone 14 Pro|26",
+  "ios|iPhone 14|18",
+  "ios|iPhone 14|26",
+  "ios|iPhone 13 Pro Max|18",
+  "ios|iPhone 13|16",
+  "ios|iPhone 13|17",
+  "ios|iPhone 13|18",
+  "ios|iPhone 12 Pro|18",
+  "ios|iPhone 14 Pro Max|16",
+  "ios|iPhone 14 Plus|16",
+  "ios|iPhone 11|13",
+  "ios|iPhone 8|11",
+  "ios|iPhone 7|10",
+  "ios|iPhone 17 Pro Max|26",
+  "ios|iPhone 17 Pro|26",
+  "ios|iPhone 17 Air|26",
+  "ios|iPhone 17|26",
+  "ios|iPhone 16e|18",
+  "ios|iPhone 16 Pro Max|18",
+  "ios|iPhone 16 Plus|18",
+  "ios|iPhone SE 2020|16",
+  "ios|iPhone SE 2022|15",
+  "ios|iPad Air 4|14",
+  "ios|iPad 9th|18",
+  "ios|iPad Air 5|26",
+  "ios|iPad Pro 11 2021|18",
+  "ios|iPad Pro 13 2024|17",
+  "ios|iPad Pro 12.9 2021|14",
+  "ios|iPad Pro 12.9 2021|17",
+  "ios|iPad Pro 11 2024|17",
+  "ios|iPad Air 6|17",
+  "ios|iPad Pro 12.9 2022|16",
+  "ios|iPad Pro 11 2022|16",
+  "ios|iPad 10th|16",
+  "ios|iPad Air 13 2025|26",
+  "ios|iPad Pro 11 2020|13",
+  "ios|iPad Pro 11 2020|16",
+  "ios|iPad 8th|14",
+  "ios|iPad Mini 2021|15",
+  "ios|iPad Pro 12.9 2018|12",
+  "ios|iPad 6th|11",
+  "android|Samsung Galaxy S23 Ultra|13",
+  "android|Samsung Galaxy S22 Plus|12",
+  "android|Samsung Galaxy S21 Plus|11",
+  "android|Samsung Galaxy S20 Ultra|10",
+  "android|Samsung Galaxy S25 Ultra|15",
+  "android|Samsung Galaxy S24 Ultra|14",
+  "android|Samsung Galaxy M52|11",
+  "android|Samsung Galaxy A52|11",
+  "android|Samsung Galaxy A51|10",
+  "android|Samsung Galaxy A11|10",
+  "android|Samsung Galaxy A10|9",
+  "android|Samsung Galaxy Tab A9 Plus|14",
+  "android|Samsung Galaxy Tab S9|13",
+  "android|Samsung Galaxy Tab S7|10",
+  "android|Samsung Galaxy Tab S7|11",
+  "android|Samsung Galaxy Tab S6|9",
+  "android|Google Pixel 9|16",
+  "android|Google Pixel 10 Pro XL|16",
+  "android|Google Pixel 10 Pro|16",
+  "android|Google Pixel 10|16",
+  "android|Google Pixel 9 Pro XL|15",
+  "android|Google Pixel 9 Pro|15",
+  "android|Google Pixel 6 Pro|12",
+  "android|Google Pixel 6 Pro|15",
+  "android|Google Pixel 8 Pro|14",
+  "android|Google Pixel 7 Pro|13",
+  "android|Google Pixel 5|11",
+  "OnePlus 13R|15",
+  "android|OnePlus 12R|14",
+  "android|OnePlus 11R|13",
+  "android|OnePlus 9|11",
+  "android|OnePlus 8|10",
+  "android|Motorola Moto G71 5G|11",
+  "android|Motorola Moto G9 Play|10",
+  "android|Vivo V21|11",
+  "android|Oppo A96|11",
+  "android|Oppo Reno 3 Pro|10",
+  "android|Xiaomi Redmi Note 11|11",
+  "android|Xiaomi Redmi Note 9|10",
+  "android|Huawei P30|9"
+)
 
-function Show-CustomSelectionForm {
-    # Load required .NET assemblies for building a GUI
-    Add-Type -AssemblyName System.Windows.Forms
-    Add-Type -AssemblyName System.Drawing
+# MOBILE_ALL combines the tiers
+$MOBILE_ALL = @()
+$MOBILE_ALL += $MOBILE_TIER1
+$MOBILE_ALL += $MOBILE_TIER2
+$MOBILE_ALL += $MOBILE_TIER3
+$MOBILE_ALL += $MOBILE_TIER4
 
-    # --- Define the Refined Theme ---
-    $theme = @{
-        BackColor      = [System.Drawing.ColorTranslator]::FromHtml("#2D2D30")
-        ForeColor      = [System.Drawing.ColorTranslator]::FromHtml("#F1F1F1")
-        PrimaryAction  = [System.Drawing.ColorTranslator]::FromHtml("#0070f0")
-        ButtonColor    = [System.Drawing.ColorTranslator]::FromHtml("#555555")
-        Font           = New-Object System.Drawing.Font("Segoe UI", 11)
-        HeaderFont     = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+# ===== Helpers =====
+function Log-Line {
+  param(
+    [Parameter(Mandatory=$true)][string]$Message,
+    [string]$DestFile
+  )
+  $ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+  $line = "[$ts] $Message"
+  Write-Host $line
+  if ($DestFile) {
+    $dir = Split-Path -Parent $DestFile
+    if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
+    Add-Content -Path $DestFile -Value $line
+  }
+}
+
+function Ensure-Workspace {
+  if (!(Test-Path $GLOBAL_DIR)) {
+    New-Item -ItemType Directory -Path $GLOBAL_DIR | Out-Null
+    Log-Line "✅ Created Onboarding workspace: $GLOBAL_DIR" $GLOBAL_LOG
+  } else {
+    Log-Line "ℹ️ Onboarding Workspace already exists: $GLOBAL_DIR" $GLOBAL_LOG
+  }
+}
+
+function Invoke-GitClone {
+  param(
+    [Parameter(Mandatory)] [string]$Url,
+    [Parameter(Mandatory)] [string]$Target,
+    [string]$Branch,
+    [string]$LogFile
+  )
+  $args = @("clone")
+  if ($Branch) { $args += @("-b", $Branch) }
+  $args += @($Url, $Target)
+
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $psi.FileName = "git"
+  $psi.Arguments = ($args | ForEach-Object {
+    if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ }
+  }) -join ' '
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError  = $true
+  $psi.UseShellExecute = $false
+  $psi.CreateNoWindow   = $true
+  $psi.WorkingDirectory = (Get-Location).Path
+
+  $p = New-Object System.Diagnostics.Process
+  $p.StartInfo = $psi
+  [void]$p.Start()
+  $stdout = $p.StandardOutput.ReadToEnd()
+  $stderr = $p.StandardError.ReadToEnd()
+  $p.WaitForExit()
+
+  if ($LogFile) {
+    if ($stdout) { Add-Content -Path $LogFile -Value $stdout }
+    if ($stderr) { Add-Content -Path $LogFile -Value $stderr }
+  }
+
+  if ($p.ExitCode -ne 0) {
+    throw "git clone failed (exit $($p.ExitCode)): $stderr"
+  }
+}
+
+function Set-ContentNoBom {
+  param(
+    [Parameter(Mandatory)][string]$Path,
+    [Parameter(Mandatory)][string]$Value
+  )
+  $enc = New-Object System.Text.UTF8Encoding($false)  # no BOM
+  [System.IO.File]::WriteAllText($Path, $Value, $enc)
+}
+
+# Run external tools capturing stdout/stderr without throwing on STDERR
+function Invoke-External {
+  param(
+    [Parameter(Mandatory)][string]$Exe,
+    [Parameter()][string[]]$Arguments = @(),
+    [string]$LogFile,
+    [string]$WorkingDirectory
+  )
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $exeToRun = $Exe
+  $argLine  = ($Arguments | ForEach-Object { if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ } }) -join ' '
+
+  # .cmd/.bat need to be invoked via cmd.exe when UseShellExecute=false
+  $ext = [System.IO.Path]::GetExtension($Exe)
+  if ($ext -and ($ext.ToLowerInvariant() -in @('.cmd','.bat'))) {
+    if (-not (Test-Path $Exe)) { throw "Command not found: $Exe" }
+    $psi.FileName = "cmd.exe"
+    $psi.Arguments = "/c `"$Exe`" $argLine"
+  } else {
+    $psi.FileName = $exeToRun
+    $psi.Arguments = $argLine
+  }
+
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError  = $true
+  $psi.UseShellExecute = $false
+  $psi.CreateNoWindow   = $true
+  if ([string]::IsNullOrWhiteSpace($WorkingDirectory)) {
+    $psi.WorkingDirectory = (Get-Location).Path
+  } else {
+    $psi.WorkingDirectory = $WorkingDirectory
+  }
+
+  $p = New-Object System.Diagnostics.Process
+  $p.StartInfo = $psi
+  [void]$p.Start()
+  $stdout = $p.StandardOutput.ReadToEnd()
+  $stderr = $p.StandardError.ReadToEnd()
+  $p.WaitForExit()
+
+  if ($LogFile) {
+    if ($stdout) { Add-Content -Path $LogFile -Value $stdout }
+    if ($stderr) { Add-Content -Path $LogFile -Value $stderr }
+  }
+  return $p.ExitCode
+}
+
+# Return a Maven executable path or wrapper for a given repo directory
+function Get-MavenCommand {
+  param([Parameter(Mandatory)][string]$RepoDir)
+  $mvnCmd = Get-Command mvn -ErrorAction SilentlyContinue
+  if ($mvnCmd) { return $mvnCmd.Source }
+  $wrapper = Join-Path $RepoDir "mvnw.cmd"
+  if (Test-Path $wrapper) { return $wrapper }
+  throw "Maven not found in PATH and 'mvnw.cmd' not present under $RepoDir. Install Maven or ensure the wrapper exists."
+}
+
+# Get the python.exe inside a Windows venv
+function Get-VenvPython {
+  param([Parameter(Mandatory)][string]$VenvDir)
+  $py = Join-Path $VenvDir "Scripts\python.exe"
+  if (Test-Path $py) { return $py }
+  throw "Python interpreter not found in venv: $VenvDir"
+}
+
+# Detect a working Python interpreter and set $PY_CMD accordingly
+function Set-PythonCmd {
+  $candidates = @(
+    @("python3"),
+    @("python"),
+    @("py","-3"),
+    @("py")
+  )
+  foreach ($cand in $candidates) {
+    try {
+      $exe = $cand[0]
+      $args = @()
+      if ($cand.Length -gt 1) { $args = $cand[1..($cand.Length-1)] }
+      $code = Invoke-External -Exe $exe -Arguments ($args + @("--version")) -LogFile $null
+      if ($code -eq 0) {
+        $script:PY_CMD = $cand
+        return
+      }
+    } catch {}
+  }
+  throw "Python not found via python3/python/py. Please install Python 3 and ensure it's on PATH."
+}
+
+# Invoke Python with arguments using the detected interpreter
+function Invoke-Py {
+  param(
+    [Parameter(Mandatory)][string[]]$Arguments,
+    [string]$LogFile,
+    [string]$WorkingDirectory
+  )
+  if (-not $PY_CMD -or $PY_CMD.Count -eq 0) { Set-PythonCmd }
+  $exe = $PY_CMD[0]
+  $baseArgs = @()
+  if ($PY_CMD.Count -gt 1) { $baseArgs = $PY_CMD[1..($PY_CMD.Count-1)] }
+  return (Invoke-External -Exe $exe -Arguments ($baseArgs + $Arguments) -LogFile $LogFile -WorkingDirectory $WorkingDirectory)
+}
+
+# ===== GUI helpers =====
+function Show-InputBox {
+  param(
+    [string]$Title = "Input",
+    [string]$Prompt = "Enter value:",
+    [string]$DefaultText = ""
+  )
+  $form = New-Object System.Windows.Forms.Form
+  $form.Text = $Title
+  $form.Size = New-Object System.Drawing.Size(500,160)
+  $form.StartPosition = "CenterScreen"
+
+  $label = New-Object System.Windows.Forms.Label
+  $label.Text = $Prompt
+  $label.AutoSize = $true
+  $label.Location = New-Object System.Drawing.Point(10,20)
+  $form.Controls.Add($label)
+
+  $textBox = New-Object System.Windows.Forms.TextBox
+  $textBox.Size = New-Object System.Drawing.Size(460,20)
+  $textBox.Location = New-Object System.Drawing.Point(10,50)
+  $textBox.Text = $DefaultText
+  $form.Controls.Add($textBox)
+
+  $okButton = New-Object System.Windows.Forms.Button
+  $okButton.Text = "OK"
+  $okButton.Location = New-Object System.Drawing.Point(380,80)
+  $okButton.Add_Click({ $form.Tag = $textBox.Text; $form.Close() })
+  $form.Controls.Add($okButton)
+
+  $form.AcceptButton = $okButton
+  [void]$form.ShowDialog()
+  return [string]$form.Tag
+}
+
+function Show-PasswordBox {
+  param(
+    [string]$Title = "Secret",
+    [string]$Prompt = "Enter secret:"
+  )
+  $form = New-Object System.Windows.Forms.Form
+  $form.Text = $Title
+  $form.Size = New-Object System.Drawing.Size(500,160)
+  $form.StartPosition = "CenterScreen"
+
+  $label = New-Object System.Windows.Forms.Label
+  $label.Text = $Prompt
+  $label.AutoSize = $true
+  $label.Location = New-Object System.Drawing.Point(10,20)
+  $form.Controls.Add($label)
+
+  $textBox = New-Object System.Windows.Forms.TextBox
+  $textBox.Size = New-Object System.Drawing.Size(460,20)
+  $textBox.Location = New-Object System.Drawing.Point(10,50)
+  $textBox.UseSystemPasswordChar = $true
+  $form.Controls.Add($textBox)
+
+  $okButton = New-Object System.Windows.Forms.Button
+  $okButton.Text = "OK"
+  $okButton.Location = New-Object System.Drawing.Point(380,80)
+  $okButton.Add_Click({ $form.Tag = $textBox.Text; $form.Close() })
+  $form.Controls.Add($okButton)
+
+  $form.AcceptButton = $okButton
+  [void]$form.ShowDialog()
+  return [string]$form.Tag
+}
+
+function Show-ChoiceBox {
+  param(
+    [string]$Title = "Choose",
+    [string]$Prompt = "Select one:",
+    [string[]]$Choices,
+    [string]$DefaultChoice
+  )
+  $form = New-Object System.Windows.Forms.Form
+  $form.Text = $Title
+  $form.Size = New-Object System.Drawing.Size(420, 240)
+  $form.StartPosition = "CenterScreen"
+
+  $label = New-Object System.Windows.Forms.Label
+  $label.Text = $Prompt
+  $label.AutoSize = $true
+  $label.Location = New-Object System.Drawing.Point(10, 10)
+  $form.Controls.Add($label)
+
+  $group = New-Object System.Windows.Forms.Panel
+  $group.Location = New-Object System.Drawing.Point(10, 35)
+  $group.Width  = 380
+  $startY  = 10
+  $spacing = 28
+
+  $radios = @()
+  [int]$i = 0
+  foreach ($c in $Choices) {
+    $rb = New-Object System.Windows.Forms.RadioButton
+    $rb.Text = $c
+    $rb.AutoSize = $true
+    $rb.Location = New-Object System.Drawing.Point(10, ($startY + $i * $spacing))
+    if ($c -eq $DefaultChoice) { $rb.Checked = $true }
+    $group.Controls.Add($rb)
+    $radios += $rb
+    $i++
+  }
+  $group.Height = [Math]::Max(120, $startY + ($Choices.Count * $spacing) + 10)
+  $form.Controls.Add($group)
+
+  $ok = New-Object System.Windows.Forms.Button
+  $ok.Text = "OK"
+  $ok.Location = New-Object System.Drawing.Point(300, ($group.Bottom + 10))
+  $ok.Add_Click({
+    foreach ($rb in $radios) { if ($rb.Checked) { $form.Tag = $rb.Text; break } }
+    $form.Close()
+  })
+  $form.Controls.Add($ok)
+
+  $form.Height = $ok.Bottom + 70
+  $form.AcceptButton = $ok
+  [void]$form.ShowDialog()
+  return [string]$form.Tag
+}
+
+# === NEW: Big clickable button chooser ===
+function Show-ClickChoice {
+  param(
+    [string]$Title = "Choose",
+    [string]$Prompt = "Select one:",
+    [string[]]$Choices,
+    [string]$DefaultChoice
+  )
+  if (-not $Choices -or $Choices.Count -eq 0) { return "" }
+
+  $form = New-Object System.Windows.Forms.Form
+  $form.Text = $Title
+  $form.StartPosition = "CenterScreen"
+  $form.MinimizeBox = $false
+  $form.MaximizeBox = $false
+  $form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+  $form.BackColor = [System.Drawing.Color]::FromArgb(245,245,245)
+
+  $label = New-Object System.Windows.Forms.Label
+  $label.Text = $Prompt
+  $label.AutoSize = $true
+  $label.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Regular)
+  $label.Location = New-Object System.Drawing.Point(12, 12)
+  $form.Controls.Add($label)
+
+  $panel = New-Object System.Windows.Forms.FlowLayoutPanel
+  $panel.Location = New-Object System.Drawing.Point(12, 40)
+  $panel.Size = New-Object System.Drawing.Size(460, 140)
+  $panel.WrapContents = $true
+  $panel.AutoScroll = $true
+  $panel.FlowDirection = [System.Windows.Forms.FlowDirection]::LeftToRight
+  $form.Controls.Add($panel)
+
+  $selected = $null
+  foreach ($c in $Choices) {
+    $btn = New-Object System.Windows.Forms.Button
+    $btn.Text = $c
+    $btn.Width = 140
+    $btn.Height = 40
+    $btn.Margin = '8,8,8,8'
+    $btn.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+    $btn.FlatStyle = 'System'
+    if ($c -eq $DefaultChoice) {
+      $btn.BackColor = [System.Drawing.Color]::FromArgb(232,240,254)
     }
-
-    # --- Create the Main Form ---
-    $form = New-Object System.Windows.Forms.Form
-    $form.Text = "BrowserStack Onboarding"
-    $form.Size = New-Object System.Drawing.Size(480, 480)
-    $form.BackColor = $theme.BackColor
-    $form.ForeColor = $theme.ForeColor
-    $form.Font = $theme.Font
-    $form.StartPosition = "CenterScreen"
-    $form.FormBorderStyle = "FixedDialog"
-    $form.MaximizeBox = $false
-    $form.MinimizeBox = $false
-    
-    # --- Create Credential Controls ---
-    $usernameLabel = New-Object System.Windows.Forms.Label
-    $usernameLabel.Text = "BrowserStack Username:"
-    $usernameLabel.Location = New-Object System.Drawing.Point(40, 40)
-    $usernameLabel.AutoSize = $true
-    $form.Controls.Add($usernameLabel)
-
-    $usernameTextBox = New-Object System.Windows.Forms.TextBox
-    $usernameTextBox.Location = New-Object System.Drawing.Point(260, 37)
-    $usernameTextBox.Size = New-Object System.Drawing.Size(170, 20)
-    $form.Controls.Add($usernameTextBox)
-
-    $accessKeyLabel = New-Object System.Windows.Forms.Label
-    $accessKeyLabel.Text = "BrowserStack Access Key:"
-    $accessKeyLabel.Location = New-Object System.Drawing.Point(40, 75)
-    $accessKeyLabel.AutoSize = $true
-    $form.Controls.Add($accessKeyLabel)
-
-    $accessKeyTextBox = New-Object System.Windows.Forms.TextBox
-    $accessKeyTextBox.Location = New-Object System.Drawing.Point(260, 72)
-    $accessKeyTextBox.Size = New-Object System.Drawing.Size(170, 20)
-    $accessKeyTextBox.UseSystemPasswordChar = $true
-    $form.Controls.Add($accessKeyTextBox)
-
-
-    # --- Create Test Type Section ---
-    $testTypeHeader = New-Object System.Windows.Forms.Label
-    $testTypeHeader.Text = "Testing Type"
-    $testTypeHeader.Font = $theme.HeaderFont
-    $testTypeHeader.Location = New-Object System.Drawing.Point(36, 130)
-    $testTypeHeader.AutoSize = $true
-    $form.Controls.Add($testTypeHeader)
-
-    # === FIX: Create an invisible Panel to group the radio buttons ===
-    $testTypePanel = New-Object System.Windows.Forms.Panel
-    $testTypePanel.Location = New-Object System.Drawing.Point(38, 160)
-    $testTypePanel.Size = New-Object System.Drawing.Size(200, 100)
-    $form.Controls.Add($testTypePanel)
-
-    $testOptions = @("Web Testing", "Mobile App Testing", "Both")
-    $yPos = 5
-    foreach ($option in $testOptions) {
-        $rb = New-Object System.Windows.Forms.RadioButton
-        $rb.Text = $option
-        $rb.Location = New-Object System.Drawing.Point(2, $yPos) # Location is relative to the Panel
-        $rb.AutoSize = $true
-        $testTypePanel.Controls.Add($rb) # Add to the Panel, not the Form
-        $yPos += 30
-    }
-
-    # --- Create Tech Stack Section ---
-    $techStackHeader = New-Object System.Windows.Forms.Label
-    $techStackHeader.Text = "Technology Stack"
-    $techStackHeader.Font = $theme.HeaderFont
-    $techStackHeader.Location = New-Object System.Drawing.Point(36, 265)
-    $techStackHeader.AutoSize = $true
-    $form.Controls.Add($techStackHeader)
-    
-    # === FIX: Create another invisible Panel for the second group ===
-    $techStackPanel = New-Object System.Windows.Forms.Panel
-    $techStackPanel.Location = New-Object System.Drawing.Point(38, 295)
-    $techStackPanel.Size = New-Object System.Drawing.Size(200, 100)
-    $form.Controls.Add($techStackPanel)
-
-    $techOptions = @("Java", "Python", "JavaScript")
-    $yPos = 5
-    foreach ($option in $techOptions) {
-        $rb = New-Object System.Windows.Forms.RadioButton
-        $rb.Text = $option
-        $rb.Location = New-Object System.Drawing.Point(2, $yPos) # Location is relative to the Panel
-        $rb.AutoSize = $true
-        $techStackPanel.Controls.Add($rb) # Add to the Panel, not the Form
-        $yPos += 30
-    }
-
-    # --- Create Buttons ---
-    $continueButton = New-Object System.Windows.Forms.Button
-    $continueButton.Text = "Continue"
-    $continueButton.Location = New-Object System.Drawing.Point(240, 395)
-    $continueButton.Size = New-Object System.Drawing.Size(95, 35)
-    $continueButton.BackColor = $theme.PrimaryAction
-    $continueButton.ForeColor = [System.Drawing.Color]::White
-    $continueButton.FlatStyle = "Flat"
-    $continueButton.FlatAppearance.BorderSize = 0
-    $form.Controls.Add($continueButton)
-
-    $cancelButton = New-Object System.Windows.Forms.Button
-    $cancelButton.Text = "Cancel"
-    $cancelButton.Location = New-Object System.Drawing.Point(345, 395)
-    $cancelButton.Size = New-Object System.Drawing.Size(85, 35)
-    $cancelButton.BackColor = $theme.ButtonColor
-    $cancelButton.FlatStyle = "Flat"
-    $cancelButton.FlatAppearance.BorderSize = 0
-    $form.Controls.Add($cancelButton)
-
-    # --- Define Button Actions (Event Handlers) ---
-    $continueButton.Add_Click({
-        # === FIX: Find checked buttons within their respective Panels ===
-        $selectedTestType = $testTypePanel.Controls | Where-Object { $_.Checked }
-        $selectedTechStack = $techStackPanel.Controls | Where-Object { $_.Checked }
-
-        if ([string]::IsNullOrWhiteSpace($usernameTextBox.Text) `
-            -or [string]::IsNullOrWhiteSpace($accessKeyTextBox.Text) `
-            -or -not $selectedTestType `
-            -or -not $selectedTechStack) {
-            [System.Windows.Forms.MessageBox]::Show("Please fill in all fields to continue.", "Validation Error", "OK", "Error")
-        } else {
-            $form.Tag = [PSCustomObject]@{
-                Username  = $usernameTextBox.Text
-                AccessKey = $accessKeyTextBox.Text
-                TestType  = $selectedTestType.Text
-                TechStack = $selectedTechStack.Text
-            }
-            $form.DialogResult = [System.Windows.Forms.DialogResult]::OK
-            $form.Close()
-        }
+    $btn.Add_Click({
+      $script:selected = $this.Text
+      $form.Tag = $script:selected
+      $form.Close()
     })
+    $panel.Controls.Add($btn)
+  }
 
-    $cancelButton.Add_Click({
-        $form.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
-        $form.Close()
-    })
-    
-    # --- Show the form and wait for the user ---
-    $result = $form.ShowDialog()
+  $cancel = New-Object System.Windows.Forms.Button
+  $cancel.Text = "Cancel"
+  $cancel.Width = 90
+  $cancel.Height = 32
+  $cancel.Location = New-Object System.Drawing.Point(382, 188)
+  $cancel.Add_Click({ $form.Tag = ""; $form.Close() })
+  $form.Controls.Add($cancel)
+  $form.CancelButton = $cancel
 
-    if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
-        return $form.Tag
-    } else {
-        return $null
-    }
+  $form.ClientSize = New-Object System.Drawing.Size(484, 230)
+  [void]$form.ShowDialog()
+  return [string]$form.Tag
 }
 
-#endregion
-
-#================================================================================
-# Main Script Body
-#================================================================================
-
-# Step 1: Workspace Setup
-$BSS_ROOT      = Join-Path $HOME '.browserstack'
-$BSS_SETUP_DIR = Join-Path $BSS_ROOT 'browserstackSampleSetup'
-$LOG_FILE      = Join-Path $BSS_SETUP_DIR 'bstackOnboardingLogs.log'
-New-Item -Path $BSS_SETUP_DIR -ItemType Directory -Force | Out-Null
-Set-Location -Path $BSS_SETUP_DIR
-New-Item -Path $LOG_FILE -ItemType File -Force | Out-Null
-
-function Write-Log($message) {
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Add-Content -Path $LOG_FILE -Value "[${timestamp}] $message"
-}
-Write-Log "[Workspace initialized]"
-
-# Step 2 & 3 Combined: Get all user input from the Custom UI
-Write-Host "Please provide your details in the setup window..."
-$selections = Show-CustomSelectionForm
-if (-not $selections) {
-    Write-Host "❌ Operation canceled by user."
-    exit 1
+function Show-OpenFileDialog {
+  param(
+    [string]$Title = "Select File",
+    [string]$Filter = "All files (*.*)|*.*"
+  )
+  $ofd = New-Object System.Windows.Forms.OpenFileDialog
+  $ofd.Title = $Title
+  $ofd.Filter = $Filter
+  $ofd.Multiselect = $false
+  if ($ofd.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+    return $ofd.FileName
+  }
+  return ""
 }
 
-# Assign all selections from the UI to the script's variables
-$BS_USERNAME   = $selections.Username
-$BS_ACCESS_KEY = $selections.AccessKey
-$TEST_OPTION   = $selections.TestType
-$TECH_STACK    = $selections.TechStack
+# ===== Baseline interactions =====
+function Ask-BrowserStack-Credentials {
+  $script:BROWSERSTACK_USERNAME = Show-InputBox -Title "BrowserStack Setup" -Prompt "Enter your BrowserStack Username:" -DefaultText ""
+  if ([string]::IsNullOrWhiteSpace($script:BROWSERSTACK_USERNAME)) {
+    Log-Line "❌ Username empty" $GLOBAL_LOG
+    throw "Username is required"
+  }
+  $script:BROWSERSTACK_ACCESS_KEY = Show-PasswordBox -Title "BrowserStack Setup" -Prompt "Enter your BrowserStack Access Key:"
+  if ([string]::IsNullOrWhiteSpace($script:BROWSERSTACK_ACCESS_KEY)) {
+    Log-Line "❌ Access Key empty" $GLOBAL_LOG
+    throw "Access Key is required"
+  }
+  Log-Line "✅ BrowserStack credentials captured (access key hidden)" $GLOBAL_LOG
+}
 
-Write-Host "✅ User credentials and options captured."
-Write-Log "[User selected: $TEST_OPTION | $TECH_STACK]"
+# === UPDATED: click-select for Web/App/Both ===
+function Ask-Test-Type {
+  $choice = Show-ClickChoice -Title "Testing Type" `
+                             -Prompt "What do you want to run?" `
+                             -Choices @("Web","App","Both") `
+                             -DefaultChoice "Web"
+  if ([string]::IsNullOrWhiteSpace($choice)) { throw "No testing type selected" }
+  $script:TEST_TYPE = $choice
+  Log-Line "✅ Selected Testing Type: $script:TEST_TYPE" $GLOBAL_LOG
 
+  switch ($script:TEST_TYPE) {
+    "Web"   { Ask-User-TestUrl }
+    "App"   { Ask-And-Upload-App }
+    "Both"  { Ask-User-TestUrl; Ask-And-Upload-App }
+  }
+}
 
-# Step 4: Validate Required Tools
-Write-Host "ℹ️ Checking prerequisites for $TECH_STACK..."
-Write-Host "📂 Current working directory: $(Get-Location)"
-switch ($TECH_STACK) {
+# === UPDATED: click-select for Tech Stack ===
+function Ask-Tech-Stack {
+  $choice = Show-ClickChoice -Title "Tech Stack" `
+                             -Prompt "Select your installed language / framework:" `
+                             -Choices @("Java","Python") `
+                             -DefaultChoice "Java"
+  if ([string]::IsNullOrWhiteSpace($choice)) { throw "No tech stack selected" }
+  $script:TECH_STACK = $choice
+  Log-Line "✅ Selected Tech Stack: $script:TECH_STACK" $GLOBAL_LOG
+}
+
+function Validate-Tech-Stack {
+  Log-Line "ℹ️ Checking prerequisites for $script:TECH_STACK" $GLOBAL_LOG
+  switch ($script:TECH_STACK) {
     "Java" {
-        if (-not (Get-Command java -ErrorAction SilentlyContinue)) {
-            Write-Host "❌ Java is not installed or not in PATH.`n   ❗ Please install Java and add it to PATH."
-            exit 1
-        }
-        $javaVer = & java -version 2>&1
-        Write-Host "✅ Java is installed. Version details:`n$javaVer"
+      if (-not (Get-Command java -ErrorAction SilentlyContinue)) {
+        Log-Line "❌ Java command not found in PATH." $GLOBAL_LOG
+        throw "Java not found"
+      }
+      $verInfo = & cmd /c 'java -version 2>&1'
+      if (-not $verInfo) {
+        Log-Line "❌ Java exists but failed to run." $GLOBAL_LOG
+        throw "Java invocation failed"
+      }
+      Log-Line "✅ Java is installed. Version details:" $GLOBAL_LOG
+      ($verInfo -split "`r?`n") | ForEach-Object { if ($_ -ne "") { Log-Line "  $_" $GLOBAL_LOG } }
     }
     "Python" {
-        if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
-            Write-Host "❌ Python is not installed or not in PATH.`n   ❗ Please install Python 3 and ensure it's in PATH."
-            exit 1
-        }
-        $pyVer = & python --version
-        Write-Host "✅ python is installed: $pyVer"
-    }
-    "JavaScript" {
-        if (-not (Get-Command node -ErrorAction SilentlyContinue) -or -not (Get-Command npm -ErrorAction SilentlyContinue)) {
-            Write-Host "❌ Node.js or npm is not installed in PATH.`n   ❗ Please install Node.js (which includes npm)."
-            exit 1
-        }
-        $nodeVer = & node -v
-        $npmVer  = & npm -v
-        Write-Host "✅ Node.js is installed: $nodeVer"
-        Write-Host "✅ npm is installed: $npmVer"
-    }
-}
-Write-Log "[Prerequisites validated for $TECH_STACK]"
-
-# Step 5: Fetch Plan Details (BrowserStack API)
-$authInfo        = "${BS_USERNAME}:${BS_ACCESS_KEY}"
-$authHeaderValue = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($authInfo))
-$headers         = @{ Authorization = "Basic $authHeaderValue" }
-$WEB_PLAN_FETCHED    = $false
-$MOBILE_PLAN_FETCHED = $false
-$webUnauthorized    = $false
-$mobileUnauthorized = $false
-
-# Web Testing plan
-try {
-    $respWeb = Invoke-WebRequest -Uri "https://api.browserstack.com/automate/plan.json" -Headers $headers -ErrorAction Stop
-    $HTTP_CODE_WEB = $respWeb.StatusCode
-    $RESPONSE_WEB_BODY = $respWeb.Content
-} catch {
-    $HTTP_CODE_WEB = $_.Exception.Response.StatusCode.value__
-    $reader = New-Object IO.StreamReader $_.Exception.Response.GetResponseStream()
-    $RESPONSE_WEB_BODY = $reader.ReadToEnd(); $reader.Close()
-}
-if ($HTTP_CODE_WEB -eq 200) {
-    $WEB_PLAN_FETCHED = $true
-    $planWebJson = $RESPONSE_WEB_BODY | ConvertFrom-Json
-    $TEAM_PARALLELS_MAX_ALLOWED_WEB = $planWebJson.parallel_sessions_max_allowed
-    Write-Host "✅ Web Testing plan fetched: Max Parallels = $TEAM_PARALLELS_MAX_ALLOWED_WEB"
-    Write-Log "[Web Plan] $RESPONSE_WEB_BODY"
-} else {
-    Write-Host "❌ Web Testing plan fetch failed (HTTP $HTTP_CODE_WEB)"
-    Write-Log "[Web Plan Error] $RESPONSE_WEB_BODY"
-    if ($HTTP_CODE_WEB -eq 401) {
-        Write-Host "⚠️ Invalid credentials or no Web Testing access."
-        $webUnauthorized = $true
-    }
-}
-
-# Mobile App Testing plan
-try {
-    $respMob = Invoke-WebRequest -Uri "https://api-cloud.browserstack.com/app-automate/plan.json" -Headers $headers -ErrorAction Stop
-    $HTTP_CODE_MOBILE = $respMob.StatusCode
-    $RESPONSE_MOBILE_BODY = $respMob.Content
-} catch {
-    $HTTP_CODE_MOBILE = $_.Exception.Response.StatusCode.value__
-    $reader = New-Object IO.StreamReader $_.Exception.Response.GetResponseStream()
-    $RESPONSE_MOBILE_BODY = $reader.ReadToEnd(); $reader.Close()
-}
-if ($HTTP_CODE_MOBILE -eq 200) {
-    $MOBILE_PLAN_FETCHED = $true
-    $planMobJson = $RESPONSE_MOBILE_BODY | ConvertFrom-Json
-    $TEAM_PARALLELS_MAX_ALLOWED_MOBILE = $planMobJson.parallel_sessions_max_allowed
-    Write-Host "✅ Mobile Testing plan fetched: Max Parallels = $TEAM_PARALLELS_MAX_ALLOWED_MOBILE"
-    Write-Log "[Mobile Plan] $RESPONSE_MOBILE_BODY"
-} else {
-    Write-Host "❌ Mobile Testing plan fetch failed (HTTP $HTTP_CODE_MOBILE)"
-    Write-Log "[Mobile Plan Error] $RESPONSE_MOBILE_BODY"
-    if ($HTTP_CODE_MOBILE -eq 401) {
-        Write-Host "⚠️ Invalid credentials or no Mobile Testing access."
-        $mobileUnauthorized = $true
-    }
-}
-# Decide exit if no access based on user selection
-if ($TEST_OPTION -eq "Web Testing" -and $webUnauthorized) { exit 1 }
-if ($TEST_OPTION -eq "Mobile App Testing" -and $mobileUnauthorized) { exit 1 }
-if ($TEST_OPTION -eq "Both" -and $webUnauthorized -and $mobileUnauthorized) {
-    Write-Host "❌ Both Web and Mobile testing are unavailable with current subscription. Exiting."
-    exit 1
-}
-Write-Log "[Plan details fetched]"
-
-# Step 6: Prepare platform templates and YAML generation
-$PARALLEL_PERCENTAGE = 0.75
-$WEB_PLATFORM_TEMPLATES = @(
-    "Windows|10|Chrome",
-    "Windows|10|Firefox",
-    "Windows|11|Edge",
-    "Windows|11|Chrome",
-    "OS X|Monterey|Safari",
-    "OS X|Monterey|Chrome",
-    "OS X|Ventura|Chrome",
-    "OS X|Big Sur|Safari",
-    "OS X|Catalina|Firefox"
-)
-$MOBILE_DEVICE_TEMPLATES = @(
-    # Samsung
-    "android|Samsung Galaxy S21|11",
-    "android|Samsung Galaxy S25|15",
-    "android|Samsung Galaxy S24|14",
-    "android|Samsung Galaxy S22|12",
-    "android|Samsung Galaxy S23|13",
-    "android|Samsung Galaxy S21|12",
-    "android|Samsung Galaxy Tab S10 Plus|15",
-    "android|Samsung Galaxy S22 Ultra|12",
-    "android|Samsung Galaxy S21 Ultra|11",
-    "android|Samsung Galaxy S20|10",
-    "android|Samsung Galaxy M32|11",
-    "android|Samsung Galaxy Note 20|10",
-    "android|Samsung Galaxy S10|9",
-    "android|Samsung Galaxy Note 9|8",
-    "android|Samsung Galaxy S9|8",
-    "android|Samsung Galaxy Tab S8|12",
-    "android|Samsung Galaxy S23 Ultra|13",
-    "android|Samsung Galaxy S22 Plus|12",
-    "android|Samsung Galaxy S21 Plus|11",
-    "android|Samsung Galaxy S20 Ultra|10",
-    "android|Samsung Galaxy S25 Ultra|15",
-    "android|Samsung Galaxy S24 Ultra|14",
-    "android|Samsung Galaxy M52|11",
-    "android|Samsung Galaxy A52|11",
-    "android|Samsung Galaxy A51|10",
-    "android|Samsung Galaxy A11|10",
-    "android|Samsung Galaxy A10|9",
-    "android|Samsung Galaxy S8|7",
-    "android|Samsung Galaxy Tab A9 Plus|14",
-    "android|Samsung Galaxy Tab S9|13",
-    "android|Samsung Galaxy Tab S7|10",
-    "android|Samsung Galaxy Tab S7|11",
-    "android|Samsung Galaxy Tab S6|9",
-
-    # Google Pixel
-    "android|Google Pixel 9|15",
-    "android|Google Pixel 6 Pro|13",
-    "android|Google Pixel 8|14",
-    "android|Google Pixel 7|13",
-    "android|Google Pixel 6|12",
-    "android|Google Pixel 3|9",
-    "android|Google Pixel 9|16",
-    "android|Google Pixel 6 Pro|12",
-    "android|Google Pixel 6 Pro|15",
-    "android|Google Pixel 9 Pro XL|15",
-    "android|Google Pixel 9 Pro|15",
-    "android|Google Pixel 8 Pro|14",
-    "android|Google Pixel 7 Pro|13",
-    "android|Google Pixel 5|11",
-    "android|Google Pixel 5|12",
-    "android|Google Pixel 4 XL|10",
-
-    # Vivo
-    "android|Vivo Y21|11",
-    "android|Vivo Y50|10",
-    "android|Vivo V30|14",
-    "android|Vivo V21|11",
-
-    # Oppo
-    "android|Oppo Reno 6|11",
-    "android|Oppo Reno 8T 5G|13",
-    "android|Oppo A96|11",
-    "android|Oppo Reno 3 Pro|10",
-
-    # Realme
-    "android|Realme 8|11",
-
-    # Motorola
-    "android|Motorola Moto G71 5G|11",
-    "android|Motorola Moto G9 Play|10",
-    "android|Motorola Moto G7 Play|9",
-
-    # OnePlus
-    "android|OnePlus 12R|14",
-    "android|OnePlus 11R|13",
-    "android|OnePlus 9|11",
-    "android|OnePlus 8|10",
-
-    # Xiaomi
-    "android|Xiaomi Redmi Note 13 Pro 5G|14",
-    "android|Xiaomi Redmi Note 12 4G|13",
-    "android|Xiaomi Redmi Note 11|11",
-    "android|Xiaomi Redmi Note 9|10",
-    "android|Xiaomi Redmi Note 8|9",
-
-    # Huawei
-    "android|Huawei P30|9"
-)
-
-function Get-WebPlatformsYaml($maxParallels) {
-    $max = [int]([math]::Floor($maxParallels * $PARALLEL_PERCENTAGE))
-    if ($max -lt 1) { $max = 1 }
-    $yamlLines = @(); $count = 0
-    foreach ($template in $WEB_PLATFORM_TEMPLATES) {
-        if ($count -ge $max) { break }
-        $parts = $template -split '\|'
-        $os = $parts[0]; $osVer = $parts[1]; $browser = $parts[2]
-        foreach ($ver in @("latest", "latest-1", "latest-2")) {
-            $yamlLines += "  - os: $os"
-            $yamlLines += "    osVersion: $osVer"
-            $yamlLines += "    browserName: $browser"
-            $yamlLines += "    browserVersion: $ver"
-            $count++
-            if ($count -ge $max) { break }
-        }
-    }
-    return $yamlLines -join [Environment]::NewLine
-}
-function Get-MobilePlatformsYaml($maxParallels) {
-    $max = [int]([math]::Floor($maxParallels * $PARALLEL_PERCENTAGE))
-    if ($max -lt 1) { $max = 1 }
-    $yamlLines = @(); $count = 0
-    foreach ($template in $MOBILE_DEVICE_TEMPLATES) {
-        if ($count -ge $max) { break }
-        $parts = $template -split '\|'
-        $platform = $parts[0]; $device = $parts[1]; $version = $parts[2]
-        $yamlLines += "  - platformName: $platform"
-        $yamlLines += "    deviceName: $device"
-        $yamlLines += "    platformVersion: '$version.0'"
-        $count++
-        if ($count -ge $max) { break }
-    }
-    return $yamlLines -join [Environment]::NewLine
-}
-
-# Step 7: Define test run functions and patterns
-$WEB_SETUP_ERRORS = @("Error", "Exception", "Build failed", "Session not created", "Cannot start test")
-$WEB_LOCAL_ERRORS = @("browserstack local failed", "fail local testing", "failed to connect tunnel")
-$MOBILE_LOCAL_ERRORS = @("tunnel connection error")
-$MOBILE_SETUP_ERRORS = @()
-
-function Run-WebTests([bool]$useLocal) {
-    switch ($TECH_STACK) {
-        "Java"       { $REPO="testng-browserstack";        $cloneUrl="https://github.com/browserstack/testng-browserstack.git" }
-        "Python"     { $REPO="python-selenium-browserstack"; $cloneUrl="https://github.com/browserstack/python-selenium-browserstack.git" }
-        "JavaScript" { $REPO="webdriverio-browserstack";    $cloneUrl="https://github.com/browserstack/webdriverio-browserstack.git" }
-    }
-    if (-not (Test-Path $REPO)) {
-        if ($cloneBranch) {
-            & git clone $cloneUrl -b $cloneBranch
+      try {
+        Set-PythonCmd
+        $code = Invoke-Py -Arguments @("--version") -LogFile $null -WorkingDirectory (Get-Location).Path
+        if ($code -eq 0) {
+          Log-Line ("✅ Python detected: {0}" -f ( ($PY_CMD -join ' ') )) $GLOBAL_LOG
         } else {
-            & git clone $cloneUrl
+          throw "Python present but failed to execute"
         }
+      } catch {
+        Log-Line "❌ Python exists but failed to run." $GLOBAL_LOG
+        throw
+      }
     }
-    Set-Location -Path $REPO
 
-    # (Prerequisites check could be repeated here if needed)
+    "JS" {
+      if (-not (Get-Command node -ErrorAction SilentlyContinue)) { Log-Line "❌ Node.js not found." $GLOBAL_LOG; throw "Node not found" }
+      if (-not (Get-Command npm -ErrorAction SilentlyContinue)) { Log-Line "❌ npm not found." $GLOBAL_LOG; throw "npm not found" }
+      Log-Line "✅ Node.js: $(& node -v) ; npm: $(& npm -v)" $GLOBAL_LOG
+    }
+    default { Log-Line "❌ Unknown tech stack selected: $script:TECH_STACK" $GLOBAL_LOG; throw "Unknown tech stack" }
+  }
+  Log-Line "✅ Prerequisites validated for $script:TECH_STACK" $GLOBAL_LOG
+}
+# fix Python branch without ternary
+function Get-PythonCmd {
+  if (Get-Command python3 -ErrorAction SilentlyContinue) { return "python3" }
+  return "python"
+}
 
-    $platformYaml = Get-WebPlatformsYaml $TEAM_PARALLELS_MAX_ALLOWED_WEB
-    if ($TECH_STACK -ne "JavaScript") {
-        # Determine framework name
-        if ($TECH_STACK -eq "Java") {
-            $framework = "testng"
-        } else {
-            $framework = "python"
+function Ask-User-TestUrl {
+  $u = Show-InputBox -Title "Test URL Setup" -Prompt "Enter the URL you want to test with BrowserStack:`n(Leave blank for default: $DEFAULT_TEST_URL)" -DefaultText ""
+  if ([string]::IsNullOrWhiteSpace($u)) {
+    $script:CX_TEST_URL = $DEFAULT_TEST_URL
+    Log-Line "⚠️ No URL entered. Falling back to default: $script:CX_TEST_URL" $GLOBAL_LOG
+  } else {
+    $script:CX_TEST_URL = $u
+    Log-Line "🌐 Using custom test URL: $script:CX_TEST_URL" $GLOBAL_LOG
+  }
+}
+
+function Get-BasicAuthHeader {
+  param([string]$User, [string]$Key)
+  $pair = "{0}:{1}" -f $User,$Key
+  $bytes = [System.Text.Encoding]::UTF8.GetBytes($pair)
+  "Basic {0}" -f [System.Convert]::ToBase64String($bytes)
+}
+
+function Ask-And-Upload-App {
+  $path = Show-OpenFileDialog -Title "📱 Select your .apk or .ipa (Cancel = use default sample)"
+  if ([string]::IsNullOrWhiteSpace($path)) {
+    Log-Line "⚠️ No app selected. Using default sample app: bs://sample.app" $GLOBAL_LOG
+    $script:APP_URL = "bs://sample.app"
+    $script:APP_PLATFORM = "all"
+    return
+  }
+  $ext = [System.IO.Path]::GetExtension($path).ToLowerInvariant()
+  switch ($ext) {
+    ".apk" { $script:APP_PLATFORM = "android" }
+    ".ipa" { $script:APP_PLATFORM = "ios" }
+    default { Log-Line "❌ Unsupported file type. Only .apk or .ipa allowed." $GLOBAL_LOG; throw "Unsupported app file" }
+  }
+
+  Log-Line "⬆️ Uploading $path to BrowserStack..." $GLOBAL_LOG
+  $headers = @{ Authorization = (Get-BasicAuthHeader -User $BROWSERSTACK_USERNAME -Key $BROWSERSTACK_ACCESS_KEY) }
+  $form = @{ file = Get-Item -Path $path }
+  $resp = Invoke-RestMethod -Method Post -Uri "https://api-cloud.browserstack.com/app-automate/upload" -Headers $headers -Form $form
+  $url = $resp.app_url
+  if ([string]::IsNullOrWhiteSpace($url)) {
+    Log-Line "❌ Upload failed. Response: $(ConvertTo-Json $resp -Depth 5)" $GLOBAL_LOG
+    throw "Upload failed"
+  }
+  $script:APP_URL = $url
+  Log-Line "✅ App uploaded successfully: $script:APP_URL" $GLOBAL_LOG
+}
+
+# ===== Generators =====
+function Generate-Web-Platforms-Yaml {
+  param([int]$MaxTotalParallels)
+  $max = [Math]::Floor($MaxTotalParallels * $PARALLEL_PERCENTAGE)
+  if ($max -lt 0) { $max = 0 }
+  $sb = New-Object System.Text.StringBuilder
+  $count = 0
+
+  foreach ($t in $WEB_PLATFORM_TEMPLATES) {
+    $parts = $t.Split('|')
+    $os = $parts[0]; $osVersion = $parts[1]; $browserName = $parts[2]
+    foreach ($version in @('latest','latest-1','latest-2')) {
+      [void]$sb.AppendLine("  - os: $os")
+      [void]$sb.AppendLine("    osVersion: $osVersion")
+      [void]$sb.AppendLine("    browserName: $browserName")
+      [void]$sb.AppendLine("    browserVersion: $version")
+      $count++
+      if ($count -ge $max -and $max -gt 0) {
+        return $sb.ToString()
+      }
+    }
+  }
+  return $sb.ToString()
+}
+
+function Generate-Mobile-Platforms-Yaml {
+  param([int]$MaxTotalParallels)
+  $max = [Math]::Floor($MaxTotalParallels * $PARALLEL_PERCENTAGE)
+  if ($max -lt 1) { $max = 1 }
+  $sb = New-Object System.Text.StringBuilder
+  $count = 0
+
+  foreach ($t in $MOBILE_ALL) {
+    $parts = $t.Split('|')
+    $platformName  = $parts[0]
+    $deviceName    = $parts[1]
+    $platformVer   = $parts[2]
+
+    if (-not [string]::IsNullOrWhiteSpace($APP_PLATFORM)) {
+      if ($APP_PLATFORM -eq 'ios' -and $platformName -ne 'ios') { continue }
+      if ($APP_PLATFORM -eq 'android' -and $platformName -ne 'android') { continue }
+    }
+
+    [void]$sb.AppendLine("  - platformName: $platformName")
+    [void]$sb.AppendLine("    deviceName: $deviceName")
+    [void]$sb.AppendLine("    platformVersion: '${platformVer}.0'")
+    $count++
+    if ($count -ge $max) { return $sb.ToString() }
+  }
+  return $sb.ToString()
+}
+
+function Generate-Web-Caps-Json {
+  param([int]$MaxTotalParallels)
+  $max = [Math]::Floor($MaxTotalParallels * $PARALLEL_PERCENTAGE)
+  if ($max -lt 1) { $max = 1 }
+  $items = @()
+  $count = 0
+  foreach ($t in $WEB_PLATFORM_TEMPLATES) {
+    $parts = $t.Split('|')
+    $os = $parts[0]; $osVersion = $parts[1]; $browserName = $parts[2]
+    foreach ($version in @('latest','latest-1','latest-2')) {
+      $items += [pscustomobject]@{
+        browserName   = $browserName
+        browserVersion= $version
+        'bstack:options' = @{
+          os        = $os
+          osVersion = $osVersion
         }
+      }
+      $count++
+      if ($count -ge $max) { break }
+    }
+    if ($count -ge $max) { break }
+  }
+  return ($items | ConvertTo-Json -Depth 5)
+}
 
-        if ($framework -eq "testng") {
-            $yamlContent = @"
-userName: $BS_USERNAME
-accessKey: $BS_ACCESS_KEY
-framework: $framework
-browserstackLocal: $useLocal
-buildName: browserstack-build-web
-projectName: BrowserStack Web Sample
+# ===== Fetch plan details =====
+function Fetch-Plan-Details {
+  Log-Line "ℹ️ Fetching BrowserStack Plan Details..." $GLOBAL_LOG
+  $auth = Get-BasicAuthHeader -User $BROWSERSTACK_USERNAME -Key $BROWSERSTACK_ACCESS_KEY
+  $headers = @{ Authorization = $auth }
+
+  if ($TEST_TYPE -in @("Web","Both")) {
+    try {
+      $resp = Invoke-RestMethod -Method Get -Uri "https://api.browserstack.com/automate/plan.json" -Headers $headers
+      $script:WEB_PLAN_FETCHED = $true
+      $script:TEAM_PARALLELS_MAX_ALLOWED_WEB = [int]$resp.parallel_sessions_max_allowed
+      Log-Line "✅ Web Testing Plan fetched: Team max parallel sessions = $TEAM_PARALLELS_MAX_ALLOWED_WEB" $GLOBAL_LOG
+    } catch {
+      Log-Line "❌ Web Testing Plan fetch failed ($($_.Exception.Message))" $GLOBAL_LOG
+    }
+  }
+  if ($TEST_TYPE -in @("App","Both")) {
+    try {
+      $resp2 = Invoke-RestMethod -Method Get -Uri "https://api-cloud.browserstack.com/app-automate/plan.json" -Headers $headers
+      $script:MOBILE_PLAN_FETCHED = $true
+      $script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE = [int]$resp2.parallel_sessions_max_allowed
+      Log-Line "✅ Mobile App Testing Plan fetched: Team max parallel sessions = $TEAM_PARALLELS_MAX_ALLOWED_MOBILE" $GLOBAL_LOG
+    } catch {
+      Log-Line "❌ Mobile App Testing Plan fetch failed ($($_.Exception.Message))" $GLOBAL_LOG
+    }
+  }
+
+  if ( ($TEST_TYPE -eq "Web"   -and -not $WEB_PLAN_FETCHED) -or
+       ($TEST_TYPE -eq "App"   -and -not $MOBILE_PLAN_FETCHED) -or
+       ($TEST_TYPE -eq "Both"  -and -not ($WEB_PLAN_FETCHED -or $MOBILE_PLAN_FETCHED)) ) {
+    Log-Line "❌ Unauthorized to fetch required plan(s) or failed request(s). Exiting." $GLOBAL_LOG
+    throw "Plan fetch failed"
+  }
+}
+
+# ===== Setup: Web (Java) =====
+function Setup-Web-Java {
+  param([bool]$UseLocal, [int]$ParallelsPerPlatform, [string]$LogFile)
+
+  $REPO = "browserstack-examples-testng"
+  $TARGET = Join-Path $GLOBAL_DIR $REPO
+
+  if (!(Test-Path $TARGET)) {
+    Log-Line "📦 Cloning repo $REPO into $TARGET" $GLOBAL_LOG
+    Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $WEB_LOG
+  } else {
+    Log-Line "📂 Repo $REPO already exists at $TARGET, skipping clone." $GLOBAL_LOG
+  }
+
+  Push-Location $TARGET
+  try {
+    Validate-Tech-Stack
+
+    $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
+    $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
+
+    $env:BROWSERSTACK_CONFIG_FILE = "src/test/resources/conf/capabilities/bstack-parallel.yml"
+
+    # Replace base URL in TestBase.java (and ensure no BOM)
+    $repoRoot = $TARGET
+    $tb = Get-ChildItem -Path $repoRoot -Recurse -Filter TestBase.java -ErrorAction SilentlyContinue |
+          Select-Object -First 1 -ExpandProperty FullName
+
+    if ($tb) {
+      $c = [System.IO.File]::ReadAllText($tb)
+      if ([string]::IsNullOrWhiteSpace($CX_TEST_URL)) { $CX_TEST_URL = "https://bstackdemo.com" }
+      $c = $c.Replace("https://bstackdemo.com", $CX_TEST_URL)
+      Set-ContentNoBom -Path $tb -Value $c
+
+      # Hard strip BOM if any stray
+      $bytes = [System.IO.File]::ReadAllBytes($tb)
+      if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+        [System.IO.File]::WriteAllBytes($tb, $bytes[3..($bytes.Length-1)])
+      }
+      Log-Line "🔧 Updated URL and ensured UTF-8 no BOM in: $tb" $GLOBAL_LOG
+    } else {
+      Log-Line "❌ Could not find TestBase.java under $repoRoot" $GLOBAL_LOG
+    }
+
+    Log-Line ("⚠️ BrowserStack Local is {0} for this run." -f ($(if($UseLocal){"ENABLED"}else{"DISABLED"}))) $GLOBAL_LOG
+
+    $platforms = Generate-Web-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_WEB
+    $localFlag = if ($UseLocal) { "true" } else { "false" }
+
+@"
+userName: $BROWSERSTACK_USERNAME
+accessKey: $BROWSERSTACK_ACCESS_KEY
+framework: testng
+browserstackLocal: $localFlag
+buildName: browserstack-sample-java-web
+projectName: NOW-Web-Test
 percy: true
 accessibility: true
 platforms:
-$platformYaml
-"@
-        } else {
-            $yamlContent = @"
-userName: $BS_USERNAME
-accessKey: $BS_ACCESS_KEY
-framework: $framework
-browserstackLocal: $useLocal
-buildName: browserstack-build-web
-projectName: BrowserStack Web Sample
-platforms:
-$platformYaml
-"@
-        }
-        Set-Content -Path "browserstack.yml" -Value $yamlContent
-    }
+$platforms
+parallelsPerPlatform: $ParallelsPerPlatform
+"@ | Set-Content $env:BROWSERSTACK_CONFIG_FILE
 
-    $runLog = Join-Path $BSS_SETUP_DIR 'web_run_result.log'
-    if (Test-Path $runLog) { Remove-Item $runLog }
-    if ($TECH_STACK -eq "Java") {
-        & mvn test -P sample-test *> $runLog 2>&1
-    } elseif ($TECH_STACK -eq "Python") {
-        & python -m venv env; . .\env\Scripts\Activate.ps1
-        & python -m pip install -r requirements.txt >> $LOG_FILE 2>&1
-        & browserstack-sdk python .\tests\test.py *> $runLog 2>&1
-    } elseif ($TECH_STACK -eq "JavaScript") {
-        & npm install >> $LOG_FILE 2>&1
-        $confFilePath = "conf/test.conf.js"
-        try {
-            $configJson = Get-Content $confFilePath -Raw | ConvertFrom-Json
-        } catch {
-            $configJson = @{}
-        }
-        $configJson.maxInstances = $TEAM_PARALLELS_MAX_ALLOWED_WEB
-        $capList = @(); $count = 0
-        $maxCaps = [int]([math]::Floor($TEAM_PARALLELS_MAX_ALLOWED_WEB * $PARALLEL_PERCENTAGE))
-        if ($maxCaps -lt 1) { $maxCaps = 1 }
-        foreach ($template in $WEB_PLATFORM_TEMPLATES) {
-            if ($count -ge $maxCaps) { break }
-            $parts = $template -split '\|'
-            $os = $parts[0]; $osVer = $parts[1]; $browser = $parts[2]
-            foreach ($ver in @("latest", "latest-1", "latest-2")) {
-                if ($count -ge $maxCaps) { break }
-                $capList += @{
-                    browserName    = $browser
-                    browserVersion = $ver
-                    "bstack:options" = @{
-                        os        = $os
-                        osVersion = $osVer
-                    }
-                }
-                $count++
-                if ($count -ge $maxCaps) { break }
-            }
-        }
-        $configJson.capabilities = $capList
-        ($configJson | ConvertTo-Json -Depth 6) | Set-Content $confFilePath
-        $env:BROWSERSTACK_USERNAME = $BS_USERNAME
-        $env:BROWSERSTACK_ACCESS_KEY = $BS_ACCESS_KEY
-        $env:BROWSERSTACK_LOCAL = $useLocal.ToString().ToLower()
-        if ($useLocal) {
-            & npm run local *> $runLog 2>&1
-        } else {
-            & npm run test *> $runLog 2>&1
-        }
-    }
-    if (Test-Path $runLog) { Get-Content $runLog | Add-Content $LOG_FILE }
-    Set-Location -Path $BSS_SETUP_DIR
+    $mvn = Get-MavenCommand -RepoDir $TARGET
+    Log-Line "⚙️ Running '$mvn install -DskipTests'" $GLOBAL_LOG
+    Push-Location $TARGET; try { [void](Invoke-External -Exe $mvn -Arguments @("install","-DskipTests") -LogFile $LogFile -WorkingDirectory $TARGET) } finally { Pop-Location }
+
+    Log-Line "🚀 Running '$mvn clean test -P bstack-parallel -Dtest=OrderTest'" $GLOBAL_LOG
+    Push-Location $TARGET; try { [void](Invoke-External -Exe $mvn -Arguments @("clean","test","-P","bstack-parallel","-Dtest=OrderTest") -LogFile $LogFile -WorkingDirectory $TARGET) } finally { Pop-Location }
+
+  } finally {
+    Pop-Location
+  }
 }
 
-function Run-MobileTests([bool]$useLocal) {
-    switch ($TECH_STACK) {
-        "Java"       { $REPO="testng-appium-app-browserstack"; $cloneUrl="https://github.com/browserstack/testng-appium-app-browserstack.git" }
-        "Python"     { $REPO="python-appium-app-browserstack"; $cloneUrl="https://github.com/browserstack/python-appium-app-browserstack.git" }
-        "JavaScript" { $REPO="webdriverio-appium-app-browserstack"; $cloneUrl="https://github.com/browserstack/webdriverio-appium-app-browserstack.git"; $cloneBranch="sdk" }
-    }
-    if (-not (Test-Path $REPO)) {
-        if ($cloneBranch) {
-            & git clone $cloneUrl -b $cloneBranch
-        } else {
-            & git clone $cloneUrl
-        }
-    }
-    Set-Location -Path $REPO
+# ===== Setup: Web (Python) =====
+function Setup-Web-Python {
+  param([bool]$UseLocal, [int]$ParallelsPerPlatform, [string]$LogFile)
 
-    $platformYaml = Get-MobilePlatformsYaml $TEAM_PARALLELS_MAX_ALLOWED_MOBILE
-    if ($TECH_STACK -eq "Java") {
-        $yamlPath = "android/testng-examples/browserstack.yml"
-        $yamlContent = @"
-userName: $BS_USERNAME
-accessKey: $BS_ACCESS_KEY
+  $REPO = "browserstack-examples-pytest"
+  $TARGET = Join-Path $GLOBAL_DIR $REPO
+
+  if (!(Test-Path $TARGET)) {
+    Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Branch "sdk" -Target $TARGET -LogFile $WEB_LOG
+    Log-Line "✅ Cloned repository: $REPO into $TARGET" $GLOBAL_LOG
+  } else {
+    Log-Line "ℹ️ Repository already exists at: $TARGET (skipping clone)" $GLOBAL_LOG
+  }
+
+  Push-Location $TARGET
+  try {
+    Validate-Tech-Stack
+
+    if (-not $PY_CMD -or $PY_CMD.Count -eq 0) { Set-PythonCmd }
+    $venv = Join-Path $TARGET "venv"
+    if (!(Test-Path $venv)) {
+      [void](Invoke-Py -Arguments @("-m","venv",$venv) -LogFile $LogFile -WorkingDirectory $TARGET)
+      Log-Line "✅ Created Python virtual environment" $GLOBAL_LOG
+    }
+    $venvPy = Get-VenvPython -VenvDir $venv
+    [void](Invoke-External -Exe $venvPy -Arguments @("-m","pip","install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
+    # Ensure SDK can find pytest on PATH
+    $env:PATH = (Join-Path $venv 'Scripts') + ";" + $env:PATH
+
+    $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
+    $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
+
+    $env:BROWSERSTACK_CONFIG_FILE = "browserstack.yml"
+    $platforms = Generate-Web-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_WEB
+    $localFlag = if ($UseLocal) { "true" } else { "false" }
+
+@"
+userName: $BROWSERSTACK_USERNAME
+accessKey: $BROWSERSTACK_ACCESS_KEY
+framework: pytest
+browserstackLocal: $localFlag
+buildName: browserstack-sample-python-web
+projectName: NOW-Web-Test
+# percy: true #TODO: Uncomment this when percy issue is fixed
+accessibility: true
+platforms:
+$platforms
+parallelsPerPlatform: $ParallelsPerPlatform
+"@ | Set-Content "browserstack.yml"
+
+    Log-Line "✅ Updated root-level browserstack.yml with platforms and credentials" $GLOBAL_LOG
+
+    # Update demo URL in e2e if present (no BOM write)
+    $e2eRel = "src/test/suites/e2e.py"
+    $e2eFull = Join-Path $TARGET $e2eRel
+    if (Test-Path $e2eFull) {
+      $c = [System.IO.File]::ReadAllText($e2eFull)
+      $c = $c.Replace("https://bstackdemo.com/", $CX_TEST_URL)
+      Set-ContentNoBom -Path $e2eFull -Value $c
+      Log-Line "🔧 Updated URL in $e2eRel" $GLOBAL_LOG
+    } else {
+      Log-Line "ℹ️ Skipping URL update: $e2eRel not found in repo" $GLOBAL_LOG
+    }
+
+    $sdk = Join-Path $venv "Scripts\browserstack-sdk.exe"
+    # Run exactly: browserstack-sdk pytest -s src/test/suites/e2e.py (pytest must be on PATH)
+    $args = @('pytest','-s','src/test/suites/e2e.py')
+    Log-Line "⚠️ Running tests with local=$localFlag" $GLOBAL_LOG
+    [void](Invoke-External -Exe $sdk -Arguments $args -LogFile $LogFile -WorkingDirectory $TARGET)
+
+  } finally {
+    Pop-Location
+  }
+}
+
+# ===== Setup: Mobile (Python) =====
+function Setup-Mobile-Python {
+  param([bool]$UseLocal, [int]$ParallelsPerPlatform, [string]$LogFile)
+
+  $REPO = "browserstack-examples-pytest-BDD-appium"
+  $TARGET = Join-Path $GLOBAL_DIR $REPO
+
+  if (!(Test-Path $TARGET)) {
+    Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $MOBILE_LOG
+    Log-Line "✅ Cloned repository: $REPO into $TARGET" $GLOBAL_LOG
+  } else {
+    Log-Line "ℹ️ Repository already exists at: $TARGET (skipping clone)" $GLOBAL_LOG
+  }
+
+  Push-Location $TARGET
+  try {
+    if (-not $PY_CMD -or $PY_CMD.Count -eq 0) { Set-PythonCmd }
+    $venv = Join-Path $TARGET "venv"
+    [void](Invoke-Py -Arguments @("-m","venv",$venv) -LogFile $LogFile -WorkingDirectory $TARGET)
+    $venvPy = Get-VenvPython -VenvDir $venv
+    [void](Invoke-External -Exe $venvPy -Arguments @("-m","pip","install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
+    # Ensure SDK can find pytest on PATH
+    $env:PATH = (Join-Path $venv 'Scripts') + ";" + $env:PATH
+
+    $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
+    $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
+
+    $env:BROWSERSTACK_CONFIG_FILE = "browserstack.yml"
+    $platforms = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE
+    $localFlag = if ($UseLocal) { "true" } else { "false" }
+
+@"
+userName: $BROWSERSTACK_USERNAME
+accessKey: $BROWSERSTACK_ACCESS_KEY
+framework: pytest
+browserstackLocal: $localFlag
+buildName: browserstack-build-mobile
+projectName: NOW-Mobile-Test
+parallelsPerPlatform: $ParallelsPerPlatform
+app: $APP_URL
+
+platforms:
+$platforms
+"@ | Set-Content $env:BROWSERSTACK_CONFIG_FILE
+
+    Log-Line ("⚠️ BrowserStack Local is {0} for this run." -f ($(if($UseLocal){"ENABLED"}else{"DISABLED"}))) $GLOBAL_LOG
+    Log-Line "🚀 Running 'browserstack-sdk pytest -s tests/test_wikipedia.py'" $GLOBAL_LOG
+
+    $sdk = Join-Path $venv "Scripts\browserstack-sdk.exe"
+    # Run exactly: browserstack-sdk pytest -s tests/test_wikipedia.py (pytest must be on PATH)
+    [void](Invoke-External -Exe $sdk -Arguments @('pytest','-s','tests/test_wikipedia.py') -LogFile $LogFile -WorkingDirectory $TARGET)
+
+  } finally {
+    Pop-Location
+  }
+}
+
+# ===== Setup: Mobile (Java) =====
+function Setup-Mobile-Java {
+  param([bool]$UseLocal, [int]$ParallelsPerPlatform, [string]$LogFile)
+
+  $REPO = "browserstack-examples-appium-testng"
+  $TARGET = Join-Path $GLOBAL_DIR $REPO
+
+  if (!(Test-Path $TARGET)) {
+    Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $MOBILE_LOG
+    Log-Line "✅ Cloned repository: $REPO into $TARGET" $GLOBAL_LOG
+  } else {
+    Log-Line "ℹ️ Repository already exists at: $TARGET (skipping clone)" $GLOBAL_LOG
+  }
+
+  # Update pom.xml sdk version to LATEST (matches mac script)
+  $pom = Join-Path $TARGET "pom.xml"
+  if (Test-Path $pom) {
+    $pomContent = Get-Content $pom -Raw
+    $pomContent = $pomContent -replace '(?s)(<artifactId>browserstack-java-sdk</artifactId>.*?<version>)(.*?)(</version>)', '$1LATEST$3'
+    $pomContent | Set-Content $pom
+    Log-Line "🔧 Updated browserstack-java-sdk version to LATEST in pom.xml" $GLOBAL_LOG
+  }
+
+  Push-Location $TARGET
+  try {
+    Validate-Tech-Stack
+
+    $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
+    $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
+
+    # Update driver init to AndroidDriver (parity with bash)
+    $testBase = Get-ChildItem -Recurse -Filter "TestBase.java" | Select-Object -First 1
+    if ($testBase) {
+      (Get-Content $testBase.FullName) -replace 'new AppiumDriver\(', 'new AndroidDriver(' | Set-Content $testBase.FullName
+      Log-Line "🔧 Updated driver initialization in $($testBase.FullName) to use AndroidDriver" $GLOBAL_LOG
+    }
+
+    $env:BROWSERSTACK_CONFIG_FILE = "src/test/resources/conf/capabilities/browserstack-parallel.yml"
+    $platforms = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE
+    $localFlag = if ($UseLocal) { "true" } else { "false" }
+
+@"
+userName: $BROWSERSTACK_USERNAME
+accessKey: $BROWSERSTACK_ACCESS_KEY
 framework: testng
-app: bs://sample.app
+browserstackLocal: $localFlag
+buildName: browserstack-build-mobile
+projectName: NOW-Mobile-Test
+parallelsPerPlatform: $ParallelsPerPlatform
+accessibility: true
+percy: true
+app: $APP_URL
 platforms:
-$platformYaml
-browserstackLocal: $useLocal
-buildName: browserstack-build-1
-projectName: BrowserStack Sample
-"@
-        Set-Content -Path $yamlPath -Value $yamlContent
-        Set-Location -Path "android/testng-examples"
-        & mvn test -P sample-test *> "$BSS_SETUP_DIR\mobile_run_result.log" 2>&1
-    }
-    elseif ($TECH_STACK -eq "Python") {
-        & python -m venv env; . .\env\Scripts\Activate.ps1
-        & python -m pip install -r requirements.txt >> $LOG_FILE 2>&1
-        Set-Location -Path "android"
-        $yamlContent = @"
-userName: $BS_USERNAME
-accessKey: $BS_ACCESS_KEY
-framework: python
-app: bs://sample.app
-platforms:
-$platformYaml
-browserstackLocal: $useLocal
-buildName: browserstack-build-1
-projectName: BrowserStack Sample
-"@
-        Set-Content -Path "browserstack.yml" -Value $yamlContent
-        & browserstack-sdk python browserstack_sample.py *> "$BSS_SETUP_DIR\mobile_run_result.log" 2>&1
-    }
-    elseif ($TECH_STACK -eq "JavaScript") {
-        Push-Location -Path "android\examples\run-parallel-test"
-        & npm install >> $LOG_FILE 2>&1
-        $confFile = "parallel.conf.js"
-        try {
-            $config = Get-Content $confFile -Raw | ConvertFrom-Json
-        } catch {
-            $config = @{}
-        }
-        $config.maxInstances = $TEAM_PARALLELS_MAX_ALLOWED_MOBILE
-        $capList = @(); $count = 0
-        $maxCaps = [int]([math]::Floor($TEAM_PARALLELS_MAX_ALLOWED_MOBILE * $PARALLEL_PERCENTAGE))
-        if ($maxCaps -lt 1) { $maxCaps = 1 }
-        foreach ($template in $MOBILE_DEVICE_TEMPLATES) {
-            if ($count -ge $maxCaps) { break }
-            $parts = $template -split '\|'
-            $deviceName = $parts[1]; $baseVer = [int]$parts[2]
-            foreach ($delta in @(0, -1)) {
-                if ($count -ge $maxCaps) { break }
-                $version = $baseVer + $delta
-                $capList += @{ device = $deviceName; "os_version" = "$version.0" }
-                $count++
-                if ($count -ge $maxCaps) { break }
-            }
-        }
-        $config.capabilities = $capList
-        ($config | ConvertTo-Json -Depth 5) | Set-Content $confFile
-        Pop-Location
-        Set-Location -Path "android"
-        $env:BROWSERSTACK_USERNAME = $BS_USERNAME
-        $env:BROWSERSTACK_ACCESS_KEY = $BS_ACCESS_KEY
-        $env:BROWSERSTACK_LOCAL = $useLocal.ToString().ToLower()
-        if ($useLocal) {
-            & npm run local *> "$BSS_SETUP_DIR\mobile_run_result.log" 2>&1
-        } else {
-            & npm run parallel *> "$BSS_SETUP_DIR\mobile_run_result.log" 2>&1
-        }
-    }
-    if (Test-Path "$BSS_SETUP_DIR\mobile_run_result.log") {
-        Get-Content "$BSS_SETUP_DIR\mobile_run_result.log" | Add-Content $LOG_FILE
-    }
-    Set-Location -Path $BSS_SETUP_DIR
+$platforms
+"@ | Set-Content $env:BROWSERSTACK_CONFIG_FILE
+
+    Log-Line ("⚠️ BrowserStack Local is {0} for this run." -f ($(if($UseLocal){"ENABLED"}else{"DISABLED"}))) $GLOBAL_LOG
+
+    $mvn = Get-MavenCommand -RepoDir $TARGET
+    Log-Line "⚙️ Running '$mvn install -DskipTests'" $GLOBAL_LOG
+    Push-Location $TARGET; try { [void](Invoke-External -Exe $mvn -Arguments @("install","-DskipTests") -LogFile $LogFile -WorkingDirectory $TARGET) } finally { Pop-Location }
+
+    Log-Line "🚀 Running '$mvn clean test -P bstack-parallel -Dtest=OrderTest'" $GLOBAL_LOG
+    Push-Location $TARGET; try { [void](Invoke-External -Exe $mvn -Arguments @("clean","test","-P","bstack-parallel","-Dtest=OrderTest") -LogFile $LogFile -WorkingDirectory $TARGET) } finally { Pop-Location }
+
+  } finally {
+    Pop-Location
+  }
 }
 
-# Step 8: Run the appropriate setups based on selection
-if ($TEST_OPTION -eq "Web Testing" -and $WEB_PLAN_FETCHED) {
-    # Run Web tests (with retry logic)
-    $webSuccess = $false; $attempt = 1
-    while ($attempt -le 2 -and -not $webSuccess) {
-        if ($ShowLogs) {
-            Write-Host "`n⏳ Running Web tests (Attempt $attempt, browserstackLocal=$($attempt -eq 1))..."
-        } else {
-            Write-Host "`n⏳ Please hold on while we prepare the next step in the background..."
-        }
-        $useLocalFlag = ($attempt -eq 1)
-        Write-Log "[Web Setup Attempt $attempt] browserstackLocal: $($useLocalFlag.ToString().ToLower())"
-        Run-WebTests -useLocal:$useLocalFlag
-        $logContent = Get-Content "$BSS_SETUP_DIR\web_run_result.log" -Raw
-        $localFailure = $WEB_LOCAL_ERRORS | ForEach-Object { if ($logContent -match $_) { $_; break } }
-        $setupFailure = $WEB_SETUP_ERRORS | ForEach-Object { if ($logContent -match $_) { $_; break } }
-        $hasSessionLink = ($logContent -match 'https://.+browserstack\.com.+')
-        if ($hasSessionLink) {
-            $webSuccess = $true; break
-        } elseif ($localFailure -and $attempt -eq 1) {
-            Write-Host "❌ Web test failed due to Local tunnel error. Retrying without Local..."
-            $attempt++; continue
-        } elseif ($setupFailure) {
-            Write-Host "❌ Web test failed due to setup error. Check logs for details."
-            break
-        } else {
-            break
-        }
+# ===== Wrappers with retry =====
+function Setup-Web {
+  Log-Line "Starting Web setup for $TECH_STACK" $WEB_LOG
+
+  $localFlag = $true
+  $attempt = 1
+  $success = $false
+
+  $totalParallels = [int]([Math]::Floor($TEAM_PARALLELS_MAX_ALLOWED_WEB * $PARALLEL_PERCENTAGE))
+  if ($totalParallels -lt 1) { $totalParallels = 1 }
+  $parallelsPerPlatform = $totalParallels
+
+  while ($attempt -le 2) {
+    Log-Line "[Web Setup Attempt $attempt] browserstackLocal: $localFlag" $WEB_LOG
+    switch ($TECH_STACK) {
+      "Java"   { Setup-Web-Java -UseLocal:$localFlag -ParallelsPerPlatform $parallelsPerPlatform -LogFile $WEB_LOG }
+      "Python" { Setup-Web-Python -UseLocal:$localFlag -ParallelsPerPlatform $parallelsPerPlatform -LogFile $WEB_LOG }
+      "JS"     { Log-Line "JS path not enabled by current Tech Stack chooser; add if needed." $WEB_LOG }
+      default  { Log-Line "Unknown TECH_STACK: $TECH_STACK" $WEB_LOG; return }
     }
-    if ($webSuccess) {
-        $buildUrl = Select-String -Path $LOG_FILE -Pattern 'https://[A-Za-z0-9./?=_-]*browserstack\.com[A-Za-z0-9./?=_-]*' |
-                    Select-Object -Last 1 -ExpandProperty Line
-        Write-Host "✅ Web test run completed. View your tests here:`n👉 $buildUrl"
+
+    if (!(Test-Path $WEB_LOG)) {
+      $content = ""
     } else {
-        $logPath = (Resolve-Path "$BSS_SETUP_DIR\web_run_result.log").Path
-        Write-Host "❌ Final Web setup failed.`n   Check logs at: $logPath`n   If the issue persists, contact support@browserstack.com"
+      $content = Get-Content $WEB_LOG -Raw
     }
+
+    $LOCAL_FAILURE = $false
+    $SETUP_FAILURE = $false
+
+    foreach ($p in $WEB_LOCAL_ERRORS) { if ($p -and ($content -match $p)) { $LOCAL_FAILURE = $true; break } }
+    foreach ($p in $WEB_SETUP_ERRORS) { if ($p -and ($content -match $p)) { $SETUP_FAILURE = $true; break } }
+
+    if ($content -match 'https://[a-zA-Z0-9./?=_-]*browserstack\.com') { $success = $true }
+
+    if ($success) {
+      Log-Line "✅ Web setup succeeded" $WEB_LOG; break
+    } elseif ($LOCAL_FAILURE -and $attempt -eq 1) {
+      $localFlag = $false
+      $attempt++
+      Log-Line "⚠️ Web test failed due to Local tunnel error. Retrying without browserstackLocal..." $WEB_LOG
+    } elseif ($SETUP_FAILURE) {
+      Log-Line "❌ Web test failed due to setup error. Check logs at: $WEB_LOG" $WEB_LOG
+      break
+    } else {
+      Log-Line "❌ Web setup ended without success; check $WEB_LOG for details" $WEB_LOG
+      break
+    }
+  }
 }
-elseif ($TEST_OPTION -eq "Mobile App Testing" -and $MOBILE_PLAN_FETCHED) {
-    # Run Mobile tests (with retry logic)
-    $mobileSuccess = $false; $attempt = 1
-    while ($attempt -le 2 -and -not $mobileSuccess) {
-        if ($ShowLogs) {
-            Write-Host "`n⏳ Running Mobile tests (Attempt $attempt, browserstackLocal=$($attempt -eq 1))..."
-        } else {
-            Write-Host "`n⏳ Please hold on while we prepare the next step in the background..."
-        }
-        $useLocalFlag = ($attempt -eq 1)
-        Write-Log "[Mobile Setup Attempt $attempt] browserstackLocal: $($useLocalFlag.ToString().ToLower())"
-        Run-MobileTests -useLocal:$useLocalFlag
-        $logContent = Get-Content "$BSS_SETUP_DIR\mobile_run_result.log" -Raw
-        $localFailure = $MOBILE_LOCAL_ERRORS | ForEach-Object { if ($logContent -match $_) { $_; break } }
-        $setupFailure = $MOBILE_SETUP_ERRORS | ForEach-Object { if ($logContent -match $_) { $_; break } }
-        $hasSessionLink = ($logContent -match 'https://.+browserstack\.com.+')
-        if ($hasSessionLink) {
-            $mobileSuccess = $true; break
-        } elseif ($localFailure -and $attempt -eq 1) {
-            Write-Host "❌ Mobile test failed due to Local tunnel error. Retrying without Local..."
-            $attempt++; continue
-        } elseif ($setupFailure) {
-            Write-Host "❌ Mobile test failed due to setup error. Check logs for details."
-            break
-        } else {
-            break
-        }
+
+
+function Setup-Mobile {
+  Log-Line "Starting Mobile setup for $TECH_STACK" $MOBILE_LOG
+
+  $localFlag = $true
+  $attempt = 1
+  $success = $false
+
+  $totalParallels = [int]([Math]::Floor($TEAM_PARALLELS_MAX_ALLOWED_MOBILE * $PARALLEL_PERCENTAGE))
+  if ($totalParallels -lt 1) { $totalParallels = 1 }
+  $parallelsPerPlatform = $totalParallels
+
+  while ($attempt -le 2) {
+    Log-Line "[Mobile Setup Attempt $attempt] browserstackLocal: $localFlag" $MOBILE_LOG
+    switch ($TECH_STACK) {
+      "Java"   { Setup-Mobile-Java -UseLocal:$localFlag -ParallelsPerPlatform $parallelsPerPlatform -LogFile $MOBILE_LOG }
+      "Python" { Setup-Mobile-Python -UseLocal:$localFlag -ParallelsPerPlatform $parallelsPerPlatform -LogFile $MOBILE_LOG }
+      "JS"     { Log-Line "JS path not enabled by current Tech Stack chooser; add if needed." $MOBILE_LOG }
+      default  { Log-Line "Unknown TECH_STACK: $TECH_STACK" $MOBILE_LOG; return }
     }
-    if ($mobileSuccess) {
-        $buildUrl = Select-String -Path $LOG_FILE -Pattern 'https://[A-Za-z0-9./?=_-]*browserstack\.com[A-Za-z0-9./?=_-]*' |
-                    Select-Object -Last 1 -ExpandProperty Line
-        Write-Host "✅ Mobile test run completed. View your tests here:`n👉 $buildUrl"
+
+    if (!(Test-Path $MOBILE_LOG)) {
+      $content = ""
     } else {
-        $logPath = (Resolve-Path "$BSS_SETUP_DIR\mobile_run_result.log").Path
-        Write-Host "❌ Final Mobile setup failed.`n   Check logs at: $logPath`n   If the issue persists, contact support@browserstack.com"
+      $content = Get-Content $MOBILE_LOG -Raw
     }
+
+    $LOCAL_FAILURE = $false
+    $SETUP_FAILURE = $false
+
+    foreach ($p in $MOBILE_LOCAL_ERRORS) { if ($p -and ($content -match $p)) { $LOCAL_FAILURE = $true; break } }
+    foreach ($p in $MOBILE_SETUP_ERRORS) { if ($p -and ($content -match $p)) { $SETUP_FAILURE = $true; break } }
+
+    if ($content -match 'https://[a-zA-Z0-9./?=_-]*browserstack\.com') { $success = $true }
+
+    if ($success) {
+      Log-Line "✅ Mobile setup succeeded" $MOBILE_LOG; break
+    } elseif ($LOCAL_FAILURE -and $attempt -eq 1) {
+      $localFlag = $false
+      $attempt++
+      Log-Line "⚠️ Mobile test failed due to Local tunnel error. Retrying without browserstackLocal..." $MOBILE_LOG
+    } elseif ($SETUP_FAILURE) {
+      Log-Line "❌ Mobile test failed due to setup error. Check logs at: $MOBILE_LOG" $MOBILE_LOG
+      break
+    } else {
+      Log-Line "❌ Mobile setup ended without success; check $MOBILE_LOG for details" $MOBILE_LOG
+      break
+    }
+  }
 }
-elseif ($TEST_OPTION -eq "Both") {
-    $ranAny = $false
-    if ($WEB_PLAN_FETCHED) {
-        Write-Host "=== Executing Web Testing ==="
-        # Run Web tests (same logic as above)
-        $webSuccess = $false; $attempt = 1
-        while ($attempt -le 2 -and -not $webSuccess) {
-            if ($ShowLogs) {
-                Write-Host "`n⏳ Running Web tests (Attempt $attempt, browserstackLocal=$($attempt -eq 1))..."
-            } else {
-                Write-Host "`n⏳ Please hold on while we prepare the next step in the background..."
-            }
-            $useLocalFlag = ($attempt -eq 1)
-            Write-Log "[Web Setup Attempt $attempt] browserstackLocal: $($useLocalFlag.ToString().ToLower())"
-            Run-WebTests -useLocal:$useLocalFlag
-            $logContent = Get-Content "$BSS_SETUP_DIR\web_run_result.log" -Raw
-            $localFailure = $WEB_LOCAL_ERRORS | ForEach-Object { if ($logContent -match $_) { $_; break } }
-            $setupFailure = $WEB_SETUP_ERRORS | ForEach-Object { if ($logContent -match $_) { $_; break } }
-            $hasSessionLink = ($logContent -match 'https://.+browserstack\.com.+')
-            if ($hasSessionLink) {
-                $webSuccess = $true; break
-            } elseif ($localFailure -and $attempt -eq 1) {
-                Write-Host "❌ Web test failed due to Local tunnel error. Retrying without Local..."; $attempt++; continue
-            } elseif ($setupFailure) {
-                Write-Host "❌ Web test failed due to setup error. Check logs."
-                break
-            } else {
-                break
-            }
-        }
-        if ($webSuccess) {
-            $buildUrl = Select-String -Path $LOG_FILE -Pattern 'https://[A-Za-z0-9./?=_-]*browserstack\.com[A-Za-z0-9./?=_-]*' |
-                        Select-Object -Last 1 -ExpandProperty Line
-            Write-Host "✅ Web test run completed. See results:`n👉 $buildUrl"
-        } else {
-            $logPath = (Resolve-Path "$BSS_SETUP_DIR\web_run_result.log").Path
-            Write-Host "❌ Web tests failed. Check logs at $logPath"
-        }
-        $ranAny = $true
-    } else {
-        Write-Host "⚠️ Skipping Web setup (Automate plan not available)."
+
+
+# ===== Orchestration =====
+function Run-Setup {
+  Log-Line "Orchestration: TEST_TYPE=$TEST_TYPE, WEB_PLAN_FETCHED=$WEB_PLAN_FETCHED, MOBILE_PLAN_FETCHED=$MOBILE_PLAN_FETCHED" $GLOBAL_LOG
+  switch ($TEST_TYPE) {
+    "Web" {
+      if ($WEB_PLAN_FETCHED) { Setup-Web } else { Log-Line "⚠️ Skipping Web setup — Web plan not fetched" $GLOBAL_LOG }
     }
-    if ($MOBILE_PLAN_FETCHED) {
-        Write-Host "`n=== Executing Mobile App Testing ==="
-        $mobileSuccess = $false; $attempt = 1
-        while ($attempt -le 2 -and -not $mobileSuccess) {
-            if ($ShowLogs) {
-                Write-Host "`n⏳ Running Mobile tests (Attempt $attempt, browserstackLocal=$($attempt -eq 1))..."
-            } else {
-                Write-Host "`n⏳ Please hold on while we prepare the next step in the background..."
-            }
-            $useLocalFlag = ($attempt -eq 1)
-            Write-Log "[Mobile Setup Attempt $attempt] browserstackLocal: $($useLocalFlag.ToString().ToLower())"
-            Run-MobileTests -useLocal:$useLocalFlag
-            $logContent = Get-Content "$BSS_SETUP_DIR\mobile_run_result.log" -Raw
-            $localFailure = $MOBILE_LOCAL_ERRORS | ForEach-Object { if ($logContent -match $_) { $_; break } }
-            $setupFailure = $MOBILE_SETUP_ERRORS | ForEach-Object { if ($logContent -match $_) { $_; break } }
-            $hasSessionLink = ($logContent -match 'https://.+browserstack\.com.+')
-            if ($hasSessionLink) {
-                $mobileSuccess = $true; break
-            } elseif ($localFailure -and $attempt -eq 1) {
-                Write-Host "❌ Mobile test failed due to Local tunnel error. Retrying without Local..."; $attempt++; continue
-            } elseif ($setupFailure) {
-                Write-Host "❌ Mobile test failed due to setup error. Check logs."
-                break
-            } else {
-                break
-            }
-        }
-        if ($mobileSuccess) {
-            $buildUrl = Select-String -Path $LOG_FILE -Pattern 'https://[A-Za-z0-9./?=_-]*browserstack\.com[A-Za-z0-9./?=_-]*' |
-                        Select-Object -Last 1 -ExpandProperty Line
-            Write-Host "✅ Mobile test run completed. See results:`n👉 $buildUrl"
-        } else {
-            $logPath = (Resolve-Path "$BSS_SETUP_DIR\mobile_run_result.log").Path
-            Write-Host "❌ Mobile tests failed. Check logs at $logPath"
-        }
-        $ranAny = $true
-    } else {
-        Write-Host "⚠️ Skipping Mobile setup (App Automate plan not available)."
+    "App" {
+      if ($MOBILE_PLAN_FETCHED) { Setup-Mobile } else { Log-Line "⚠️ Skipping Mobile setup — Mobile plan not fetched" $GLOBAL_LOG }
     }
-    if (-not $ranAny) {
-        Write-Host "❌ Both Web and Mobile setups were skipped due to plan availability. Exiting."
-        exit 1
+    "Both" {
+      $ranAny = $false
+      if ($WEB_PLAN_FETCHED) { Setup-Web; $ranAny = $true } else { Log-Line "⚠️ Skipping Web setup — Web plan not fetched" $GLOBAL_LOG }
+      if ($MOBILE_PLAN_FETCHED) { Setup-Mobile; $ranAny = $true } else { Log-Line "⚠️ Skipping Mobile setup — Mobile plan not fetched" $GLOBAL_LOG }
+      if (-not $ranAny) { Log-Line "❌ Both Web and Mobile setup were skipped. Exiting." $GLOBAL_LOG; throw "No setups executed" }
     }
+    default { Log-Line "❌ Invalid TEST_TYPE: $TEST_TYPE" $GLOBAL_LOG; throw "Invalid TEST_TYPE" }
+  }
+}
+
+# ===== Main =====
+try {
+  Ensure-Workspace
+  Ask-BrowserStack-Credentials
+  Ask-Test-Type
+  Ask-Tech-Stack
+  Validate-Tech-Stack
+  Fetch-Plan-Details
+
+  Log-Line "Plan summary: WEB_PLAN_FETCHED=$WEB_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_WEB), MOBILE_PLAN_FETCHED=$MOBILE_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" $GLOBAL_LOG
+  Run-Setup
+  Log-Line "Setup run finished" $GLOBAL_LOG
+} catch {
+  Log-Line "❌ Fatal: $($_.Exception.Message)" $GLOBAL_LOG
+  throw
 }
