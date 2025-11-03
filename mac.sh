@@ -663,7 +663,7 @@ setup_web_java() {
   # === 3️⃣ Update Base URL ===
   if grep -qr "https://www.bstackdemo.com" .; then
     log_msg_to "🌐 Updating base URL to $CX_TEST_URL" "$GLOBAL" "$WEB_LOG_FILE"
-    sed -i.bak "s|https://www.bstackdemo.com|$CX_TEST_URL|g" $(grep -rl "https://www.bstackdemo.com" .)
+    sed -i "s|https://www.bstackdemo.com|$CX_TEST_URL|g" $(grep -rl "https://www.bstackdemo.com" .)
   fi
 
   if is_domain_private; then
@@ -718,6 +718,8 @@ setup_web_python() {
 
   REPO="now-pytest-browserstack"
   TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
+
+  rm -rf $TARGET_DIR
 
     git clone https://github.com/browserstackCE/$REPO.git "$TARGET_DIR" >> "$WEB_LOG_FILE" 2>&1 || true
     log_msg_to "✅ Cloned repository: $REPO into $TARGET_DIR" "$PRE_RUN_LOG_FILE"
@@ -774,8 +776,8 @@ EOF
 
 
   # Update base URL in the new sample test
-  # sed -i.bak "s|https://bstackdemo.com/|$CX_TEST_URL|g" tests/bstack-sample-test.py || true
-  sed -i.bak "s|https://bstackdemo.com|$CX_TEST_URL|g" tests/bstack-sample-test.py || true
+  # sed -i "s|https://bstackdemo.com/|$CX_TEST_URL|g" tests/bstack-sample-test.py || true
+  sed -i "s|https://bstackdemo.com|$CX_TEST_URL|g" tests/bstack-sample-test.py || true
   log_msg_to "🌐 Updated base URL in tests/bstack-sample-test.py to: $CX_TEST_URL"
 
 
@@ -792,21 +794,22 @@ EOF
 }
 
 
-setup_web_js() {
+setup_web_nodejs() {
   local local_flag=$1
   local parallels=$2
 
-  REPO="webdriverio-browserstack"
+  REPO="now-webdriverio-browserstack"
   TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
+
+  rm -rf $TARGET_DIR
 
   mkdir -p "$WORKSPACE_DIR/$PROJECT_FOLDER"
 
   # === 1️⃣ Clone Repo ===
-    log_msg_to "📦 Cloning repo $REPO (branch tra) into $TARGET_DIR" "$GLOBAL" "$WEB_LOG_FILE"
-    git clone -b tra https://github.com/browserstack/$REPO.git "$TARGET_DIR" >> "$WEB_LOG_FILE" 2>&1 || true
+    log_msg_to "📦 Cloning repo $REPO into $TARGET_DIR" "$GLOBAL" "$WEB_LOG_FILE"
+    git clone https://github.com/browserstackCE/$REPO.git "$TARGET_DIR" >> "$WEB_LOG_FILE" 2>&1 || true
 
   cd "$TARGET_DIR" || return 1
-  validate_prereqs || return 1
 
   # === 2️⃣ Install Dependencies ===
   log_msg_to "⚙️ Running 'npm install'" "$GLOBAL" "$WEB_LOG_FILE"
@@ -818,148 +821,9 @@ setup_web_js() {
   local caps_json
   caps_json=$(generate_web_caps_json "$parallels")
 
-  # === 5️⃣ Determine buildIdentifier based on local ===
-  if [ "$local_flag" = true ]; then
-    BUILD_ID="#${BUILD_NUMBER}-local"
-  else
-    BUILD_ID="#${BUILD_NUMBER}-remote"
-  fi
-
-  cat > conf/base.conf.js <<EOF
-exports.config = {
-  user: process.env.BROWSERSTACK_USERNAME || 'BROWSERSTACK_USERNAME',
-  key: process.env.BROWSERSTACK_ACCESS_KEY || 'BROWSERSTACK_ACCESS_KEY',
-
-  updateJob: false,
-  specs: ['./tests/specs/test.js'],
-  exclude: [],
-
-  logLevel: 'warn',
-  coloredLogs: true,
-  screenshotPath: './errorShots/',
-  baseUrl: "$CX_TEST_URL",
-
-   waitforTimeout: 10000,
-  connectionRetryTimeout: 120000,
-  connectionRetryCount: 1,
-  hostname: 'hub.browserstack.com',
-  services: [['browserstack']],
-
-  before: function () {
-    var chai = require('chai');
-    global.expect = chai.expect;
-    chai.Should();
-  },
-
-  framework: 'mocha',
-  mochaOpts: {
-    ui: 'bdd',
-    timeout: 60000,
-  },
-};
-EOF
-
-cat > tests/specs/test.js <<EOF
-describe("Testing with BStackDemo", () => {
-  it("add product to cart", async () => {
-    await browser.url("$CX_TEST_URL");
-
-    await browser.waitUntil(
-      async () => (await browser.getTitle()).match(/StackDemo/i),
-      { timeout: 5000, timeoutMsg: "Title didn't match with BrowserStack" }
-    );
-    
-    await browser.waitUntil(
-      async () => (await productInCart.getText()).match(productOnScreenText),
-      { timeout: 5000 }
-    );
-  });
-});
-EOF
-
-
-
- # === 6️⃣ Create conf/test.conf.js using template ===
-log_msg_to "🛠️ Creating conf/test.conf.js configuration file" "$GLOBAL" "$WEB_LOG_FILE"
-
-if [ "$local_flag" = true ]; then
-  # BUILD_ID="#${BUILD_NUMBER}-localOn"
-  cat > conf/test.conf.js <<EOF
-const { config: baseConfig } = require('./base.conf.js');
-const parallelConfig = {
-  maxInstances: $parallels,
-  commonCapabilities: {
-    'bstack:options': {
-      buildIdentifier: "$BUILD_ID",
-      buildName: 'browserstack-sample-js-web',
-      source: 'webdriverio:sample-master:v1.2',
-      projectName: 'NOW-Web-Test',
-    }
-  },
-  services: [
-    [
-      'browserstack',
-      { 
-        testObservability: true,
-        testObservabilityOptions: {
-          buildTag: ['bstack_sample']
-        },
-        browserstackLocal: true,
-        accessibility: true,
-        percy: true,
-      },
-    ],
-  ],
-  capabilities: [
-$(echo "$caps_json" | sed 's/^/    /')
-  ],
-};
-exports.config = { ...baseConfig, ...parallelConfig };
-exports.config.capabilities.forEach(function (caps) {
-  for (var i in exports.config.commonCapabilities)
-    caps[i] = { ...caps[i], ...exports.config.commonCapabilities[i]};
-});
-EOF
-
-else
-  cat > conf/test.conf.js <<EOF
-const { config: baseConfig } = require('./base.conf.js');
-const parallelConfig = {
-  maxInstances: $parallels,
-  commonCapabilities: {
-    'bstack:options': {
-      buildIdentifier: "$BUILD_ID",
-      buildName: 'browserstack-sample-js-web',
-      source: 'webdriverio:sample-master:v1.2',
-      projectName: 'NOW-Web-Test',
-    }
-  },
-  services: [
-    [
-      'browserstack',
-      { 
-        testObservability: true,
-        testObservabilityOptions: {
-          buildTag: ['bstack_sample']
-        },
-        browserstackLocal: false,
-        accessibility: true,
-        percy: true,
-      },
-    ],
-  ],
-  capabilities: [
-$(echo "$caps_json" | sed 's/^/    /')
-  ],
-};
-exports.config = { ...baseConfig, ...parallelConfig };
-exports.config.capabilities.forEach(function (caps) {
-  for (var i in exports.config.commonCapabilities)
-    caps[i] = { ...caps[i], ...exports.config.commonCapabilities[i]};
-});
-EOF
-
-fi
+  export BSTACK_PARALLELS=$parallels
+  
+  export BSTACK_CAPS_JSON=$caps_json
 
   if is_domain_private; then
     local_flag=true
@@ -1009,15 +873,28 @@ setup_web() {
   while [ "$attempt" -le 1 ]; do
     log_msg_to "[Web Setup]" "$WEB_LOG_FILE"
     case "$TECH_STACK" in
-      Java)       setup_web_java "$local_flag" "$parallels_per_platform" "$WEB_LOG_FILE" ;;
-      Python)     setup_web_python "$local_flag" "$parallels_per_platform" "$WEB_LOG_FILE" ;;
-      NodeJS) setup_web_js "$local_flag" "$parallels_per_platform" "$WEB_LOG_FILE" ;;
+      Java)    
+        setup_web_java "$local_flag" "$parallels_per_platform" "$WEB_LOG_FILE"
+        if (grep -qiE "BUILD FAILURE" "$WEB_LOG_FILE"); then
+          success=false
+        fi
+        ;;
+      Python)
+        setup_web_python "$local_flag" "$parallels_per_platform" "$WEB_LOG_FILE"
+        if (grep -qiE "BUILD FAILURE" "$WEB_LOG_FILE"); then
+          success=false
+        fi
+        ;;
+        
+
+      NodeJS) setup_web_nodejs "$local_flag" "$parallels_per_platform" "$WEB_LOG_FILE"
+        if (grep -qiE "([1-9][0-9]*) passed, 0 failed" "$WEB_LOG_FILE"); then
+          success=false
+        fi
+        ;;
+
       *) log_msg_to "Unknown TECH_STACK: $TECH_STACK" "$WEB_LOG_FILE"; return 1 ;;
     esac
-
-    if (grep -qiE "BUILD FAILURE" "$WEB_LOG_FILE"); then
-      success=false
-    fi
 
     if [ "$success" = true ]; then
       log_msg_to "✅ Web setup succeeded." "$WEB_LOG_FILE"
@@ -1188,7 +1065,7 @@ setup_mobile_java() {
   # Update pom.xml → browserstack-java-sdk version to LATEST
   pom_file="$TARGET_DIR/pom.xml"
   if [ -f "$pom_file" ]; then
-    sed -i.bak '/<artifactId>browserstack-java-sdk<\/artifactId>/,/<\/dependency>/ s|<version>.*</version>|<version>LATEST</version>|' "$pom_file"
+    sed -i '/<artifactId>browserstack-java-sdk<\/artifactId>/,/<\/dependency>/ s|<version>.*</version>|<version>LATEST</version>|' "$pom_file"
     log_msg_to "🔧 Updated browserstack-java-sdk version to LATEST in pom.xml" "$GLOBAL" "$MOBILE_LOG_FILE"
   fi
 
@@ -1202,7 +1079,7 @@ setup_mobile_java() {
   # Update TestBase.java → switch AppiumDriver to AndroidDriver
   testbase_file=$(find src -name "TestBase.java" | head -n 1)
   if [ -f "$testbase_file" ]; then
-    sed -i.bak 's/new AppiumDriver(/new AndroidDriver(/g' "$testbase_file"
+    sed -i 's/new AppiumDriver(/new AndroidDriver(/g' "$testbase_file"
     log_msg_to "🔧 Updated driver initialization in $testbase_file to use AndroidDriver" "$GLOBAL" "$MOBILE_LOG_FILE"
   fi
 
