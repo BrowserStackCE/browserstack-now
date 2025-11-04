@@ -13,7 +13,7 @@ This utility automates the entire first-mile experience — from credential inpu
 | 🔍 Pre-requisite Check     | Validates if Java, Node, and Python are installed. Provides installation guidance if they are missing.      |
 | 📊 Plan Variant Detection  | Calls the `/plan` API to tailor the sample repo based on the customer’s subscription tier (e.g., Live, Pro). |
 | ✅ Console UX with Checkmarks | Mimics the BrowserStack Network Assessment Tool for a familiar experience.                              |
-| 🪵 Logging for Debugging   | Saves all raw logs under `~/.browserstack/bstack_onboarding.log` for support and debugging purposes.     |
+| 🪵 Logging for Debugging   | Saves all raw logs under `~/.browserstack/NOW` for support and debugging purposes.     |
 | 🖥️ (Planned) UI Framework Picker | Allows customers to select their preferred test framework via an interactive UI.                      |
 
 ## How to Use?
@@ -34,9 +34,9 @@ You can either run the script directly from the web or clone the repository and 
 
     **macOS / Linux**
     ```bash
-    bash mac.sh
+    bash mac.sh or ./mac.sh
     ```
-
+    Incase there are any permission related issues, please run: chmod +x ./mac.sh
     **Windows**
     ```powershell
     ./windows.ps1

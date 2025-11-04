@@ -533,20 +533,21 @@ generate_web_caps_json() {
 
 generate_mobile_caps_json() {
   local max_total=$1
+  local output_file="$WORKSPACE_DIR/$PROJECT_FOLDER/usage_file.json"
+  : > "$output_file" # Clear the output file
+
   local count=0
-  local usage_file="/tmp/device_usage.txt"
-  : > "$usage_file"
 
-  local json="["
-  for template in "${MOBILE_DEVICE_TEMPLATES[@]}"; do
+  local json="[" 
+
+  for template in "${MOBILE_ALL[@]}"; do
     IFS="|" read -r platformName deviceName baseVersion <<< "$template"
-    local usage
-    usage=$(grep -Fxc "$deviceName" "$usage_file")
-
-    if [ "$usage" -ge 5 ]; then
+    if [ "$APP_PLATFORM" == "ios" ] && [ "$platformName" != "ios" ]; then
+      continue
+    elif [ "$APP_PLATFORM" == "android" ] || [ "$APP_PLATFORM" == "all" ] && [ "$platformName" != "android" ]; then
       continue
     fi
-
+    
     json="${json}{
       \"bstack:options\": {
         \"deviceName\": \"${deviceName}\",
@@ -554,18 +555,14 @@ generate_mobile_caps_json() {
       }
     },"
 
-    echo "$deviceName" >> "$usage_file"
     count=$((count + 1))
     if [ "$count" -ge "$max_total" ]; then
       break
     fi
-  done
-
+  done # End of the loop
   json="${json%,}]"
-  echo "$json"
-  rm -f "$usage_file"
+  echo "$json" > "$output_file"
 }
-
 # ===== Fetch plan details (writes to GLOBAL) =====
 fetch_plan_details() {
     log_msg_to "ℹ️ Fetching BrowserStack Plan Details..." "$GLOBAL"
@@ -829,7 +826,7 @@ setup_web_nodejs() {
     local_flag=true
   fi
 
-  # Log local flag status
+  Log local flag status
   if [ "$local_flag" = "true" ]; then
     log_msg_to "✅ BrowserStack Local is ENABLED for this run." "$PRE_RUN_LOG_FILE"
   else
@@ -1154,37 +1151,32 @@ EOF
 }
 
 
-setup_mobile_js() {
+setup_mobile_nodejs() {
   local local_flag=$1
   local parallels=$2
   local log_file=$3
 
-  REPO="webdriverio-appium-app-browserstack"
+  cd $WORKSPACE_DIR/$PROJECT_FOLDER || return 1
+
+  REPO="now-webdriverio-appium-app-browserstack"
   if [ ! -d "$REPO" ]; then
-    git clone -b sdk https://github.com/browserstack/$REPO
+    git clone -b sdk https://github.com/BrowserStackCE/$REPO
   fi
-  cd "$REPO/android/" || return 1
+  
+  cd "$REPO/test/" || return 1
 
   validate_prereqs || return 1
   npm install >> "$log_file" 2>&1 || true
-  cd "examples/run-parallel-test" || return 1
-  caps_file="parallel.conf.js"
-
-  if sed --version >/dev/null 2>&1; then
-    sed -i "s/\(maxInstances:\)[[:space:]]*[0-9]\+/\1 $parallels/" "$caps_file" || true
-  else
-    sed -i '' "s/\(maxInstances:\)[[:space:]]*[0-9]\+/\1 $parallels/" "$caps_file" || true
-  fi
-
-  caps_json=$(generate_mobile_caps_json "$parallels")
-  printf "%s\n" "capabilities: $caps_json," > "$caps_file".tmp || true
-  mv "$caps_file".tmp "$caps_file" || true
+  generate_mobile_caps_json "$parallels"
 
   export BROWSERSTACK_USERNAME="$BROWSERSTACK_USERNAME"
   export BROWSERSTACK_ACCESS_KEY="$BROWSERSTACK_ACCESS_KEY"
+  export BSTACK_PARALLELS=$parallels
 
-  npm run parallel > "$log_file" 2>&1 || true
-  [ -f "$log_file" ] && sed -n '1,200p' "$log_file" | while read -r l; do log_msg_to "mobile: $l" "$GLOBAL"; done
+  npm run test > "$log_file" 2>&1 || true
+  [ -f "$log_file" ] && sed -n '1,200p' "$log_file" | while read -r l; do log_msg_to "mobile: $l" "$GLOBAL"; done 
+
+  # rm $WORKSPACE_DIR/$PROJECT_FOLDER/usage_file.json || true
   return 0
 }
 
@@ -1209,7 +1201,7 @@ setup_mobile() {
     case "$TECH_STACK" in
       Java)       setup_mobile_java "$local_flag" "$parallels_per_platform" "$MOBILE_LOG_FILE" ;;
       Python)     setup_mobile_python "$local_flag" "$parallels_per_platform" "$MOBILE_LOG_FILE" ;;
-      NodeJS) setup_mobile_js "$local_flag" "$parallels_per_platform" "$MOBILE_LOG_FILE" ;;
+      NodeJS) setup_mobile_nodejs "$local_flag" "$parallels_per_platform" "$MOBILE_LOG_FILE" ;;
       *) log_msg_to "Unknown TECH_STACK: $TECH_STACK" "$MOBILE_LOG_FILE"; return 1 ;;
     esac
 
