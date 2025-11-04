@@ -34,12 +34,17 @@ You can either run the script directly from the web or clone the repository and 
 
     **macOS / Linux**
     ```bash
-    bash mac.sh or ./mac.sh
+    bash mac/run.sh or ./mac/run.sh
     ```
-    Incase there are any permission related issues, please run: chmod +x ./mac.sh
+    If you encounter any permission issues, ensure the script is executable:
+
+    ```
+    chmod +x ./mac/run.sh
+    ```
+    
     **Windows**
     ```powershell
-    ./windows.ps1
+    ./win/run.ps1
     ```
 
 ### Remote Execution
@@ -49,7 +54,7 @@ You can either run the script directly from the web or clone the repository and 
 To run the onboarding utility on macOS or Linux without cloning, execute the following command in your terminal:
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/http-heading/browserstack-now/main/mac_os.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/http-heading/browserstack-now/main/mac/run.sh)"
 ```
 
 #### Windows
@@ -58,7 +63,7 @@ To run the onboarding utility on Windows without cloning, execute the following 
 **Note:** You may need to set the execution policy to `RemoteSigned` or `Bypass` to run the script.
 
 ```powershell
-iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/http-heading/browserstack-now/main/windows.ps1'))
+iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/http-heading/browserstack-now/main/win/run.ps1'))
 ```
 
 ## Identifying and sharing the log files
