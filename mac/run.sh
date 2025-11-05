@@ -26,6 +26,7 @@ APP_URL=""
 APP_PLATFORM=""   # ios | android | all
 
 
+<<<<<<< HEAD:mac.sh
 # ===== Error Patterns =====
 WEB_SETUP_ERRORS=("Work in Progress")
 WEB_LOCAL_ERRORS=("Work in Progress")
@@ -33,6 +34,8 @@ WEB_LOCAL_ERRORS=("Work in Progress")
 MOBILE_SETUP_ERRORS=("Work in Progress")
 MOBILE_LOCAL_ERRORS=("Work in Progress")
 
+=======
+>>>>>>> 67ca2f8a83425109951e581354969d419862d844:mac/run.sh
 # ===== Example Platform Templates (replace with your full lists if available) =====
 WEB_PLATFORM_TEMPLATES=(
   "Windows|10|Chrome"
@@ -40,10 +43,8 @@ WEB_PLATFORM_TEMPLATES=(
   "Windows|11|Edge"
   "Windows|11|Chrome"
   "Windows|8|Chrome"
-  #"OS X|Monterey|Safari"
   "OS X|Monterey|Chrome"
   "OS X|Ventura|Chrome"
-  #"OS X|Big Sur|Safari"
   "OS X|Catalina|Firefox"
 )
 
@@ -190,7 +191,6 @@ MOBILE_ALL=(
 
 APP_URL=""
 APP_PLATFORM=""   # ios | android | all
-
 
 
 # ===== Log files (runtime only; created on first write) =====
@@ -879,7 +879,7 @@ setup_web_nodejs() {
     local_flag=true
   fi
 
-  Log local flag status
+  #log_msg_to local flag status
   if [ "$local_flag" = "true" ]; then
     log_msg_to "✅ BrowserStack Local is ENABLED for this run." "$PRE_RUN_LOG_FILE"
   else
@@ -892,7 +892,7 @@ setup_web_nodejs() {
   export BROWSERSTACK_LOCAL=$local_flag
 
   # === 8️⃣ Run Tests ===
-  log_msg_to "🚀 Running 'npm run test'" "$GLOBAL" "$WEB_LOG_FILE"
+  log_msg_to "🚀 Running 'npm run test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/" "$WEB_LOG_FILE"
   npm run test >> "$WEB_LOG_FILE" 2>&1 || true
 
   # === 9️⃣ Wrap Up ===
@@ -1079,13 +1079,13 @@ PYEOF
 
   # Log local flag status
   if [ "$local_flag" = "true" ]; then
-    log_msg_to "⚠️ BrowserStack Local is ENABLED for this run." "$PRE_RUN_LOG_FILE"
+    log_msg_to "⚠️ BrowserStack Local is ENABLED for this run."
   else
-    log_msg_to "⚠️ BrowserStack Local is DISABLED for this run." "$PRE_RUN_LOG_FILE"
+    log_msg_to "⚠️ BrowserStack Local is DISABLED for this run." 
   fi  
 
   # Run pytest with BrowserStack SDK from the chosen platform directory
-  log_msg_to "🚀 Running 'cd $run_dir && browserstack-sdk pytest -s bstack_sample.py'" "$PRE_RUN_LOG_FILE"
+  log_msg_to "🚀 Running 'cd $run_dir && browserstack-sdk pytest -s bstack_sample.py'"
   (
     cd "$run_dir" && browserstack-sdk pytest -s bstack_sample.py >> "$log_file" 2>&1 || true
   )
@@ -1325,5 +1325,12 @@ fetch_plan_details
 # Plan summary in pre-run log
 # log_msg_to "Plan summary: WEB_PLAN_FETCHED=$WEB_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_WEB), MOBILE_PLAN_FETCHED=$MOBILE_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" "$GLOBAL"
 log_msg_to "Plan summary: WEB_PLAN_FETCHED=$WEB_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_WEB), MOBILE_PLAN_FETCHED=$MOBILE_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" "$GLOBAL"
+<<<<<<< HEAD:mac.sh
+=======
+log_msg_to "Checking proxy in environment" "$GLOBAL"
+chmod +x proxy-check.sh
+./proxy-check.sh
+log_msg_to "Starting setup run..." "$GLOBAL"
+>>>>>>> 67ca2f8a83425109951e581354969d419862d844:mac/run.sh
 run_setup
 log_msg_to "Setup run finished." "$GLOBAL"
