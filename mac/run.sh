@@ -26,16 +26,7 @@ APP_URL=""
 APP_PLATFORM=""   # ios | android | all
 
 
-<<<<<<< HEAD:mac.sh
-# ===== Error Patterns =====
-WEB_SETUP_ERRORS=("Work in Progress")
-WEB_LOCAL_ERRORS=("Work in Progress")
 
-MOBILE_SETUP_ERRORS=("Work in Progress")
-MOBILE_LOCAL_ERRORS=("Work in Progress")
-
-=======
->>>>>>> 67ca2f8a83425109951e581354969d419862d844:mac/run.sh
 # ===== Example Platform Templates (replace with your full lists if available) =====
 WEB_PLATFORM_TEMPLATES=(
   "Windows|10|Chrome"
@@ -47,7 +38,6 @@ WEB_PLATFORM_TEMPLATES=(
   "OS X|Ventura|Chrome"
   "OS X|Catalina|Firefox"
 )
-
 
 MOBILE_ALL=(
   # Tier 1
@@ -371,42 +361,6 @@ ask_user_for_test_url() {
   fi
 }
 
-# ask_and_upload_app() {
-
-#   APP_FILE_PATH=$(osascript -e 'POSIX path of (choose file with prompt "📱 Please select your .apk or .ipa app file to upload to BrowserStack, If No App Selected then Defualt Browserstack app will be used automatically")')
-
-#   if [ -z "$APP_FILE_PATH" ]; then
-#     log_msg_to "⚠️ No app selected. Using default sample app: bs://sample.app" "$GLOBAL"
-#     APP_URL="bs://sample.app"
-#     APP_PLATFORM="all"
-#     return
-#   fi
-
-#   # Detect platform
-#   if [[ "$APP_FILE_PATH" == *.apk ]]; then
-#     APP_PLATFORM="android"
-#   elif [[ "$APP_FILE_PATH" == *.ipa ]]; then
-#     APP_PLATFORM="ios"
-#   else
-#     log_msg_to "❌ Unsupported file type. Only .apk or .ipa allowed." "$GLOBAL"
-#     exit 1
-#   fi
-
-#   # Upload app
-#   log_msg_to "⬆️ Uploading $APP_FILE_PATH to BrowserStack..." "$GLOBAL"
-#   UPLOAD_RESPONSE=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
-#     -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-#     -F "file=@$APP_FILE_PATH")
-
-#   APP_URL=$(echo "$UPLOAD_RESPONSE" | grep -o '"app_url":"[^"]*' | cut -d'"' -f4)
-
-#   if [ -z "$APP_URL" ]; then
-#     log_msg_to "❌ Upload failed. Response: $UPLOAD_RESPONSE" "$GLOBAL"
-#     exit 1
-#   fi
-
-#   log_msg_to "✅ App uploaded successfully: $APP_URL" "$GLOBAL"
-# }
 ask_and_upload_app() {
   
   CHOICE_RESPONSE=$(osascript -e '
@@ -1325,12 +1279,9 @@ fetch_plan_details
 # Plan summary in pre-run log
 # log_msg_to "Plan summary: WEB_PLAN_FETCHED=$WEB_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_WEB), MOBILE_PLAN_FETCHED=$MOBILE_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" "$GLOBAL"
 log_msg_to "Plan summary: WEB_PLAN_FETCHED=$WEB_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_WEB), MOBILE_PLAN_FETCHED=$MOBILE_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" "$GLOBAL"
-<<<<<<< HEAD:mac.sh
-=======
 log_msg_to "Checking proxy in environment" "$GLOBAL"
 chmod +x proxy-check.sh
 ./proxy-check.sh
 log_msg_to "Starting setup run..." "$GLOBAL"
->>>>>>> 67ca2f8a83425109951e581354969d419862d844:mac/run.sh
 run_setup
 log_msg_to "Setup run finished." "$GLOBAL"
