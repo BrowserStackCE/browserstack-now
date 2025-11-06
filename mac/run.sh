@@ -26,12 +26,6 @@ APP_URL=""
 APP_PLATFORM=""   # ios | android | all
 
 
-# ===== Error Patterns =====
-WEB_SETUP_ERRORS=("")
-WEB_LOCAL_ERRORS=("")
-
-MOBILE_SETUP_ERRORS=("")
-MOBILE_LOCAL_ERRORS=("")
 
 # ===== Example Platform Templates (replace with your full lists if available) =====
 WEB_PLATFORM_TEMPLATES=(
@@ -40,155 +34,9 @@ WEB_PLATFORM_TEMPLATES=(
   "Windows|11|Edge"
   "Windows|11|Chrome"
   "Windows|8|Chrome"
-  "OS X|Monterey|Safari"
   "OS X|Monterey|Chrome"
   "OS X|Ventura|Chrome"
-  "OS X|Big Sur|Safari"
   "OS X|Catalina|Firefox"
-)
-
-
-MOBILE_TIER1=(
-  "ios|iPhone 15|17"
-  "ios|iPhone 15 Pro|17"
-  "ios|iPhone 16|18"
-  "android|Samsung Galaxy S25|15"
-  "android|Samsung Galaxy S24|14"
-)
-
-# Tier 2 – Up to 40 parallels
-MOBILE_TIER2=(
-  "ios|iPhone 14 Pro|16"
-  "ios|iPhone 14|16"
-  "ios|iPad Air 13 2025|18"
-  "android|Samsung Galaxy S23|13"
-  "android|Samsung Galaxy S22|12"
-  "android|Samsung Galaxy S21|11"
-  "android|Samsung Galaxy Tab S10 Plus|15"
-)
-
-# Tier 3 – Up to 16 parallels
-MOBILE_TIER3=(
-  "ios|iPhone 13 Pro Max|15"
-  "ios|iPhone 13|15"
-  "ios|iPhone 12 Pro|14"
-  "ios|iPhone 12 Pro|17"
-  "ios|iPhone 12|17"
-  "ios|iPhone 12|14"
-  "ios|iPhone 12 Pro Max|16"
-  "ios|iPhone 13 Pro|15"
-  "ios|iPhone 13 Mini|15"
-  "ios|iPhone 16 Pro|18"
-  "ios|iPad 9th|15"
-  "ios|iPad Pro 12.9 2020|14"
-  "ios|iPad Pro 12.9 2020|16"
-  "ios|iPad 8th|16"
-  "android|Samsung Galaxy S22 Ultra|12"
-  "android|Samsung Galaxy S21|12"
-  "android|Samsung Galaxy S21 Ultra|11"
-  "android|Samsung Galaxy S20|10"
-  "android|Samsung Galaxy M32|11"
-  "android|Samsung Galaxy Note 20|10"
-  "android|Samsung Galaxy S10|9"
-  "android|Samsung Galaxy Note 9|8"
-  "android|Samsung Galaxy Tab S8|12"
-  "android|Google Pixel 9|15"
-  "android|Google Pixel 6 Pro|13"
-  "android|Google Pixel 8|14"
-  "android|Google Pixel 7|13"
-  "android|Google Pixel 6|12"
-  "android|Vivo Y21|11"
-  "android|Vivo Y50|10"
-  "android|Oppo Reno 6|11"
-)
-
-# Tier 4 – Up to 5 parallels
-MOBILE_TIER4=(
-  "ios|iPhone 15 Pro Max|17"
-  "ios|iPhone 15 Pro Max|26"
-  "ios|iPhone 15|26"
-  "ios|iPhone 15 Plus|17"
-  "ios|iPhone 14 Pro|26"
-  "ios|iPhone 14|18"
-  "ios|iPhone 14|26"
-  "ios|iPhone 13 Pro Max|18"
-  "ios|iPhone 13|16"
-  "ios|iPhone 13|17"
-  "ios|iPhone 13|18"
-  "ios|iPhone 12 Pro|18"
-  "ios|iPhone 14 Pro Max|16"
-  "ios|iPhone 14 Plus|16"
-  "ios|iPhone 11|13"
-  "ios|iPhone 8|11"
-  "ios|iPhone 7|10"
-  "ios|iPhone 17 Pro Max|26"
-  "ios|iPhone 17 Pro|26"
-  "ios|iPhone 17 Air|26"
-  "ios|iPhone 17|26"
-  "ios|iPhone 16e|18"
-  "ios|iPhone 16 Pro Max|18"
-  "ios|iPhone 16 Plus|18"
-  "ios|iPhone SE 2020|16"
-  "ios|iPhone SE 2022|15"
-  "ios|iPad Air 4|14"
-  "ios|iPad 9th|18"
-  "ios|iPad Air 5|26"
-  "ios|iPad Pro 11 2021|18"
-  "ios|iPad Pro 13 2024|17"
-  "ios|iPad Pro 12.9 2021|14"
-  "ios|iPad Pro 12.9 2021|17"
-  "ios|iPad Pro 11 2024|17"
-  "ios|iPad Air 6|17"
-  "ios|iPad Pro 12.9 2022|16"
-  "ios|iPad Pro 11 2022|16"
-  "ios|iPad 10th|16"
-  "ios|iPad Air 13 2025|26"
-  "ios|iPad Pro 11 2020|13"
-  "ios|iPad Pro 11 2020|16"
-  "ios|iPad 8th|14"
-  "ios|iPad Mini 2021|15"
-  "ios|iPad Pro 12.9 2018|12"
-  "ios|iPad 6th|11"
-  "android|Samsung Galaxy S23 Ultra|13"
-  "android|Samsung Galaxy S22 Plus|12"
-  "android|Samsung Galaxy S21 Plus|11"
-  "android|Samsung Galaxy S20 Ultra|10"
-  "android|Samsung Galaxy S25 Ultra|15"
-  "android|Samsung Galaxy S24 Ultra|14"
-  "android|Samsung Galaxy M52|11"
-  "android|Samsung Galaxy A52|11"
-  "android|Samsung Galaxy A51|10"
-  "android|Samsung Galaxy A11|10"
-  "android|Samsung Galaxy A10|9"
-  "android|Samsung Galaxy Tab A9 Plus|14"
-  "android|Samsung Galaxy Tab S9|13"
-  "android|Samsung Galaxy Tab S7|10"
-  "android|Samsung Galaxy Tab S7|11"
-  "android|Samsung Galaxy Tab S6|9"
-  "android|Google Pixel 9|16"
-  "android|Google Pixel 10 Pro XL|16"
-  "android|Google Pixel 10 Pro|16"
-  "android|Google Pixel 10|16"
-  "android|Google Pixel 9 Pro XL|15"
-  "android|Google Pixel 9 Pro|15"
-  "android|Google Pixel 6 Pro|12"
-  "android|Google Pixel 6 Pro|15"
-  "android|Google Pixel 8 Pro|14"
-  "android|Google Pixel 7 Pro|13"
-  "android|Google Pixel 5|11"
-  "android|OnePlus 13R|15"
-  "android|OnePlus 12R|14"
-  "android|OnePlus 11R|13"
-  "android|OnePlus 9|11"
-  "android|OnePlus 8|10"
-  "android|Motorola Moto G71 5G|11"
-  "android|Motorola Moto G9 Play|10"
-  "android|Vivo V21|11"
-  "android|Oppo A96|11"
-  "android|Oppo Reno 3 Pro|10"
-  "android|Xiaomi Redmi Note 11|11"
-  "android|Xiaomi Redmi Note 9|10"
-  "android|Huawei P30|9"
 )
 
 MOBILE_ALL=(
@@ -230,7 +78,6 @@ MOBILE_ALL=(
   "android|Samsung Galaxy M32|11"
   "android|Samsung Galaxy Note 20|10"
   "android|Samsung Galaxy S10|9"
-  "android|Samsung Galaxy Note 9|8"
   "android|Samsung Galaxy Tab S8|12"
   "android|Google Pixel 9|15"
   "android|Google Pixel 6 Pro|13"
@@ -336,7 +183,6 @@ APP_URL=""
 APP_PLATFORM=""   # ios | android | all
 
 
-
 # ===== Log files (runtime only; created on first write) =====
 # ===== Log files (per-run) =====
 LOG_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/logs"
@@ -351,6 +197,7 @@ mkdir -p "$LOG_DIR"
 : > "$GLOBAL"
 : > "$WEB_LOG_FILE"
 : > "$MOBILE_LOG_FILE"
+
 
 # ===== Logging helper (runtime timestamped logging) =====
 # Usage: log_msg_to "message" "$DEST_FILE"  (DEST_FILE optional; prints to console always)
@@ -369,6 +216,21 @@ log_msg_to() {
     mkdir -p "$(dirname "$dest_file")"
     echo "$line" >> "$dest_file"
   fi
+}
+
+# Spinner function
+show_spinner() {
+    local pid=$1
+    local spin='|/-\'
+    local i=0
+	local ts
+  	ts="$(date +"%Y-%m-%d %H:%M:%S")"
+    while kill -0 "$pid" 2>/dev/null; do
+        i=$(( (i+1) %4 ))
+        printf "\r[$ts] ⏳ Processing... ${spin:$i:1}"
+        sleep 0.1
+    done
+    log_msg_to "✅ Done!"
 }
 
 # ===== validate_prereqs shim (keeps compatibility with older code) =====
@@ -390,7 +252,7 @@ setup_workspace() {
 
 ask_browserstack_credentials() {
     # Prompt username
-    BROWSERSTACK_USERNAME=$(osascript -e 'Tell application "System Events" to display dialog "Enter your BrowserStack Username:" default answer "" with title "BrowserStack Setup" buttons {"OK"} default button "OK"' \
+    BROWSERSTACK_USERNAME=$(osascript -e 'Tell application "System Events" to display dialog "Please enter your BrowserStack Username.\n\nNote: Locate it in your BrowserStack account profile page.\nhttps://www.browserstack.com/accounts/profile/details" default answer "" with title "BrowserStack Setup" buttons {"OK"} default button "OK"' \
                             -e 'text returned of result')
     if [ -z "$BROWSERSTACK_USERNAME" ]; then
         log_msg_to "❌ Username empty" "$GLOBAL"
@@ -398,7 +260,7 @@ ask_browserstack_credentials() {
     fi
 
     # Prompt access key (hidden)
-    BROWSERSTACK_ACCESS_KEY=$(osascript -e 'Tell application "System Events" to display dialog "Enter your BrowserStack Access Key:" default answer "" with hidden answer with title "BrowserStack Setup" buttons {"OK"} default button "OK"' \
+    BROWSERSTACK_ACCESS_KEY=$(osascript -e 'Tell application "System Events" to display dialog "Please enter your BrowserStack Access Key.\n\nNote: Locate it in your BrowserStack account page.\nhttps://www.browserstack.com/accounts/profile/details" default answer "" with hidden answer with title "BrowserStack Setup" buttons {"OK"} default button "OK"' \
                              -e 'text returned of result')
     if [ -z "$BROWSERSTACK_ACCESS_KEY" ]; then
         log_msg_to "❌ Access Key empty" "$GLOBAL"
@@ -408,25 +270,12 @@ ask_browserstack_credentials() {
     log_msg_to "✅ BrowserStack credentials captured (access key hidden)" "$GLOBAL"
 }
 
-# ask_test_type() {
-#     TEST_TYPE=$(osascript -e 'Tell application "System Events" to display dialog "Select testing type:" buttons {"Web", "App", "Both"} default button "Web" with title "Testing Type"' \
-#                           -e 'button returned of result')
-#     log_msg_to "✅ Selected Testing Type: $TEST_TYPE" "$GLOBAL"
-# }
 
 ask_tech_stack() {
-    TECH_STACK=$(osascript -e 'Tell application "System Events" to display dialog "Select installed tech stack:" buttons {"Java", "Python"} default button "Java" with title "Tech Stack"' \
+    TECH_STACK=$(osascript -e 'Tell application "System Events" to display dialog "Select installed tech stack:" buttons {"Java", "Python", "NodeJS"} default button "Java" with title "Testing Framework Technology Stack"' \
                         -e 'button returned of result')
     log_msg_to "✅ Selected Tech Stack: $TECH_STACK" "$GLOBAL"
 }
-
-# ask_tech_stack() {
-#     TECH_STACK=$(osascript -e 'Tell application "System Events" to display dialog "Select installed tech stack:" buttons {"Java", "Python"} default button "Java" with title "Tech Stack"' \
-#                         -e 'button returned of result')
-#     log_msg_to "✅ Selected Tech Stack: $TECH_STACK" "$GLOBAL"
-# }
-
-
 
 validate_tech_stack_installed() {
     log_msg_to "ℹ️ Checking prerequisites for $TECH_STACK" "$GLOBAL"
@@ -463,7 +312,7 @@ validate_tech_stack_installed() {
 
             log_msg_to "✅ Python3 is installed: $PYTHON_VERSION_OUTPUT" "$GLOBAL"
             ;;
-        JS|JavaScript)
+        NodeJS)
             log_msg_to "🔍 Checking if 'node' command exists..." "$GLOBAL"
             if ! command -v node >/dev/null 2>&1; then
                 log_msg_to "❌ Node.js command not found in PATH." "$GLOBAL"
@@ -513,39 +362,57 @@ ask_user_for_test_url() {
 }
 
 ask_and_upload_app() {
-  APP_FILE_PATH=$(osascript -e 'POSIX path of (choose file with prompt "📱 Please select your .apk or .ipa app file to upload to BrowserStack, If No App Selected then Defualt Browserstack app will be used automatically")')
+  
+  CHOICE_RESPONSE=$(osascript -e '
+    display dialog "How would you like to select your app?" ¬
+    with title "BrowserStack App Upload" ¬
+    with icon note ¬
+    buttons {"Use Sample App", "Upload my App (.apk/.ipa)", "Cancel"} ¬
+    default button "Upload my App (.apk/.ipa)"
+  ' 2>/dev/null) 
 
-  if [ -z "$APP_FILE_PATH" ]; then
-    log_msg_to "⚠️ No app selected. Using default sample app: bs://sample.app" "$GLOBAL"
+  if [[ "$CHOICE_RESPONSE" == *"Use Sample App"* ]]; then
+    log_msg_to "➡️ Using default sample app: bs://sample.app" "$GLOBAL"
     APP_URL="bs://sample.app"
     APP_PLATFORM="all"
-    return
-  fi
+    return 0 
 
-  # Detect platform
-  if [[ "$APP_FILE_PATH" == *.apk ]]; then
-    APP_PLATFORM="android"
-  elif [[ "$APP_FILE_PATH" == *.ipa ]]; then
-    APP_PLATFORM="ios"
+  elif [[ "$CHOICE_RESPONSE" == *"Upload my App"* ]]; then
+    APP_FILE_PATH=$(osascript -e 'POSIX path of (choose file with prompt "📱 Please select your .apk or .ipa app file")' 2>/dev/null)
+
+    if [ -z "$APP_FILE_PATH" ]; then
+      log_msg_to "⚠️ File selection canceled. Aborting." "$GLOBAL"
+      return 1
+    fi
+
+    if [[ "$APP_FILE_PATH" == *.apk ]]; then
+      APP_PLATFORM="android"
+    elif [[ "$APP_FILE_PATH" == *.ipa ]]; then
+      APP_PLATFORM="ios"
+    else
+      log_msg_to "❌ Unsupported file type. Only .apk or .ipa allowed." "$GLOBAL"
+      return 1 
+    fi
+
+    log_msg_to "⬆️ Uploading $APP_FILE_PATH to BrowserStack..." "$GLOBAL"
+    UPLOAD_RESPONSE=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+      -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+      -F "file=@$APP_FILE_PATH")
+
+    APP_URL=$(echo "$UPLOAD_RESPONSE" | grep -o '"app_url":"[^"]*' | cut -d'"' -f4)
+
+    if [ -z "$APP_URL" ]; then
+      log_msg_to "❌ Upload failed. Response: $UPLOAD_RESPONSE" "$GLOBAL"
+      return 1
+    fi
+
+    log_msg_to "✅ App uploaded successfully: $APP_URL" "$GLOBAL"
+    return 0
+
   else
-    log_msg_to "❌ Unsupported file type. Only .apk or .ipa allowed." "$GLOBAL"
-    exit 1
+    log_msg_to "🚫 Operation canceled by user." "$GLOBAL"
+    return 1 
   fi
-
-  # Upload app
-  log_msg_to "⬆️ Uploading $APP_FILE_PATH to BrowserStack..." "$GLOBAL"
-  UPLOAD_RESPONSE=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
-    -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-    -F "file=@$APP_FILE_PATH")
-
-  APP_URL=$(echo "$UPLOAD_RESPONSE" | grep -o '"app_url":"[^"]*' | cut -d'"' -f4)
-
-  if [ -z "$APP_URL" ]; then
-    log_msg_to "❌ Upload failed. Response: $UPLOAD_RESPONSE" "$GLOBAL"
-    exit 1
-  fi
-
-  log_msg_to "✅ App uploaded successfully: $APP_URL" "$GLOBAL"
 }
 
 ask_test_type() {
@@ -566,8 +433,6 @@ ask_test_type() {
         ;;
     esac
 }
-
-
 # ===== Dynamic config generators =====
 generate_web_platforms_yaml() {
   local max_total_parallels=$1
@@ -596,110 +461,6 @@ generate_web_platforms_yaml() {
   echo "$yaml"
 }
 
-# generate_mobile_platforms_yaml() {
-#   local max_total_parallels=$1
-#   local max
-#   max=$(echo "$max_total_parallels * $PARALLEL_PERCENTAGE" | bc | cut -d'.' -f1)
-#   [ -z "$max" ] && max=0
-#   local yaml=""
-#   local count=0
-
-#   for template in "${MOBILE_DEVICE_TEMPLATES[@]}"; do
-#     IFS="|" read -r platformName deviceName platformVersion <<< "$template"
-#     yaml+="  - platformName: $platformName
-#     deviceName: $deviceName
-#     platformVersion: '${platformVersion}.0'
-# "
-#     count=$((count + 1))
-#     if [ "$count" -ge "$max" ]; then
-#       echo "$yaml"
-#       return
-#     fi
-#   done
-
-#   echo "$yaml"
-# }
-
-
-
-# ask_and_upload_app() {
-#   APP_FILE_PATH=$(osascript -e 'POSIX path of (choose file with prompt "📱 Please select your .apk or .ipa app file to upload to BrowserStack")')
-
-#   if [ -z "$APP_FILE_PATH" ]; then
-#     log_msg_to "⚠️ No app selected. Using default sample app: bs://sample.app" "$GLOBAL"
-#     APP_URL="bs://sample.app"
-#     APP_PLATFORM="all"
-#     return
-#   fi
-
-#   # Detect platform
-#   if [[ "$APP_FILE_PATH" == *.apk ]]; then
-#     APP_PLATFORM="android"
-#   elif [[ "$APP_FILE_PATH" == *.ipa ]]; then
-#     APP_PLATFORM="ios"
-#   else
-#     log_msg_to "❌ Unsupported file type. Only .apk or .ipa allowed." "$GLOBAL"
-#     exit 1
-#   fi
-
-#   # Upload app
-#   log_msg_to "⬆️ Uploading $APP_FILE_PATH to BrowserStack..." "$GLOBAL"
-#   UPLOAD_RESPONSE=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
-#     -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-#     -F "file=@$APP_FILE_PATH")
-
-#   APP_URL=$(echo "$UPLOAD_RESPONSE" | grep -o '"app_url":"[^"]*' | cut -d'"' -f4)
-
-#   if [ -z "$APP_URL" ]; then
-#     log_msg_to "❌ Upload failed. Response: $UPLOAD_RESPONSE" "$GLOBAL"
-#     exit 1
-#   fi
-
-#   log_msg_to "✅ App uploaded successfully: $APP_URL" "$GLOBAL"
-# }
-
-# generate_mobile_platforms_yaml() {
-#   local max_total_parallels=$1
-#   local yaml=""
-#   local count=0
-
-#   # Select tier based on parallel count
-#   if (( max_total_parallels >= 80 )); then
-#     devices=("${MOBILE_TIER1[@]}")
-#   elif (( max_total_parallels >= 40 )); then
-#     devices=("${MOBILE_TIER2[@]}")
-#   elif (( max_total_parallels >= 16 )); then
-#     devices=("${MOBILE_TIER3[@]}")
-#   else
-#     devices=("${MOBILE_TIER4[@]}")
-#   fi
-
-#   # Filter devices by platform and limit by max_total_parallels
-#   for template in "${devices[@]}"; do
-#     IFS="|" read -r platformName deviceName platformVersion <<< "$template"
-
-#     # Skip if platform mismatch
-#     if [[ "$APP_PLATFORM" == "ios" && "$platformName" != "ios" ]]; then
-#       continue
-#     fi
-#     if [[ "$APP_PLATFORM" == "android" && "$platformName" != "android" ]]; then
-#       continue
-#     fi
-
-#     yaml+="  - platformName: $platformName
-#     deviceName: $deviceName
-#     platformVersion: ${platformVersion}.0
-# "
-
-#     count=$((count + 1))
-#     if (( count >= max_total_parallels )); then
-#       break
-#     fi
-#   done
-
-#   echo "$yaml"
-# }
-
 generate_mobile_platforms_yaml() {
   local max_total_parallels=$1
   local max=$(echo "$max_total_parallels * $PARALLEL_PERCENTAGE" | bc | cut -d'.' -f1)
@@ -715,12 +476,14 @@ generate_mobile_platforms_yaml() {
   for template in "${MOBILE_ALL[@]}"; do
     IFS="|" read -r platformName deviceName platformVersion <<< "$template"
 
-    # Apply platform filter
     if [ -n "$APP_PLATFORM" ]; then
       if [[ "$APP_PLATFORM" == "ios" && "$platformName" != "ios" ]]; then
         continue
       fi
       if [[ "$APP_PLATFORM" == "android" && "$platformName" != "android" ]]; then
+        continue
+      fi
+      if [[ "$APP_PLATFORM" == "all" && "$platformName" != "android" ]]; then
         continue
       fi
     fi
@@ -737,10 +500,8 @@ generate_mobile_platforms_yaml() {
   done
 
   echo "$yaml"
+  log_msg_to "Generated mobile platforms YAML:" "$MOBILE_LOG_FILE"
 }
-
-
-
 
 
 generate_web_caps_json() {
@@ -779,20 +540,21 @@ generate_web_caps_json() {
 
 generate_mobile_caps_json() {
   local max_total=$1
+  local output_file="$WORKSPACE_DIR/$PROJECT_FOLDER/usage_file.json"
+  : > "$output_file" # Clear the output file
+
   local count=0
-  local usage_file="/tmp/device_usage.txt"
-  : > "$usage_file"
 
-  local json="["
-  for template in "${MOBILE_DEVICE_TEMPLATES[@]}"; do
+  local json="[" 
+
+  for template in "${MOBILE_ALL[@]}"; do
     IFS="|" read -r platformName deviceName baseVersion <<< "$template"
-    local usage
-    usage=$(grep -Fxc "$deviceName" "$usage_file")
-
-    if [ "$usage" -ge 5 ]; then
+    if [ "$APP_PLATFORM" == "ios" ] && [ "$platformName" != "ios" ]; then
+      continue
+    elif [ "$APP_PLATFORM" == "android" ] || [ "$APP_PLATFORM" == "all" ] && [ "$platformName" != "android" ]; then
       continue
     fi
-
+    
     json="${json}{
       \"bstack:options\": {
         \"deviceName\": \"${deviceName}\",
@@ -800,18 +562,14 @@ generate_mobile_caps_json() {
       }
     },"
 
-    echo "$deviceName" >> "$usage_file"
     count=$((count + 1))
     if [ "$count" -ge "$max_total" ]; then
       break
     fi
-  done
-
+  done # End of the loop
   json="${json%,}]"
-  echo "$json"
-  rm -f "$usage_file"
+  echo "$json" > "$output_file"
 }
-
 # ===== Fetch plan details (writes to GLOBAL) =====
 fetch_plan_details() {
     log_msg_to "ℹ️ Fetching BrowserStack Plan Details..." "$GLOBAL"
@@ -854,132 +612,73 @@ fetch_plan_details() {
     fi
 }
 
+# Function to check if IP is private
+is_private_ip() {
+  case $1 in
+    10.* | 192.168.* | 172.16.* | 172.17.* | 172.18.* | 172.19.* | \
+    172.20.* | 172.21.* | 172.22.* | 172.23.* | 172.24.* | 172.25.* | \
+    172.26.* | 172.27.* | 172.28.* | 172.29.* | 172.30.* | 172.31.* | "")
+      return 0 ;;  # Private
+    *)
+      return 1 ;;  # Public
+  esac
+}
 
+is_domain_private() {
+  domain=${CX_TEST_URL#*://}  # remove protocol
+  domain=${domain%%/*}  # remove everything after first "/"
+  log_msg_to "Website domain: $domain"
+  export NOW_WEB_DOMAIN="$CX_TEST_URL"
 
-# setup_web_java_tested() {
-#   local local_flag=$1
-#   local parallels=$2
-#   local log_file=$3
+# Resolve domain using Cloudflare DNS
+IP_ADDRESS=$(dig +short "$domain" @1.1.1.1 | head -n1)
 
-#   REPO="testng-browserstack"
-#   TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
+# Determine if domain is private
+if is_private_ip "$IP_ADDRESS"; then
+  is_cx_domain_private=0
+else
+  is_cx_domain_private=-1
+fi
 
-#   mkdir -p "$WORKSPACE_DIR/$PROJECT_FOLDER"
+log_msg_to "Resolved IPs: $IP_ADDRESS"
 
-#   # Clone repo if not present
-#   if [ ! -d "$TARGET_DIR" ]; then
-#     log_msg_to "📦 Cloning repo $REPO into $TARGET_DIR" "$GLOBAL"
-#     git clone https://github.com/browserstack/testng-browserstack.git "$TARGET_DIR"
-#   else
-#     log_msg_to "📂 Repo $REPO already exists at $TARGET_DIR, skipping clone." "$GLOBAL"
-#   fi
-
-#   cd "$TARGET_DIR" || return 1
-
-#   validate_prereqs || return 1
-
-#   # Export credentials for Maven to use
-#   export BROWSERSTACK_USERNAME="$BROWSERSTACK_USERNAME"
-#   export BROWSERSTACK_ACCESS_KEY="$BROWSERSTACK_ACCESS_KEY"
-
-#   # Run BrowserStack SDK archetype setup
-#   log_msg_to "⚙️ Setting up BrowserStack SDK project" "$GLOBAL"
-#   mvn archetype:generate -B \
-#     -DarchetypeGroupId=com.browserstack \
-#     -DarchetypeArtifactId=browserstack-sdk-archetype-setup \
-#     -DarchetypeVersion=1.1 \
-#     -DgroupId=com.browserstack \
-#     -DartifactId=testng-browserstack \
-#     -Dversion=1.0 \
-#     -DBROWSERSTACK_USERNAME="$BROWSERSTACK_USERNAME" \
-#     -DBROWSERSTACK_ACCESS_KEY="$BROWSERSTACK_ACCESS_KEY" \
-#     -DBROWSERSTACK_PROJECT_REPO="$REPO" >> "$log_file" 2>&1 || true
-
-#   # cd testng-browserstack || return 1
-
-#   # Update base URL in the Java code (replacing https://www.bstackdemo.com)
-#   sed -i.bak "s|https://www.bstackdemo.com|$CX_TEST_URL|g" $(grep -rl "https://www.bstackdemo.com" .)
-
-#   # Log local flag status
-#   if [ "$local_flag" = "true" ]; then
-#     log_msg_to "⚠️ BrowserStack Local is ENABLED for this run." "$GLOBAL"
-#   else
-#     log_msg_to "⚠️ BrowserStack Local is DISABLED for this run." "$GLOBAL"
-#   fi
-
-#   # Generate platforms YAML
-#   platform_yaml=$(generate_web_platforms_yaml "$TEAM_PARALLELS_MAX_ALLOWED_WEB")
-
-#   # Overwrite YAML config at the root level
-#   cat > browserstack.yml <<EOF
-# userName: $BROWSERSTACK_USERNAME
-# accessKey: $BROWSERSTACK_ACCESS_KEY
-# framework: testng
-# browserstackLocal: $local_flag
-# buildName: browserstack-sample-java-web
-# projectName: NOW-Web-Test
-# percy: true
-# accessibility: true
-# platforms:
-# $platform_yaml
-# parallelsPerPlatform: $parallels
-# EOF
-
-#   # Run Maven test
-#   log_msg_to "🚀 Running 'mvn test -P sample-test'" "$GLOBAL"
-#   mvn test -P sample-test >> "$log_file" 2>&1 || true
-
-#   cd "$WORKSPACE_DIR/$PROJECT_FOLDER"
-#   return 0
-# }
+return $is_cx_domain_private
+}
 
 
 setup_web_java() {
   local local_flag=$1
   local parallels=$2
 
-  REPO="testng-browserstack"
+  REPO="now-testng-browserstack"
   TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
 
   mkdir -p "$WORKSPACE_DIR/$PROJECT_FOLDER"
-
+  rm -rf $TARGET_DIR
   # === 1️⃣ Clone Repo ===
-  if [ ! -d "$TARGET_DIR" ]; then
     log_msg_to "📦 Cloning repo $REPO into $TARGET_DIR" "$GLOBAL" "$WEB_LOG_FILE"
-    git clone https://github.com/browserstack/testng-browserstack.git "$TARGET_DIR" >> "$WEB_LOG_FILE" 2>&1 || true
-  else
-    log_msg_to "📂 Repo $REPO already exists at $TARGET_DIR, skipping clone." "$GLOBAL" "$WEB_LOG_FILE"
-  fi
+    git clone https://github.com/browserstackCE/now-testng-browserstack.git "$TARGET_DIR" >> "$WEB_LOG_FILE" 2>&1 || true
+
 
   cd "$TARGET_DIR" || return 1
-  validate_prereqs || return 1
+  # validate_prereqs || return 1
 
-  # === 2️⃣ SDK Setup ===
-  log_msg_to "⚙️ Setting up BrowserStack SDK project" "$GLOBAL" "$WEB_LOG_FILE"
-  mvn archetype:generate -B \
-    -DarchetypeGroupId=com.browserstack \
-    -DarchetypeArtifactId=browserstack-sdk-archetype-setup \
-    -DarchetypeVersion=1.1 \
-    -DgroupId=com.browserstack \
-    -DartifactId=testng-browserstack \
-    -Dversion=1.0 \
-    -DBROWSERSTACK_USERNAME="$BROWSERSTACK_USERNAME" \
-    -DBROWSERSTACK_ACCESS_KEY="$BROWSERSTACK_ACCESS_KEY" \
-    -DBROWSERSTACK_PROJECT_REPO="$REPO" >> "$WEB_LOG_FILE" 2>&1 || true
-
-  # cd testng-browserstack || return 1
 
   # === 3️⃣ Update Base URL ===
   if grep -qr "https://www.bstackdemo.com" .; then
     log_msg_to "🌐 Updating base URL to $CX_TEST_URL" "$GLOBAL" "$WEB_LOG_FILE"
-    sed -i.bak "s|https://www.bstackdemo.com|$CX_TEST_URL|g" $(grep -rl "https://www.bstackdemo.com" .)
+    sed -i "s|https://www.bstackdemo.com|$CX_TEST_URL|g" $(grep -rl "https://www.bstackdemo.com" .)
+  fi
+
+  if is_domain_private; then
+    local_flag=true
   fi
 
   # === 4️⃣ Local Flag ===
   if [ "$local_flag" = "true" ]; then
-    log_msg_to "⚠️ BrowserStack Local is ENABLED for this run." "$GLOBAL" "$WEB_LOG_FILE"
+    log_msg_to "✅ BrowserStack Local is ENABLED for this run." "$GLOBAL" "$WEB_LOG_FILE"
   else
-    log_msg_to "⚠️ BrowserStack Local is DISABLED for this run." "$GLOBAL" "$WEB_LOG_FILE"
+    log_msg_to "✅ BrowserStack Local is DISABLED for this run." "$GLOBAL" "$WEB_LOG_FILE"
   fi
 
   # === 5️⃣ YAML Setup ===
@@ -990,7 +689,7 @@ userName: $BROWSERSTACK_USERNAME
 accessKey: $BROWSERSTACK_ACCESS_KEY
 framework: testng
 browserstackLocal: $local_flag
-buildName: browserstack-sample-java-web
+buildName: now-testng-java-web
 projectName: NOW-Web-Test
 percy: true
 accessibility: true
@@ -999,46 +698,50 @@ $platform_yaml
 parallelsPerPlatform: $parallels
 EOF
 
+  
+
   # === 6️⃣ Build and Run ===
   log_msg_to "⚙️ Running 'mvn install -DskipTests'" "$GLOBAL" "$WEB_LOG_FILE"
   mvn install -DskipTests >> "$WEB_LOG_FILE" 2>&1 || true
 
-  log_msg_to "🚀 Running 'mvn test -P sample-test'" "$GLOBAL" "$WEB_LOG_FILE"
-  mvn test -P sample-test >> "$WEB_LOG_FILE" 2>&1 || true
+  log_msg_to "🚀 Running 'mvn test -P sample-test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/" "$GLOBAL" "$WEB_LOG_FILE"
+  mvn test -P sample-test >> "$WEB_LOG_FILE" 2>&1 &
+  cmd_pid=$!|| true
+
+  show_spinner "$cmd_pid"
+  wait "$cmd_pid"
 
   cd "$WORKSPACE_DIR/$PROJECT_FOLDER"
   return 0
 }
-
-
 
 setup_web_python() {
   local local_flag=$1
   local parallels=$2
   local log_file=$3
 
-  REPO="pytest-browserstack"
+  REPO="now-pytest-browserstack"
   TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
 
-  if [ ! -d "$TARGET_DIR" ]; then
-    git clone https://github.com/browserstack/$REPO.git "$TARGET_DIR"
+  rm -rf $TARGET_DIR
+
+    git clone https://github.com/browserstackCE/$REPO.git "$TARGET_DIR" >> "$WEB_LOG_FILE" 2>&1 || true
     log_msg_to "✅ Cloned repository: $REPO into $TARGET_DIR" "$PRE_RUN_LOG_FILE"
-  else
-    log_msg_to "ℹ️ Repository already exists at: $TARGET_DIR (skipping clone)" "$PRE_RUN_LOG_FILE"
-  fi
+
 
   cd "$TARGET_DIR" || return 1
 
-  validate_prereqs || return 1
+  #validate_prereqs || return 1
 
   # Setup Python venv
   if [ ! -d "venv" ]; then
     python3 -m venv venv
-    log_msg_to "✅ Created Python virtual environment" "$PRE_RUN_LOG_FILE"
+    log_msg_to "✅ Created Python virtual environment"
   fi
+  
   # shellcheck disable=SC1091
   source venv/bin/activate
-  pip install -r requirements.txt >> "$log_file" 2>&1
+  pip3 install -r requirements.txt >> "$WEB_LOG_FILE" 2>&1
 
   # Export credentials for pytest to use
   export BROWSERSTACK_USERNAME="$BROWSERSTACK_USERNAME"
@@ -1047,6 +750,17 @@ setup_web_python() {
   # Update YAML at root level (browserstack.yml)
   export BROWSERSTACK_CONFIG_FILE="browserstack.yml"
   platform_yaml=$(generate_web_platforms_yaml "$TEAM_PARALLELS_MAX_ALLOWED_WEB")
+
+    if is_domain_private; then
+    local_flag=true
+  fi
+
+    # === 4️⃣ Local Flag ===
+  if [ "$local_flag" = "true" ]; then
+    log_msg_to "✅ BrowserStack Local is ENABLED for this run." "$GLOBAL" "$WEB_LOG_FILE"
+  else
+    log_msg_to "✅ BrowserStack Local is DISABLED for this run." "$GLOBAL" "$WEB_LOG_FILE"
+  fi
 
   cat > browserstack.yml <<EOF
 userName: $BROWSERSTACK_USERNAME
@@ -1062,236 +776,69 @@ $platform_yaml
 parallelsPerPlatform: $parallels
 EOF
 
-  log_msg_to "✅ Updated root-level browserstack.yml with platforms and credentials" "$PRE_RUN_LOG_FILE"
+  log_msg_to "✅ Updated root-level browserstack.yml with platforms and credentials."
 
-  # Replace sample test with universal health check test
-  cat > tests/bstack-sample-test.py <<'PYEOF'
-import pytest
-
-def test_universal_browserstack_check(selenium):
-
-    # 1. Navigate to the website
-    selenium.get('https://bstackdemo.com/')
-
-    # 2. Use universal functions to get page data (no locators)
-    page_title = selenium.title
-    current_url = selenium.current_url
-    page_source = selenium.page_source
-
-    # 3. Log the captured data to BrowserStack using 'annotate'
-    # This will appear in the "Text Logs" section of your Automate session
-    log_data = f"Page Title: {page_title} | Current URL: {current_url}"
-    selenium.execute_script(
-        'browserstack_executor: {"action": "annotate", "arguments": {"data": "' + log_data + '", "level": "info"}}'
-    )
-
-    # 4. Perform simple, locator-free assertions
-    assert len(page_source) > 100  # Checks that the page has content
-
-    # 5. Set the final session status to 'passed'
-    selenium.execute_script(
-        'browserstack_executor: {"action": "setSessionStatus", "arguments": {"status": "passed", "reason": "Page loaded and title verified!"}}'
-    )
-PYEOF
 
   # Update base URL in the new sample test
-  # sed -i.bak "s|https://bstackdemo.com/|$CX_TEST_URL|g" tests/bstack-sample-test.py || true
-  sed -i.bak "s|https://bstackdemo.com|$CX_TEST_URL|g" tests/bstack-sample-test.py || true
-  log_msg_to "🌐 Updated base URL in tests/bstack-sample-test.py to: $CX_TEST_URL" "$PRE_RUN_LOG_FILE"
+  # sed -i "s|https://bstackdemo.com/|$CX_TEST_URL|g" tests/bstack-sample-test.py || true
+  sed -i "s|https://bstackdemo.com|$CX_TEST_URL|g" tests/bstack-sample-test.py || true
+  log_msg_to "🌐 Updated base URL in tests/bstack-sample-test.py to: $CX_TEST_URL"
 
+
+  log_msg_to "🚀 Running 'browserstack-sdk pytest -s tests/bstack-sample-test.py'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/" "$GLOBAL" "$WEB_LOG_FILE"
   # Run tests
-  log_msg_to "⚠️ Running tests with local=$local_flag" "$PRE_RUN_LOG_FILE"
-  browserstack-sdk pytest -s tests/bstack-sample-test.py >> "$log_file" 2>&1 || true
+  browserstack-sdk pytest -s tests/bstack-sample-test.py >> "$WEB_LOG_FILE" 2>&1 &
+  cmd_pid=$!|| true
 
-  # Copy first 200 lines of logs for visibility
-  [ -f "$log_file" ] && sed -n '1,200p' "$log_file" | while read -r l; do
-    log_msg_to "web (py): $l" "$PRE_RUN_LOG_FILE"
-  done
+  show_spinner "$cmd_pid"
+  wait "$cmd_pid"
 
+  cd "$WORKSPACE_DIR/$PROJECT_FOLDER"
   return 0
 }
 
 
-
-
-setup_web_js() {
+setup_web_nodejs() {
   local local_flag=$1
   local parallels=$2
 
-  REPO="webdriverio-browserstack"
+  REPO="now-webdriverio-browserstack"
   TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
+
+  rm -rf $TARGET_DIR
 
   mkdir -p "$WORKSPACE_DIR/$PROJECT_FOLDER"
 
   # === 1️⃣ Clone Repo ===
-  if [ ! -d "$TARGET_DIR" ]; then
-    log_msg_to "📦 Cloning repo $REPO (branch tra) into $TARGET_DIR" "$GLOBAL" "$WEB_LOG_FILE"
-    git clone -b tra https://github.com/browserstack/$REPO.git "$TARGET_DIR" >> "$WEB_LOG_FILE" 2>&1 || true
-  else
-    log_msg_to "📂 Repo $REPO already exists at $TARGET_DIR, skipping clone." "$GLOBAL" "$WEB_LOG_FILE"
-  fi
+    log_msg_to "📦 Cloning repo $REPO into $TARGET_DIR" "$GLOBAL" "$WEB_LOG_FILE"
+    git clone https://github.com/browserstackCE/$REPO.git "$TARGET_DIR" >> "$WEB_LOG_FILE" 2>&1 || true
 
   cd "$TARGET_DIR" || return 1
-  validate_prereqs || return 1
 
   # === 2️⃣ Install Dependencies ===
   log_msg_to "⚙️ Running 'npm install'" "$GLOBAL" "$WEB_LOG_FILE"
   npm install >> "$WEB_LOG_FILE" 2>&1 || true
 
-  # # === 3️⃣ Update Base URL ===
-  # if grep -qr "https://www.bstackdemo.com" .; then
-  #   log_msg_to "🌐 Updating base URL to $CX_TEST_URL" "$GLOBAL" "$WEB_LOG_FILE"
-  #   sed -i.bak "s|https://www.bstackdemo.com|$CX_TEST_URL|g" $(grep -rl "https://www.bstackdemo.com" .)
-  # fi
 
   # === 4️⃣ Generate Capabilities JSON ===
   log_msg_to "🧩 Generating browser/OS capabilities" "$GLOBAL" "$WEB_LOG_FILE"
   local caps_json
   caps_json=$(generate_web_caps_json "$parallels")
 
-  # === 5️⃣ Determine buildIdentifier based on local ===
-  if [ "$local_flag" = true ]; then
-    BUILD_ID="#${BUILD_NUMBER}-local"
-  else
-    BUILD_ID="#${BUILD_NUMBER}-remote"
+  export BSTACK_PARALLELS=$parallels
+  
+  export BSTACK_CAPS_JSON=$caps_json
+
+  if is_domain_private; then
+    local_flag=true
   fi
 
-  cat > conf/base.conf.js <<EOF
-exports.config = {
-  user: process.env.BROWSERSTACK_USERNAME || 'BROWSERSTACK_USERNAME',
-  key: process.env.BROWSERSTACK_ACCESS_KEY || 'BROWSERSTACK_ACCESS_KEY',
-
-  updateJob: false,
-  specs: ['./tests/specs/test.js'],
-  exclude: [],
-
-  logLevel: 'warn',
-  coloredLogs: true,
-  screenshotPath: './errorShots/',
-  baseUrl: "$CX_TEST_URL",
-
-   waitforTimeout: 10000,
-  connectionRetryTimeout: 120000,
-  connectionRetryCount: 1,
-  hostname: 'hub.browserstack.com',
-  services: [['browserstack']],
-
-  before: function () {
-    var chai = require('chai');
-    global.expect = chai.expect;
-    chai.Should();
-  },
-
-  framework: 'mocha',
-  mochaOpts: {
-    ui: 'bdd',
-    timeout: 60000,
-  },
-};
-EOF
-
-cat > tests/specs/test.js <<EOF
-describe("Testing with BStackDemo", () => {
-  it("add product to cart", async () => {
-    await browser.url("$CX_TEST_URL");
-
-    await browser.waitUntil(
-      async () => (await browser.getTitle()).match(/StackDemo/i),
-      { timeout: 5000, timeoutMsg: "Title didn't match with BrowserStack" }
-    );
-    
-    await browser.waitUntil(
-      async () => (await productInCart.getText()).match(productOnScreenText),
-      { timeout: 5000 }
-    );
-  });
-});
-EOF
-
-
-
- # === 6️⃣ Create conf/test.conf.js using template ===
-log_msg_to "🛠️ Creating conf/test.conf.js configuration file" "$GLOBAL" "$WEB_LOG_FILE"
-
-if [ "$local_flag" = true ]; then
-  # BUILD_ID="#${BUILD_NUMBER}-localOn"
-  cat > conf/test.conf.js <<EOF
-const { config: baseConfig } = require('./base.conf.js');
-const parallelConfig = {
-  maxInstances: $parallels,
-  commonCapabilities: {
-    'bstack:options': {
-      buildIdentifier: "$BUILD_ID",
-      buildName: 'browserstack-sample-js-web',
-      source: 'webdriverio:sample-master:v1.2',
-      projectName: 'NOW-Web-Test',
-    }
-  },
-  services: [
-    [
-      'browserstack',
-      { 
-        testObservability: true,
-        testObservabilityOptions: {
-          buildTag: ['bstack_sample']
-        },
-        browserstackLocal: true,
-        accessibility: true,
-        percy: true,
-      },
-    ],
-  ],
-  capabilities: [
-$(echo "$caps_json" | sed 's/^/    /')
-  ],
-};
-exports.config = { ...baseConfig, ...parallelConfig };
-exports.config.capabilities.forEach(function (caps) {
-  for (var i in exports.config.commonCapabilities)
-    caps[i] = { ...caps[i], ...exports.config.commonCapabilities[i]};
-});
-EOF
-
-else
-  # BUILD_ID="#${BUILD_NUMBER}-localOff"
-  cat > conf/test.conf.js <<EOF
-const { config: baseConfig } = require('./base.conf.js');
-const parallelConfig = {
-  maxInstances: $parallels,
-  commonCapabilities: {
-    'bstack:options': {
-      buildIdentifier: "$BUILD_ID",
-      buildName: 'browserstack-sample-js-web',
-      source: 'webdriverio:sample-master:v1.2',
-      projectName: 'NOW-Web-Test',
-    }
-  },
-  services: [
-    [
-      'browserstack',
-      { 
-        testObservability: true,
-        testObservabilityOptions: {
-          buildTag: ['bstack_sample']
-        },
-        browserstackLocal: false,
-        accessibility: true,
-        percy: true,
-      },
-    ],
-  ],
-  capabilities: [
-$(echo "$caps_json" | sed 's/^/    /')
-  ],
-};
-exports.config = { ...baseConfig, ...parallelConfig };
-exports.config.capabilities.forEach(function (caps) {
-  for (var i in exports.config.commonCapabilities)
-    caps[i] = { ...caps[i], ...exports.config.commonCapabilities[i]};
-});
-EOF
-
-fi
+  #log_msg_to local flag status
+  if [ "$local_flag" = "true" ]; then
+    log_msg_to "✅ BrowserStack Local is ENABLED for this run." "$PRE_RUN_LOG_FILE"
+  else
+    log_msg_to "✅ BrowserStack Local is DISABLED for this run." "$PRE_RUN_LOG_FILE"
+  fi  
 
   # === 7️⃣ Export BrowserStack Credentials ===
   export BROWSERSTACK_USERNAME="$BROWSERSTACK_USERNAME"
@@ -1299,7 +846,7 @@ fi
   export BROWSERSTACK_LOCAL=$local_flag
 
   # === 8️⃣ Run Tests ===
-  log_msg_to "🚀 Running 'npm run test'" "$GLOBAL" "$WEB_LOG_FILE"
+  log_msg_to "🚀 Running 'npm run test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/" "$WEB_LOG_FILE"
   npm run test >> "$WEB_LOG_FILE" 2>&1 || true
 
   # === 9️⃣ Wrap Up ===
@@ -1310,59 +857,52 @@ fi
 }
 
 
-
-
-
 # ===== Web wrapper with retry logic (writes runtime logs to WEB_LOG_FILE) =====
 setup_web() {
   log_msg_to "Starting Web setup for $TECH_STACK" "$WEB_LOG_FILE"
 
-  local local_flag=true
+  local local_flag=false
   local attempt=1
-  local success=false
-  local log_file="$WEB_LOG_FILE"
+  local success=true
+  local log_file=$WEB_LOG_FILE
   # don't pre-create; file will be created on first write by log_msg_to or command output redirection
 
   local total_parallels
   total_parallels=$(echo "$TEAM_PARALLELS_MAX_ALLOWED_WEB * $PARALLEL_PERCENTAGE" | bc | cut -d'.' -f1)
   [ -z "$total_parallels" ] && total_parallels=1
   local parallels_per_platform
-  # parallels_per_platform=$(( (total_parallels + 1) / 2 ))
   parallels_per_platform=$total_parallels
 
 
-  while [ "$attempt" -le 2 ]; do
-    log_msg_to "[Web Setup Attempt $attempt] browserstackLocal: $local_flag" "$WEB_LOG_FILE"
+  while [ "$attempt" -le 1 ]; do
+    log_msg_to "[Web Setup]" "$WEB_LOG_FILE"
     case "$TECH_STACK" in
-      Java)       setup_web_java "$local_flag" "$parallels_per_platform" "$WEB_LOG_FILE" ;;
-      Python)     setup_web_python "$local_flag" "$parallels_per_platform" "$WEB_LOG_FILE" ;;
-      JS|JavaScript) setup_web_js "$local_flag" "$parallels_per_platform" "$WEB_LOG_FILE" ;;
+      Java)    
+        setup_web_java "$local_flag" "$parallels_per_platform" "$WEB_LOG_FILE"
+        if (grep -qiE "BUILD FAILURE" "$WEB_LOG_FILE"); then
+          success=false
+        fi
+        ;;
+      Python)
+        setup_web_python "$local_flag" "$parallels_per_platform" "$WEB_LOG_FILE"
+        if (grep -qiE "BUILD FAILURE" "$WEB_LOG_FILE"); then
+          success=false
+        fi
+        ;;
+        
+
+      NodeJS) setup_web_nodejs "$local_flag" "$parallels_per_platform" "$WEB_LOG_FILE"
+        if (grep -qiE "([1-9][0-9]*) passed, 0 failed" "$WEB_LOG_FILE"); then
+          success=false
+        fi
+        ;;
+
       *) log_msg_to "Unknown TECH_STACK: $TECH_STACK" "$WEB_LOG_FILE"; return 1 ;;
     esac
 
-    LOG_CONTENT=$(<"$WEB_LOG_FILE" 2>/dev/null || true)
-    LOCAL_FAILURE=false
-    SETUP_FAILURE=false
-
-    for pattern in "${WEB_LOCAL_ERRORS[@]}"; do
-      echo "$LOG_CONTENT" | grep -qiE "$pattern" && LOCAL_FAILURE=true && break
-    done
-
-    for pattern in "${WEB_SETUP_ERRORS[@]}"; do
-      echo "$LOG_CONTENT" | grep -qiE "$pattern" && SETUP_FAILURE=true && break
-    done
-
-    if echo "$LOG_CONTENT" | grep -qiE "https://[a-zA-Z0-9./?=_-]*browserstack\.com"; then
-      success=true
-    fi
-
     if [ "$success" = true ]; then
-      log_msg_to "✅ Web setup succeeded" "$WEB_LOG_FILE"
+      log_msg_to "✅ Web setup succeeded." "$WEB_LOG_FILE"
       break
-    elif [ "$LOCAL_FAILURE" = true ] && [ "$attempt" -eq 1 ]; then
-      local_flag=false
-      attempt=$((attempt + 1))
-      log_msg_to "⚠️ Web test failed due to Local tunnel error. Retrying without browserstackLocal..." "$WEB_LOG_FILE"
     elif [ "$SETUP_FAILURE" = true ]; then
       log_msg_to "❌ Web test failed due to setup error. Check logs at: $WEB_LOG_FILE" "$WEB_LOG_FILE"
       break
@@ -1374,8 +914,6 @@ setup_web() {
 }
 
 
-
-
 setup_mobile_python() {
   local local_flag=$1
   local parallels=$2
@@ -1385,12 +923,8 @@ setup_mobile_python() {
   TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
 
   # Clone repo if not present
-  if [ ! -d "$TARGET_DIR" ]; then
     git clone https://github.com/browserstack/$REPO.git "$TARGET_DIR"
     log_msg_to "✅ Cloned repository: $REPO into $TARGET_DIR" "$PRE_RUN_LOG_FILE"
-  else
-    log_msg_to "ℹ️ Repository already exists at: $TARGET_DIR (skipping clone)" "$PRE_RUN_LOG_FILE"
-  fi
 
   cd "$TARGET_DIR" || return 1
 
@@ -1493,15 +1027,19 @@ PYEOF
     run_dir="ios"
   fi
 
+  if is_domain_private; then
+    local_flag=true
+  fi
+
   # Log local flag status
   if [ "$local_flag" = "true" ]; then
-    log_msg_to "⚠️ BrowserStack Local is ENABLED for this run." "$PRE_RUN_LOG_FILE"
+    log_msg_to "⚠️ BrowserStack Local is ENABLED for this run."
   else
-    log_msg_to "⚠️ BrowserStack Local is DISABLED for this run." "$PRE_RUN_LOG_FILE"
+    log_msg_to "⚠️ BrowserStack Local is DISABLED for this run." 
   fi  
 
   # Run pytest with BrowserStack SDK from the chosen platform directory
-  log_msg_to "🚀 Running 'cd $run_dir && browserstack-sdk pytest -s bstack_sample.py'" "$PRE_RUN_LOG_FILE"
+  log_msg_to "🚀 Running 'cd $run_dir && browserstack-sdk pytest -s bstack_sample.py'"
   (
     cd "$run_dir" && browserstack-sdk pytest -s bstack_sample.py >> "$log_file" 2>&1 || true
   )
@@ -1516,99 +1054,52 @@ PYEOF
   return 0
 }
 
-
 setup_mobile_java() {
   local local_flag=$1
   local parallels=$2
   local log_file=$3
 
-  REPO="browserstack-examples-appium-testng"
+  REPO="now-testng-appium-app-browserstack"
   TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
 
-  if [ ! -d "$TARGET_DIR" ]; then
-    git clone https://github.com/BrowserStackCE/$REPO.git "$TARGET_DIR"
-    log_msg_to "✅ Cloned repository: $REPO into $TARGET_DIR" "$GLOBAL" "$MOBILE_LOG_FILE"
-  else
-    log_msg_to "ℹ️ Repository already exists at: $TARGET_DIR (skipping clone)" "$GLOBAL" "$MOBILE_LOG_FILE"
-  fi
-
-  # Update pom.xml → browserstack-java-sdk version to LATEST
-  pom_file="$TARGET_DIR/pom.xml"
-  if [ -f "$pom_file" ]; then
-    sed -i.bak '/<artifactId>browserstack-java-sdk<\/artifactId>/,/<\/dependency>/ s|<version>.*</version>|<version>LATEST</version>|' "$pom_file"
-    log_msg_to "🔧 Updated browserstack-java-sdk version to LATEST in pom.xml" "$GLOBAL" "$MOBILE_LOG_FILE"
-  fi
-
+  git clone https://github.com/BrowserStackCE/$REPO.git "$TARGET_DIR"
+  log_msg_to "✅ Cloned repository: $REPO into $TARGET_DIR" "$GLOBAL" "$MOBILE_LOG_FILE"
   cd "$TARGET_DIR" || return 1
+
+if [[ "$APP_PLATFORM" == "all" || "$APP_PLATFORM" == "android" ]]; then
+  cd android/testng-examples
+else
+  cd ios/testng-examples
+fi
+
   validate_prereqs || return 1
 
-  # Export credentials for Maven
   export BROWSERSTACK_USERNAME="$BROWSERSTACK_USERNAME"
   export BROWSERSTACK_ACCESS_KEY="$BROWSERSTACK_ACCESS_KEY"
-
-  # Update TestBase.java → switch AppiumDriver to AndroidDriver
-  testbase_file=$(find src -name "TestBase.java" | head -n 1)
-  if [ -f "$testbase_file" ]; then
-    sed -i.bak 's/new AppiumDriver(/new AndroidDriver(/g' "$testbase_file"
-    log_msg_to "🔧 Updated driver initialization in $testbase_file to use AndroidDriver" "$GLOBAL" "$MOBILE_LOG_FILE"
-  fi
-
+  
   # YAML config path
-  export BROWSERSTACK_CONFIG_FILE="src/test/resources/conf/capabilities/browserstack-parallel.yml"
+  export BROWSERSTACK_CONFIG_FILE="./browserstack.yml"
   platform_yaml=$(generate_mobile_platforms_yaml "$TEAM_PARALLELS_MAX_ALLOWED_MOBILE")
 
-  cat > "$BROWSERSTACK_CONFIG_FILE" <<EOF
-userName: $BROWSERSTACK_USERNAME
-accessKey: $BROWSERSTACK_ACCESS_KEY
-framework: testng
-browserstackLocal: $local_flag
-buildName: browserstack-build-mobile
-projectName: NOW-Mobile-Test
-parallelsPerPlatform: $parallels
-accessibility: true
-percy: true
-app: $APP_URL
+  cat >> "$BROWSERSTACK_CONFIG_FILE" <<EOF
+app: ${APP_URL}
 platforms:
 $platform_yaml
 EOF
 
-  log_msg_to "✅ Updated $BROWSERSTACK_CONFIG_FILE with platforms and credentials" "$GLOBAL" "$MOBILE_LOG_FILE"
-
-cat > "/src/test/java/com/browserstack/test/suites/e2e/OrderTest.java" <<EOF
-package com.browserstack.test.suites.e2e;
-
-import com.browserstack.app.pages.HomePage;
-import com.browserstack.app.pages.OrdersPage;
-import com.browserstack.test.suites.TestBase;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
-public class OrderTest extends TestBase {
-
-    @Test
-    public void placeOrder() {
-        HomePage page = new HomePage(driver)
-                .navigateToSignIn()
-                .loginWith("fav_user", "testingisfun99");
-               
-    }
-}
-EOF
-
-  # Log local flag status
-  if [ "$local_flag" = "true" ]; then
-    log_msg_to "⚠️ BrowserStack Local is ENABLED for this run." "$GLOBAL" "$MOBILE_LOG_FILE"
-  else
-    log_msg_to "⚠️ BrowserStack Local is DISABLED for this run." "$GLOBAL" "$MOBILE_LOG_FILE"
-  fi  
-
   # Run Maven install first
-  log_msg_to "⚙️ Running 'mvn install -DskipTests'" "$GLOBAL" "$MOBILE_LOG_FILE"
-  mvn install -DskipTests >> "$log_file" 2>&1 || true
+  log_msg_to "⚙️ Running 'mvn clean'" "$GLOBAL" "$MOBILE_LOG_FILE"
+  if ! mvn clean >> "$log_file" 2>&1; then
+    log_msg_to "❌ 'mvn clean' FAILED. See $log_file for details." "$GLOBAL" "$MOBILE_LOG_FILE"
+    return 1 # Fail the function if clean fails
+  fi
 
-  # Then run actual test suite
-  log_msg_to "🚀 Running 'mvn clean test -P bstack-parallel -Dtest=OrderTest'" "$GLOBAL" "$MOBILE_LOG_FILE"
-  mvn clean test -P bstack-parallel -Dtest=OrderTest >> "$log_file" 2>&1 || true
+  log_msg_to "🚀 mvn test -P sample-test'" "$GLOBAL" "$MOBILE_LOG_FILE"
+  if ! mvn test -P sample-test >> "$log_file" 2>&1; then
+    log_msg_to "❌ 'mvn test -P sample-test' FAILED. See $log_file for details." "$GLOBAL" "$MOBILE_LOG_FILE"
+  else
+    log_msg_to "✅ 'mvn test -P sample-test' complete." "$GLOBAL" "$MOBILE_LOG_FILE"
+  fi
 
   # Copy first 200 lines of logs for visibility
   [ -f "$log_file" ] && sed -n '1,200p' "$log_file" | while read -r l; do 
@@ -1616,43 +1107,53 @@ EOF
   done
 
   cd "$WORKSPACE_DIR/$PROJECT_FOLDER"
+  rm -rf "$TARGET_DIR" || return 1
   return 0
 }
 
 
-
-
-setup_mobile_js() {
+setup_mobile_nodejs() {
   local local_flag=$1
   local parallels=$2
   local log_file=$3
 
-  REPO="webdriverio-appium-app-browserstack"
+  # cd $WORKSPACE_DIR/$PROJECT_FOLDER || return 1
+
+  REPO="now-webdriverio-appium-app-browserstack"
+  TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
   if [ ! -d "$REPO" ]; then
-    git clone -b sdk https://github.com/browserstack/$REPO
+    git clone -b sdk https://github.com/BrowserStackCE/$REPO
+    log_msg_to "✅ Cloned repository: $REPO into $TARGET_DIR" "$GLOBAL" "$MOBILE_LOG_FILE"
   fi
-  cd "$REPO/android/" || return 1
+  cd "$TARGET_DIR/test/" || return 1
 
   validate_prereqs || return 1
-  npm install >> "$log_file" 2>&1 || true
-  cd "examples/run-parallel-test" || return 1
-  caps_file="parallel.conf.js"
 
-  if sed --version >/dev/null 2>&1; then
-    sed -i "s/\(maxInstances:\)[[:space:]]*[0-9]\+/\1 $parallels/" "$caps_file" || true
+  log_msg_to "⚙️ Running 'npm install'" "$GLOBAL" "$MOBILE_LOG_FILE"
+  if ! npm install >> "$log_file" 2>&1; then
+    log_msg_to "❌ 'npm install' FAILED. See $log_file for details." "$GLOBAL" "$MOBILE_LOG_FILE"
+    return 1 # Fail the function if clean fails
   else
-    sed -i '' "s/\(maxInstances:\)[[:space:]]*[0-9]\+/\1 $parallels/" "$caps_file" || true
+    log_msg_to "✅ 'npm install' complete." "$GLOBAL" "$MOBILE_LOG_FILE"
   fi
 
-  caps_json=$(generate_mobile_caps_json "$parallels")
-  printf "%s\n" "capabilities: $caps_json," > "$caps_file".tmp || true
-  mv "$caps_file".tmp "$caps_file" || true
+  generate_mobile_caps_json "$parallels"
 
   export BROWSERSTACK_USERNAME="$BROWSERSTACK_USERNAME"
   export BROWSERSTACK_ACCESS_KEY="$BROWSERSTACK_ACCESS_KEY"
+  export BSTACK_PARALLELS=$parallels
 
-  npm run parallel > "$log_file" 2>&1 || true
+  if ! npm run test >> "$log_file" 2>&1; then
+    echo "❌ Error: Test execution failed. See $log_file for test results and failure details."
+    log_msg_to "❌ 'npm run test' FAILED. See $log_file for test report and failure details." "$GLOBAL" "$MOBILE_LOG_FILE"
+    return 1
+  else
+    log_msg_to "✅ 'npm run test' complete." "$GLOBAL" "$MOBILE_LOG_FILE"
+  fi
+  
   [ -f "$log_file" ] && sed -n '1,200p' "$log_file" | while read -r l; do log_msg_to "mobile: $l" "$GLOBAL"; done
+
+  rm -rf $TARGET_DIR || true
   return 0
 }
 
@@ -1669,43 +1170,50 @@ setup_mobile() {
   total_parallels=$(echo "$TEAM_PARALLELS_MAX_ALLOWED_MOBILE * $PARALLEL_PERCENTAGE" | bc | cut -d'.' -f1)
   [ -z "$total_parallels" ] && total_parallels=1
   local parallels_per_platform
-  # parallels_per_platform=$(( (total_parallels + 2) / 3 ))
   parallels_per_platform=$total_parallels
 
-  while [ "$attempt" -le 2 ]; do
-    log_msg_to "[Mobile Setup Attempt $attempt] browserstackLocal: $local_flag" "$MOBILE_LOG_FILE"
+  while [ "$attempt" -le 1 ]; do
     case "$TECH_STACK" in
       Java)       setup_mobile_java "$local_flag" "$parallels_per_platform" "$MOBILE_LOG_FILE" ;;
       Python)     setup_mobile_python "$local_flag" "$parallels_per_platform" "$MOBILE_LOG_FILE" ;;
-      JS|JavaScript) setup_mobile_js "$local_flag" "$parallels_per_platform" "$MOBILE_LOG_FILE" ;;
+      NodeJS) setup_mobile_nodejs "$local_flag" "$parallels_per_platform" "$MOBILE_LOG_FILE" ;;
       *) log_msg_to "Unknown TECH_STACK: $TECH_STACK" "$MOBILE_LOG_FILE"; return 1 ;;
     esac
 
     LOG_CONTENT=$(<"$MOBILE_LOG_FILE" 2>/dev/null || true)
+    
+    # 2. !!FIX!! Reset ALL state flags at the start of each loop
     LOCAL_FAILURE=false
     SETUP_FAILURE=false
+    success=false
 
+    # 3. !!FIX!! Use here-strings (<<<) instead of echo
     for pattern in "${MOBILE_LOCAL_ERRORS[@]}"; do
-      echo "$LOG_CONTENT" | grep -qiE "$pattern" && LOCAL_FAILURE=true && break
+      grep -qiE "$pattern" <<< "$LOG_CONTENT" && LOCAL_FAILURE=true && break
     done
 
     for pattern in "${MOBILE_SETUP_ERRORS[@]}"; do
-      echo "$LOG_CONTENT" | grep -qiE "$pattern" && SETUP_FAILURE=true && break
+      grep -qiE "$pattern" <<< "$LOG_CONTENT" && SETUP_FAILURE=true && break
     done
 
-    if echo "$LOG_CONTENT" | grep -qiE "https://[a-zA-Z0-9./?=_-]*browserstack\.com"; then
-      success=true
+    # 4. !!FIX!! Only check for success IF no failures were found
+    if [ "$LOCAL_FAILURE" = false ] && [ "$SETUP_FAILURE" = false ]; then
+      if grep -qiE "https://[a-zA-Z0-9./?=_-]*browserstack\.com/[a-zA-Z0-9./?=_-]*" <<< "$LOG_CONTENT"; then
+        success=true
+      fi
     fi
 
-    if [ "$success" = true ]; then
-      log_msg_to "✅ Mobile setup succeeded" "$MOBILE_LOG_FILE"
-      break
-    elif [ "$LOCAL_FAILURE" = true ] && [ "$attempt" -eq 1 ]; then
+    # 5. !!FIX!! Re-ordered logic block to prioritize failures
+    if [ "$LOCAL_FAILURE" = true ] && [ "$attempt" -eq 1 ]; then
       local_flag=false
       attempt=$((attempt + 1))
-      log_msg_to "⚠️ Mobile test failed due to Local tunnel error. Retrying without browserstackLocal..." "$MOBILE_LOG_FILE"
+      log_msg_to "⚠️ Mobile test failed due to Local tunnel error. Retrying..." "$MOBILE_LOG_FILE"
+      # (Note: 'continue' is implied here as we don't 'break')
     elif [ "$SETUP_FAILURE" = true ]; then
       log_msg_to "❌ Mobile test failed due to setup error. Check logs at: $log_file" "$MOBILE_LOG_FILE"
+      break
+    elif [ "$success" = true ]; then
+      log_msg_to "✅ Mobile setup succeeded" "$MOBILE_LOG_FILE"
       break
     else
       log_msg_to "❌ Mobile setup ended without success; check $MOBILE_LOG_FILE for details" "$MOBILE_LOG_FILE"
@@ -1769,10 +1277,11 @@ validate_tech_stack_installed
 fetch_plan_details
 
 # Plan summary in pre-run log
+# log_msg_to "Plan summary: WEB_PLAN_FETCHED=$WEB_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_WEB), MOBILE_PLAN_FETCHED=$MOBILE_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" "$GLOBAL"
 log_msg_to "Plan summary: WEB_PLAN_FETCHED=$WEB_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_WEB), MOBILE_PLAN_FETCHED=$MOBILE_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" "$GLOBAL"
-
-# Run actual setup(s)
+log_msg_to "Checking proxy in environment" "$GLOBAL"
+chmod +x proxy-check.sh
+./proxy-check.sh
+log_msg_to "Starting setup run..." "$GLOBAL"
 run_setup
-
-# End
-log_msg_to "Setup run finished" "$GLOBAL"
+log_msg_to "Setup run finished." "$GLOBAL"
