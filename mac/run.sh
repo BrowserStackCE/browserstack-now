@@ -78,7 +78,6 @@ MOBILE_ALL=(
   "android|Samsung Galaxy M32|11"
   "android|Samsung Galaxy Note 20|10"
   "android|Samsung Galaxy S10|9"
-  "android|Samsung Galaxy Note 9|8"
   "android|Samsung Galaxy Tab S8|12"
   "android|Google Pixel 9|15"
   "android|Google Pixel 6 Pro|13"
@@ -232,12 +231,6 @@ show_spinner() {
         sleep 0.1
     done
     log_msg_to "✅ Done!"
-}
-
-# ===== validate_prereqs shim (keeps compatibility with older code) =====
-validate_prereqs() {
-  # For backwards compatibility call validate_tech_stack_installed
-  validate_tech_stack_installed
 }
 
 # ===== Functions: baseline interactions =====
@@ -667,22 +660,26 @@ setup_web_java() {
   # === 5️⃣ YAML Setup ===
   log_msg_to "🧩 Generating YAML config (bstack.yml)" "$GLOBAL" "$WEB_LOG_FILE"
   platform_yaml=$(generate_web_platforms_yaml "$TEAM_PARALLELS_MAX_ALLOWED_WEB")
-  cat > browserstack.yml <<EOF
-userName: $BROWSERSTACK_USERNAME
-accessKey: $BROWSERSTACK_ACCESS_KEY
-framework: testng
-browserstackLocal: $local_flag
-buildName: now-testng-java-web
-projectName: NOW-Web-Test
-percy: true
-accessibility: true
-platforms:
-$platform_yaml
-parallelsPerPlatform: $parallels
-EOF
+
+  export BSTACK_PARALLELS=$platform_yaml # to be picked up from ENV in repo
+  export BROWSERSTACK_LOCAL=$local_flag # to be picked up from ENV in repo
+
+##  Remove after repo changes. 
+#   cat > browserstack.yml <<EOF
+# userName: $BROWSERSTACK_USERNAME
+# accessKey: $BROWSERSTACK_ACCESS_KEY
+# framework: testng
+# browserstackLocal: $local_flag
+# buildName: now-testng-java-web
+# projectName: NOW-Web-Test
+# percy: true
+# accessibility: true
+# platforms:
+# $platform_yaml
+# parallelsPerPlatform: $parallels
+# EOF
 
   
-
   # === 6️⃣ Build and Run ===
   log_msg_to "⚙️ Running 'mvn install -DskipTests'" "$GLOBAL" "$WEB_LOG_FILE"
   mvn install -DskipTests >> "$WEB_LOG_FILE" 2>&1 || true
@@ -745,6 +742,7 @@ setup_web_python() {
     log_msg_to "✅ BrowserStack Local is DISABLED for this run." "$GLOBAL" "$WEB_LOG_FILE"
   fi
 
+
   cat > browserstack.yml <<EOF
 userName: $BROWSERSTACK_USERNAME
 accessKey: $BROWSERSTACK_ACCESS_KEY
@@ -793,18 +791,18 @@ setup_web_nodejs() {
   mkdir -p "$WORKSPACE_DIR/$PROJECT_FOLDER"
 
   # === 1️⃣ Clone Repo ===
-    log_msg_to "📦 Cloning repo $REPO into $TARGET_DIR" "$GLOBAL" "$WEB_LOG_FILE"
+    log_msg_to "📦 Cloning repo $REPO into $TARGET_DIR" "$WEB_LOG_FILE"
     git clone https://github.com/browserstackCE/$REPO.git "$TARGET_DIR" >> "$WEB_LOG_FILE" 2>&1 || true
 
   cd "$TARGET_DIR" || return 1
 
   # === 2️⃣ Install Dependencies ===
-  log_msg_to "⚙️ Running 'npm install'" "$GLOBAL" "$WEB_LOG_FILE"
+  log_msg_to "⚙️ Running 'npm install'" "$WEB_LOG_FILE"
   npm install >> "$WEB_LOG_FILE" 2>&1 || true
 
 
   # === 4️⃣ Generate Capabilities JSON ===
-  log_msg_to "🧩 Generating browser/OS capabilities" "$GLOBAL" "$WEB_LOG_FILE"
+  log_msg_to "🧩 Generating browser/OS capabilities" "$WEB_LOG_FILE"
   local caps_json
   caps_json=$(generate_web_caps_json "$parallels")
 
@@ -818,9 +816,9 @@ setup_web_nodejs() {
 
   #log_msg_to local flag status
   if [ "$local_flag" = "true" ]; then
-    log_msg_to "✅ BrowserStack Local is ENABLED for this run." "$PRE_RUN_LOG_FILE"
+    log_msg_to "✅ BrowserStack Local is ENABLED for this run." "$WEB_LOG_FILE"
   else
-    log_msg_to "✅ BrowserStack Local is DISABLED for this run." "$PRE_RUN_LOG_FILE"
+    log_msg_to "✅ BrowserStack Local is DISABLED for this run." "$WEB_LOG_FILE"
   fi  
 
   # === 7️⃣ Export BrowserStack Credentials ===
@@ -833,7 +831,7 @@ setup_web_nodejs() {
   npm run test >> "$WEB_LOG_FILE" 2>&1 || true
 
   # === 9️⃣ Wrap Up ===
-  log_msg_to "✅ Web JS setup and test execution completed successfully." "$GLOBAL" "$WEB_LOG_FILE"
+  log_msg_to "✅ Web JS setup and test execution completed successfully." "$WEB_LOG_FILE"
 
   cd "$WORKSPACE_DIR/$PROJECT_FOLDER"
   return 0
@@ -868,7 +866,7 @@ setup_web() {
         ;;
       Python)
         setup_web_python "$local_flag" "$parallels_per_platform" "$WEB_LOG_FILE"
-        if (grep -qiE "BUILD FAILURE" "$WEB_LOG_FILE"); then
+        if (grep -qiE "BUILD FAILURE" "$WEB_LOG_FILE"); then ## needs to change based on pytest output
           success=false
         fi
         ;;
@@ -886,11 +884,8 @@ setup_web() {
     if [ "$success" = true ]; then
       log_msg_to "✅ Web setup succeeded." "$WEB_LOG_FILE"
       break
-    elif [ "$SETUP_FAILURE" = true ]; then
-      log_msg_to "❌ Web test failed due to setup error. Check logs at: $WEB_LOG_FILE" "$WEB_LOG_FILE"
-      break
     else
-      log_msg_to "❌ Web setup ended without success; check $WEB_LOG_FILE for details" "$WEB_LOG_FILE"
+      log_msg_to "❌ Web setup failed. Check $WEB_LOG_FILE for details" "$WEB_LOG_FILE"
       break
     fi
   done
@@ -962,7 +957,7 @@ EOF
 
   APP_PLATFORM="$original_platform"
 
-  log_msg_to "✅ Wrote platform YAMLs to android/browserstack.yml and ios/browserstack.yml" "$PRE_RUN_LOG_FILE"
+  log_msg_to "✅ Wrote platform YAMLs to android/browserstack.yml and ios/browserstack.yml" "$MOBILE_LOG_FILE"
 
   # Replace sample tests in both android and ios with universal, locator-free test
   cat > android/bstack_sample.py <<'PYEOF'
@@ -1016,9 +1011,9 @@ PYEOF
 
   # Log local flag status
   if [ "$local_flag" = "true" ]; then
-    log_msg_to "⚠️ BrowserStack Local is ENABLED for this run."
+    log_msg_to "✅ BrowserStack Local is ENABLED for this run."
   else
-    log_msg_to "⚠️ BrowserStack Local is DISABLED for this run." 
+    log_msg_to "✅ BrowserStack Local is DISABLED for this run." 
   fi  
 
   # Run pytest with BrowserStack SDK from the chosen platform directory
@@ -1047,13 +1042,13 @@ setup_mobile_java() {
   TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
 
     git clone https://github.com/BrowserStackCE/$REPO.git "$TARGET_DIR"
-    log_msg_to "✅ Cloned repository: $REPO into $TARGET_DIR" "$GLOBAL" "$MOBILE_LOG_FILE"
+    log_msg_to "✅ Cloned repository: $REPO into $TARGET_DIR" "$MOBILE_LOG_FILE"
 
   # Update pom.xml → browserstack-java-sdk version to LATEST
   pom_file="$TARGET_DIR/pom.xml"
   if [ -f "$pom_file" ]; then
     sed -i '/<artifactId>browserstack-java-sdk<\/artifactId>/,/<\/dependency>/ s|<version>.*</version>|<version>LATEST</version>|' "$pom_file"
-    log_msg_to "🔧 Updated browserstack-java-sdk version to LATEST in pom.xml" "$GLOBAL" "$MOBILE_LOG_FILE"
+    log_msg_to "🔧 Updated browserstack-java-sdk version to LATEST in pom.xml" "$MOBILE_LOG_FILE"
   fi
 
   cd "$TARGET_DIR" || return 1
@@ -1067,29 +1062,33 @@ setup_mobile_java() {
   testbase_file=$(find src -name "TestBase.java" | head -n 1)
   if [ -f "$testbase_file" ]; then
     sed -i 's/new AppiumDriver(/new AndroidDriver(/g' "$testbase_file"
-    log_msg_to "🔧 Updated driver initialization in $testbase_file to use AndroidDriver" "$GLOBAL" "$MOBILE_LOG_FILE"
+    log_msg_to "🔧 Updated driver initialization in $testbase_file to use AndroidDriver" "$MOBILE_LOG_FILE"
   fi
 
   # YAML config path
   export BROWSERSTACK_CONFIG_FILE="src/test/resources/conf/capabilities/browserstack-parallel.yml"
   platform_yaml=$(generate_mobile_platforms_yaml "$TEAM_PARALLELS_MAX_ALLOWED_MOBILE")
 
-  cat > "$BROWSERSTACK_CONFIG_FILE" <<EOF
-userName: $BROWSERSTACK_USERNAME
-accessKey: $BROWSERSTACK_ACCESS_KEY
-framework: testng
-browserstackLocal: $local_flag
-buildName: browserstack-build-mobile
-projectName: NOW-Mobile-Test
-parallelsPerPlatform: $parallels
-accessibility: true
-percy: true
-app: $APP_URL
-platforms:
-$platform_yaml
-EOF
+  export BSTACK_PARALLELS=$platform_yaml # to be picked up from ENV in repo
+  export BROWSERSTACK_LOCAL=$local_flag # to be picked up from ENV in repo
 
-  log_msg_to "✅ Updated $BROWSERSTACK_CONFIG_FILE with platforms and credentials" "$GLOBAL" "$MOBILE_LOG_FILE"
+##  Remove after repo changes. 
+#   cat > "$BROWSERSTACK_CONFIG_FILE" <<EOF
+# userName: $BROWSERSTACK_USERNAME
+# accessKey: $BROWSERSTACK_ACCESS_KEY
+# framework: testng
+# browserstackLocal: $local_flag
+# buildName: browserstack-build-mobile
+# projectName: NOW-Mobile-Test
+# parallelsPerPlatform: $parallels
+# accessibility: true
+# percy: true
+# app: $APP_URL
+# platforms:
+# $platform_yaml
+# EOF
+
+  log_msg_to "✅ Updated $BROWSERSTACK_CONFIG_FILE with platforms and credentials" "$MOBILE_LOG_FILE"
 
 cat > "/src/test/java/com/browserstack/test/suites/e2e/OrderTest.java" <<EOF
 package com.browserstack.test.suites.e2e;
