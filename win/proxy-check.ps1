@@ -1,5 +1,3 @@
-
-proxy_check.ps1
 #requires -version 5.0
 <#
   BrowserStack Proxy Detection and Validation
