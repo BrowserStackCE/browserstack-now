@@ -64,10 +64,8 @@ $WEB_PLATFORM_TEMPLATES = @(
   "Windows|11|Edge",
   "Windows|11|Chrome",
   "Windows|8|Chrome",
-  #"OS X|Monterey|Safari",
   "OS X|Monterey|Chrome",
   "OS X|Ventura|Chrome",
-  #"OS X|Big Sur|Safari",
   "OS X|Catalina|Firefox"
 )
 
@@ -1076,17 +1074,6 @@ function Setup-Web-Java {
 
   Push-Location $TARGET
   try {
-    # Update Base URL
-    $files = Get-ChildItem -Path $TARGET -Recurse -Filter *.* -File | Where-Object { $_.Extension -match '\.(java|xml|properties)$' }
-    foreach ($file in $files) {
-      $content = Get-Content $file.FullName -Raw -ErrorAction SilentlyContinue
-      if ($content -and $content -match "https://www\.bstackdemo\.com") {
-        $content = $content -replace "https://www\.bstackdemo\.com", $CX_TEST_URL
-        Set-ContentNoBom -Path $file.FullName -Value $content
-        Log-Line "🌐 Updated base URL in $($file.Name)" $GLOBAL_LOG
-      }
-    }
-
     # Check if domain is private
     if (Test-DomainPrivate) {
       $UseLocal = $true
@@ -1197,16 +1184,6 @@ parallelsPerPlatform: $ParallelsPerPlatform
 
     Log-Line "✅ Updated root-level browserstack.yml with platforms and credentials" $GLOBAL_LOG
 
-    # Update base URL in test file
-    $testFile = "tests\bstack-sample-test.py"
-    $testFileFull = Join-Path $TARGET $testFile
-    if (Test-Path $testFileFull) {
-      $c = [System.IO.File]::ReadAllText($testFileFull)
-      $c = $c.Replace("https://bstackdemo.com", $CX_TEST_URL)
-      Set-ContentNoBom -Path $testFileFull -Value $c
-      Log-Line "🌐 Updated base URL in tests/bstack-sample-test.py to: $CX_TEST_URL" $GLOBAL_LOG
-    }
-
     $sdk = Join-Path $venv "Scripts\browserstack-sdk.exe"
     Log-Line "🚀 Running 'browserstack-sdk pytest -s tests/bstack-sample-test.py'. This could take a few minutes. Follow the Automation build here: https://automation.browserstack.com/" $GLOBAL_LOG
     [void](Invoke-External -Exe $sdk -Arguments @('pytest','-s','tests/bstack-sample-test.py') -LogFile $LogFile -WorkingDirectory $TARGET)
@@ -1259,7 +1236,9 @@ function Setup-Web-NodeJS {
 
     $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
-    $env:BROWSERSTACK_LOCAL = if ($UseLocal) { "true" } else { "false" }
+    $localFlagStr = if ($UseLocal) { "true" } else { "false" }
+    $env:BROWSERSTACK_LOCAL = $localFlagStr
+    $env:BSTACK_PARALLELS = $ParallelsPerPlatform
 
     Log-Line "🚀 Running 'npm run test'" $GLOBAL_LOG
     [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $TARGET)
@@ -1422,7 +1401,7 @@ class TestUniversalAppCheck:
 function Setup-Mobile-Java {
   param([bool]$UseLocal, [int]$ParallelsPerPlatform, [string]$LogFile)
 
-  $REPO = "browserstack-examples-appium-testng"
+  $REPO = "now-testng-appium-app-browserstack"
   $TARGET = Join-Path $GLOBAL_DIR $REPO
 
   New-Item -ItemType Directory -Path $GLOBAL_DIR -Force | Out-Null
@@ -1433,47 +1412,30 @@ function Setup-Mobile-Java {
   Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $MOBILE_LOG
   Log-Line "✅ Cloned repository: $REPO into $TARGET" $GLOBAL_LOG
 
-  # Update pom.xml sdk version to LATEST (matches mac script)
-  $pom = Join-Path $TARGET "pom.xml"
-  if (Test-Path $pom) {
-    $pomContent = Get-Content $pom -Raw
-    $pomContent = $pomContent -replace '(?s)(<artifactId>browserstack-java-sdk</artifactId>.*?<version>)(.*?)(</version>)', '$1LATEST$3'
-    $pomContent | Set-Content $pom
-    Log-Line "🔧 Updated browserstack-java-sdk version to LATEST in pom.xml" $GLOBAL_LOG
-  }
-
   Push-Location $TARGET
   try {
+    # Navigate to platform-specific directory
+    if ($APP_PLATFORM -eq "all" -or $APP_PLATFORM -eq "android") {
+      Set-Location "android\testng-examples"
+    } else {
+      Set-Location "ios\testng-examples"
+    }
+    
     $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
 
-    # Update driver init to AndroidDriver (parity with bash)
-    $testBase = Get-ChildItem -Path "src" -Recurse -Filter "TestBase.java" -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($testBase) {
-      (Get-Content $testBase.FullName -Raw) -replace 'new AppiumDriver\(', 'new AndroidDriver(' | Set-Content $testBase.FullName
-      Log-Line "🔧 Updated driver initialization in $($testBase.FullName) to use AndroidDriver" $GLOBAL_LOG
-    }
-
-    $env:BROWSERSTACK_CONFIG_FILE = "src/test/resources/conf/capabilities/browserstack-parallel.yml"
+    # YAML config path
+    $env:BROWSERSTACK_CONFIG_FILE = ".\browserstack.yml"
     $platforms = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
-@"
-userName: $BROWSERSTACK_USERNAME
-accessKey: $BROWSERSTACK_ACCESS_KEY
-framework: testng
-browserstackLocal: $localFlag
-buildName: browserstack-build-mobile
-projectName: NOW-Mobile-Test
-parallelsPerPlatform: $ParallelsPerPlatform
-accessibility: true
-percy: true
+    # Append to existing YAML (repo has base config)
+    $yamlAppend = @"
 app: $APP_URL
 platforms:
 $platforms
-"@ | Set-Content $env:BROWSERSTACK_CONFIG_FILE
-
-    Log-Line "✅ Updated $env:BROWSERSTACK_CONFIG_FILE with platforms and credentials" $GLOBAL_LOG
+"@
+    Add-Content -Path $env:BROWSERSTACK_CONFIG_FILE -Value $yamlAppend
 
     # Check if domain is private
     if (Test-DomainPrivate) {
@@ -1487,12 +1449,16 @@ $platforms
       Log-Line "✅ BrowserStack Local is DISABLED for this run." $GLOBAL_LOG
     }
 
-    $mvn = Get-MavenCommand -RepoDir $TARGET
-    Log-Line "⚙️ Running '$mvn install -DskipTests'" $GLOBAL_LOG
-    [void](Invoke-External -Exe $mvn -Arguments @("install","-DskipTests") -LogFile $LogFile -WorkingDirectory $TARGET)
+    $mvn = Get-MavenCommand -RepoDir (Get-Location).Path
+    Log-Line "⚙️ Running '$mvn clean'" $GLOBAL_LOG
+    $cleanExit = Invoke-External -Exe $mvn -Arguments @("clean") -LogFile $LogFile -WorkingDirectory (Get-Location).Path
+    if ($cleanExit -ne 0) {
+      Log-Line "❌ 'mvn clean' FAILED. See $LogFile for details." $GLOBAL_LOG
+      throw "Maven clean failed"
+    }
 
-    Log-Line "🚀 Running '$mvn clean test -P bstack-parallel -Dtest=OrderTest'" $GLOBAL_LOG
-    [void](Invoke-External -Exe $mvn -Arguments @("clean","test","-P","bstack-parallel","-Dtest=OrderTest") -LogFile $LogFile -WorkingDirectory $TARGET)
+    Log-Line "🚀 Running '$mvn test -P sample-test'. This could take a few minutes. Follow the Automation build here: https://automation.browserstack.com/" $GLOBAL_LOG
+    [void](Invoke-External -Exe $mvn -Arguments @("test","-P","sample-test") -LogFile $LogFile -WorkingDirectory (Get-Location).Path)
 
   } finally {
     Pop-Location
@@ -1514,7 +1480,7 @@ function Setup-Mobile-NodeJS {
     Remove-Item -Path $TARGET -Recurse -Force
   }
 
-  Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Branch "sdk" -Target $TARGET -LogFile $MOBILE_LOG
+  Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $MOBILE_LOG
 
   $testDir = Join-Path $TARGET "test"
   Push-Location $testDir
@@ -1744,7 +1710,7 @@ function Run-Setup {
   }
   Log-Line "========================================" $GLOBAL_LOG
   Log-Line "🎉 All requested tests have been executed!" $GLOBAL_LOG
-  Log-Line "🔗 View results: https://automate.browserstack.com/ (Web) | https://app-automate.browserstack.com/ (Mobile)" $GLOBAL_LOG
+  Log-Line "🔗 View results: https://automation.browserstack.com/" $GLOBAL_LOG
   Log-Line "========================================" $GLOBAL_LOG
 }
 
@@ -1758,6 +1724,25 @@ try {
   Fetch-Plan-Details
 
   Log-Line "Plan summary: WEB_PLAN_FETCHED=$WEB_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_WEB), MOBILE_PLAN_FETCHED=$MOBILE_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" $GLOBAL_LOG
+  
+  # Check for proxy configuration
+  Log-Line "ℹ️ Checking proxy in environment" $GLOBAL_LOG
+  $proxyCheckScript = Join-Path $PSScriptRoot "proxy-check.ps1"
+  if (Test-Path $proxyCheckScript) {
+    try {
+      & $proxyCheckScript -BrowserStackUsername $BROWSERSTACK_USERNAME -BrowserStackAccessKey $BROWSERSTACK_ACCESS_KEY
+      if ($env:PROXY_HOST -and $env:PROXY_PORT) {
+        Log-Line "✅ Proxy configured: $env:PROXY_HOST:$env:PROXY_PORT" $GLOBAL_LOG
+      } else {
+        Log-Line "ℹ️ No proxy configured or proxy check failed" $GLOBAL_LOG
+      }
+    } catch {
+      Log-Line "⚠️ Proxy check script failed: $($_.Exception.Message)" $GLOBAL_LOG
+    }
+  } else {
+    Log-Line "⚠️ Proxy check script not found at: $proxyCheckScript" $GLOBAL_LOG
+  }
+  
   Run-Setup
 } catch {
   Log-Line " " $GLOBAL_LOG
