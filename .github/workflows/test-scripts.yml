@@ -16,6 +16,7 @@ jobs:
     name: Test mac/run.sh on macOS
     runs-on: macos-latest
     timeout-minutes: 30
+    environment: BrowserStack
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -150,6 +151,7 @@ jobs:
   test-windows:
     name: Test win/run.ps1 on Windows
     runs-on: windows-latest
+    environment: BrowserStack
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -278,6 +280,7 @@ jobs:
     name: Test mac/run.sh on Linux
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    environment: BrowserStack
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
