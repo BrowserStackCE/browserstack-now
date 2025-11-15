@@ -30,12 +30,12 @@ log_file=""
 if [[ "$RUN_MODE" == *"--silent"* || "$RUN_MODE" == *"--debug"* ]]; then
     TEST_TYPE=$TT
     TECH_STACK=$TSTACK
-    log_file="$LOG_DIR/${TEST_TYPE:unknown}_run_result.log"
+    log_file="$LOG_DIR/${TEST_TYPE:unknown}_${TECH_STACK:unknown}_run_result.log"
     log_info "Run Mode: ${RUN_MODE:-default}"
 else
     get_test_type $RUN_MODE
     get_tech_stack $RUN_MODE
-    log_file="$LOG_DIR/${TEST_TYPE:unknown}_run_result.log"
+    log_file="$LOG_DIR/${TEST_TYPE:unknown}_${TECH_STACK:unknown}_run_result.log"
     perform_next_steps_based_on_test_type $TEST_TYPE
 fi
 

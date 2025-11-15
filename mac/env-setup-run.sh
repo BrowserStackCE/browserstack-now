@@ -94,9 +94,9 @@ platforms:
 $platform_yaml
 EOF
     
-    export BSTACK_PARALLELS=$parallels # to be picked up from ENV in repo
+    export BSTACK_PARALLELS=$parallels 
     export BSTACK_PLATFORMS=$platform_yaml
-    export BROWSERSTACK_LOCAL=$local_flag # to be picked up from ENV in repo
+    export BROWSERSTACK_LOCAL=$local_flag 
 
     # === 6️⃣ Build and Run ===
     log_msg_to "⚙️ Running 'mvn install -DskipTests'"
@@ -156,6 +156,7 @@ EOF
     
     export BSTACK_PARALLELS=$parallels
     export BROWSERSTACK_LOCAL=true
+    export BSTACK_PLATFORMS=$platform_yaml
     
     
     # Run Maven install first
@@ -204,7 +205,7 @@ setup_web_python() {
     # Update YAML at root level (browserstack.yml)
     export BROWSERSTACK_CONFIG_FILE="./src/conf/browserstack_parallel.yml"
     platform_yaml=$(generate_web_platforms "$TEAM_PARALLELS_MAX_ALLOWED_WEB" "yaml")
-    
+    export BSTACK_PLATFORMS=$platform_yaml
       cat >> "$BROWSERSTACK_CONFIG_FILE" <<EOF
 
 platforms:
@@ -217,6 +218,7 @@ EOF
     
     export BSTACK_PARALLELS=1
     export BROWSERSTACK_LOCAL=$local_flag
+    export BSTACK_PLATFORMS=$platform_yaml
     
     report_bstack_local_status "$local_flag"
 
@@ -281,6 +283,7 @@ EOF
         run_dir="ios"
     fi
     
+    export BSTACK_PLATFORMS=$platform_yaml
     export BROWSERSTACK_LOCAL=true
 
     log_section "Validate Environment Variables"

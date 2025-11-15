@@ -20,7 +20,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
       - name: Set up Bash
         run: |
           echo "Bash version:"
@@ -166,7 +169,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
       - name: Check PowerShell version
         run: |
           $PSVersionTable.PSVersion
@@ -306,7 +312,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
       - name: Set up Bash
         run: |
           echo "Bash version:"
@@ -430,7 +439,7 @@ jobs:
         with:
           name: browserstack-logs-linux
           path: |
-            ~/.browserstack/NOW/logs/
+            $HOME/.browserstack/NOW/logs/
             /tmp/run_test_*.log
           retention-days: 30
           if-no-files-found: ignore
