@@ -37,21 +37,18 @@ setup_environment() {
             "setup_${setup_type}_java" "$local_flag" "$parallels_per_platform" "$NOW_RUN_LOG_FILE"
             log_section "✅ Results"
             run_status=$(identify_run_status_java "$NOW_RUN_LOG_FILE")
-            log_info "Fetching results..."
             check_return_value $? "$NOW_RUN_LOG_FILE" "${setup_type} setup succeeded." "❌ ${setup_type} setup failed. Check $log_file for details"
         ;;
         python)
             "setup_${setup_type}_python" "$local_flag" "$parallels_per_platform" "$NOW_RUN_LOG_FILE"
             log_section "✅ Results"
             run_status=$(identify_run_status_python "$NOW_RUN_LOG_FILE")
-            log_info "Fetching results..."
             check_return_value $? "$NOW_RUN_LOG_FILE" "${setup_type} setup succeeded." "❌ ${setup_type} setup failed. Check $log_file for details"
         ;;
         nodejs)
             "setup_${setup_type}_nodejs" "$local_flag" "$parallels_per_platform" "$NOW_RUN_LOG_FILE"
             log_section "✅ Results"
             run_status=$(identify_run_status_nodejs "$NOW_RUN_LOG_FILE")
-            log_info "Fetching results..."
             check_return_value $? "$NOW_RUN_LOG_FILE" "${setup_type} setup succeeded." "❌ ${setup_type} setup failed. Check $log_file for details"
         ;;
         *)
@@ -100,11 +97,21 @@ EOF
     export BSTACK_PARALLELS=$parallels # to be picked up from ENV in repo
     export BSTACK_PLATFORMS=$platform_yaml
     export BROWSERSTACK_LOCAL=$local_flag # to be picked up from ENV in repo
+
     # === 6️⃣ Build and Run ===
     log_msg_to "⚙️ Running 'mvn install -DskipTests'"
     log_info "Installing dependencies"
     mvn install -DskipTests >> $NOW_RUN_LOG_FILE 2>&1 || return 1
     log_success "Dependencies installed"
+
+
+    log_section "Validate Environment Variables"
+    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
+    log_info "Web Application Endpoint: $CX_TEST_URL"
+    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
+    log_info "Parallels per platform: $BSTACK_PARALLELS"
+    log_info "Platforms: \n$BSTACK_PLATFORMS"
+    
     
     print_tests_running_log_section "mvn test -P sample-test"
     log_msg_to "🚀 Running 'mvn test -P sample-test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
@@ -159,6 +166,13 @@ EOF
         return 1 # Fail the function if clean fails
     fi
     log_success "Dependencies installed"
+
+    log_section "Validate Environment Variables"
+    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
+    log_info "Native App Endpoint: $BROWSERSTACK_APP"
+    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
+    log_info "Parallels per platform: $BSTACK_PARALLELS"
+    log_info "Platforms: \n$BSTACK_PLATFORMS"
     
     log_msg_to "🚀 Running 'mvn test -P sample-test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
     print_tests_running_log_section "mvn test -P sample-test"
@@ -205,6 +219,13 @@ EOF
     export BROWSERSTACK_LOCAL=$local_flag
     
     report_bstack_local_status "$local_flag"
+
+    log_section "Validate Environment Variables"
+    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
+    log_info "Web Application Endpoint: $CX_TEST_URL"
+    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
+    log_info "Parallels per platform: $BSTACK_PARALLELS"
+    log_info "Platforms: \n$BSTACK_PLATFORMS"
     
     
     print_tests_running_log_section "browserstack-sdk pytest -s src/test/suites/*.py --browserstack.config ./src/conf/browserstack_parallel.yml"
@@ -261,6 +282,13 @@ EOF
     fi
     
     export BROWSERSTACK_LOCAL=true
+
+    log_section "Validate Environment Variables"
+    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
+    log_info "Native App Endpoint: $BROWSERSTACK_APP"
+    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
+    log_info "Parallels per platform: $BSTACK_PARALLELS"
+    log_info "Platforms: \n$BSTACK_PLATFORMS"
     
     print_tests_running_log_section "browserstack-sdk pytest -s bstack-sample.py"
     # Run pytest with BrowserStack SDK from the chosen platform directory
@@ -282,7 +310,7 @@ setup_web_nodejs() {
     TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
     mkdir -p "$WORKSPACE_DIR/$PROJECT_FOLDER"
     
-    clone_repository $REPO $TARGET_DIR
+    clone_repository $REPO $TARGET_DIR "test"
 
     
     # === 2️⃣ Install Dependencies ===
@@ -304,8 +332,13 @@ setup_web_nodejs() {
     export BROWSERSTACK_LOCAL=$local_flag
     
     report_bstack_local_status "$local_flag"
-    
-    
+
+    log_section "Validate Environment Variables"
+    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
+    log_info "Web Application Endpoint: $CX_TEST_URL"
+    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
+    log_info "Parallels per platform: $BSTACK_PARALLELS"
+    log_info "Platforms: \n$BSTACK_CAPS_JSON"    
     
     # === 8️⃣ Run Tests ===
     log_msg_to "🚀 Running 'npm run test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
@@ -330,7 +363,7 @@ setup_app_nodejs() {
     mkdir -p "$WORKSPACE_DIR/$PROJECT_FOLDER"
     REPO="now-webdriverio-appium-app-browserstack"
     TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
-    $TEST_FOLDER="/test"
+    TEST_FOLDER="/test"
     
     clone_repository $REPO $TARGET_DIR $TEST_FOLDER
     
@@ -350,6 +383,13 @@ setup_app_nodejs() {
     export BSTACK_PARALLELS=$parallels
     export BROWSERSTACK_LOCAL=true
     export BROWSERSTACK_APP=$app_url
+
+    log_section "Validate Environment Variables"
+    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
+    log_info "Native App Endpoint: $BROWSERSTACK_APP"
+    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
+    log_info "Parallels per platform: $BSTACK_PARALLELS"
+    log_info "Platforms: \n$BSTACK_CAPS_JSON"
     
     # === 8️⃣ Run Tests ===
     log_msg_to "🚀 Running 'npm run test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"

@@ -3,6 +3,8 @@
 # ===== Credential Management =====
 get_browserstack_credentials() {
     local run_mode=$1
+    local username=""
+    local access_key=""
     if [[ "$RUN_MODE" == *"--silent"* || "$RUN_MODE" == *"--debug"* ]]; then
         username="$BROWSERSTACK_USERNAME"
         access_key="$BROWSERSTACK_ACCESS_KEY"
@@ -27,7 +29,6 @@ get_browserstack_credentials() {
         export BROWSERSTACK_ACCESS_KEY=$access_key
         log_info "BrowserStack credentials captured from user: $username"
     fi
-    
     
     return 0
 }
