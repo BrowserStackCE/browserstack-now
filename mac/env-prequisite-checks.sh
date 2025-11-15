@@ -26,7 +26,7 @@ parse_proxy() {
 
 set_proxy_in_env() {
     log_section "🌐 Network & Proxy Validation"
-    base64_encoded_creds=$(printf "%s" $BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY | base64 | tr -d '\n')
+    base64_encoded_creds=$(printf "%s" "$BROWSERSTACK_USERNAME":"$BROWSERSTACK_ACCESS_KEY" | base64 | tr -d '\n')
     
     
     # If no proxy configured, exit early
@@ -34,7 +34,7 @@ set_proxy_in_env() {
         log_warn "No proxy found. Using direct connection."
         export PROXY_HOST=""
         export PROXY_PORT=""
-        return 0 2>/dev/null || exit 0
+        return 0 2>/dev/null
     fi
     
     log_msg_to "Proxy detected: $PROXY"

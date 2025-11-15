@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# shellcheck source=/dev/null
 source "$(dirname "$0")/device-machine-allocation.sh"
 
 # # ===== Global Variables =====
@@ -41,20 +42,21 @@ log_msg_to() {
     # write to dest file if provided
     if [ -n "$dest_file" ]; then
         mkdir -p "$(dirname "$dest_file")"
-        echo "$line" >> $NOW_RUN_LOG_FILE
+        echo "$line" >> "$NOW_RUN_LOG_FILE"
     fi
 }
 
 # Spinner function for long-running processes
 show_spinner() {
     local pid=$1
+    # shellcheck disable=SC1003
     local spin='|/-\'
     local i=0
     local ts
     ts="$(date +"%Y-%m-%d %H:%M:%S")"
     while kill -0 "$pid" 2>/dev/null; do
         i=$(( (i+1) %4 ))
-        printf "\r⏳ Processing... ${spin:$i:1}"
+        printf "\r⏳ Processing... %s" "${spin:$i:1}"
         sleep 0.1
     done
     echo ""
@@ -119,7 +121,7 @@ upload_sample_app() {
     log_msg_to "Exported BROWSERSTACK_APP=$BROWSERSTACK_APP"
     
     if [ -z "$app_url" ]; then
-        log_msg_to "❌ Upload failed. Response: $UPLOAD_RESPONSE"
+        log_msg_to "❌ Upload failed. Response: $upload_response"
         return 1
     fi
     
@@ -292,7 +294,7 @@ identify_run_status_java() {
     skipped=$(echo "$line" | grep -m 1 -oE "Skipped: [0-9]+" | awk '{print $2}')
     
     # Calculate passed tests
-    passed=$(( $tests_run - ($failures + $errors + $skipped) ))
+    passed=$(( tests_run-(failures+errors+skipped) ))
     
     # Check condition
     if (( passed > 0 )); then
@@ -302,8 +304,6 @@ identify_run_status_java() {
         log_error "Error: No tests passed (Tests run: $tests_run, Failures: $failures, Errors: $errors, Skipped: $skipped)"
         return 1
     fi
-    
-    return 1
 }
 
 

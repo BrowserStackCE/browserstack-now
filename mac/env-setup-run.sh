@@ -2,7 +2,7 @@
 # shellcheck shell=bash
 
 setup_environment() {
-    local setup_type=$1  # "web" or "mobile"
+    local setup_type=$1  
     local tech_stack=$2
     local max_parallels
     
@@ -17,7 +17,7 @@ setup_environment() {
         max_parallels=$TEAM_PARALLELS_MAX_ALLOWED_MOBILE
     fi
     
-    log_msg_to "Starting ${setup_type} setup for $TECH_STACK" "$NOW_RUN_LOG_FILE"
+    log_msg_to "Starting ${setup_type} setup for " "$tech_stack" "$NOW_RUN_LOG_FILE"
     
     local local_flag=false
     
@@ -134,7 +134,7 @@ setup_app_java() {
     local app_url=$BROWSERSTACK_APP
     log_msg_to "APP_PLATFORM: $APP_PLATFORM" >> "$NOW_RUN_LOG_FILE" 2>&1
 
-    clone_repository $REPO $TARGET_DIR
+    clone_repository "$REPO" "$TARGET_DIR"
     
     if [[ "$APP_PLATFORM" == "all" || "$APP_PLATFORM" == "android" ]]; then
         cd "android/testng-examples" || return 1
@@ -145,7 +145,7 @@ setup_app_java() {
     
     # YAML config path
     export BROWSERSTACK_CONFIG_FILE="./browserstack.yml"
-    platform_yaml=$(generate_mobile_platforms $TEAM_PARALLELS_MAX_ALLOWED_MOBILE "yaml")
+    platform_yaml=$(generate_mobile_platforms "$TEAM_PARALLELS_MAX_ALLOWED_MOBILE" "yaml")
     
     cat >> "$BROWSERSTACK_CONFIG_FILE" <<EOF
 app: ${app_url}
@@ -182,7 +182,7 @@ EOF
     show_spinner "$cmd_pid"
     wait "$cmd_pid"
     
-    cd "$WORKSPACE_DIR/$PROJECT_FOLDER"
+    cd "$WORKSPACE_DIR/$PROJECT_FOLDER" || return 1
     return 0
 }
 
@@ -232,14 +232,14 @@ EOF
     print_tests_running_log_section "browserstack-sdk pytest -s src/test/suites/*.py --browserstack.config ./src/conf/browserstack_parallel.yml"
     log_msg_to "🚀 Running 'browserstack-sdk pytest -s tests/bstack-sample-test.py'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
     # Run tests
-    browserstack-sdk pytest -s src/test/suites/*.py --browserstack.config ./src/conf/browserstack_parallel.yml >> $NOW_RUN_LOG_FILE 2>&1
+    browserstack-sdk pytest -s src/test/suites/*.py --browserstack.config ./src/conf/browserstack_parallel.yml >> "$NOW_RUN_LOG_FILE" 2>&1
     # &
     # cmd_pid=$!|| return 1
     
     # show_spinner "$cmd_pid"
     # wait "$cmd_pid"
     
-    cd "$WORKSPACE_DIR/$PROJECT_FOLDER"
+    cd "$WORKSPACE_DIR/$PROJECT_FOLDER" || return 1
     return 0
 }
 
@@ -251,7 +251,7 @@ setup_app_python() {
     REPO="now-pytest-appium-app-browserstack"
     TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
     
-    clone_repository $REPO $TARGET_DIR
+    clone_repository "$REPO" "$TARGET_DIR"
     
     detect_setup_python_env
     
@@ -259,16 +259,12 @@ setup_app_python() {
     pip install -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
     log_success "Dependencies installed"
     
-    
-    # Prepare platform-specific YAMLs in android/ and ios/
-    local original_platform="$APP_PLATFORM"
-    
     local app_url=$BROWSERSTACK_APP
     local platform_yaml
     
     export BSTACK_PARALLELS=1
     export BROWSERSTACK_CONFIG_FILE="./android/browserstack.yml"
-    platform_yaml=$(generate_mobile_platforms $TEAM_PARALLELS_MAX_ALLOWED_MOBILE "yaml")
+    platform_yaml=$(generate_mobile_platforms "$TEAM_PARALLELS_MAX_ALLOWED_MOBILE" "yaml")
     
     cat >> "$BROWSERSTACK_CONFIG_FILE" <<EOF
 
@@ -312,13 +308,13 @@ setup_web_nodejs() {
     TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
     mkdir -p "$WORKSPACE_DIR/$PROJECT_FOLDER"
     
-    clone_repository $REPO $TARGET_DIR
+    clone_repository "$REPO" "$TARGET_DIR"
 
     
     # === 2️⃣ Install Dependencies ===
     log_msg_to "⚙️ Running 'npm install'"
     log_info "Installing dependencies"
-    npm install >> $NOW_RUN_LOG_FILE 2>&1 || return 1
+    npm install >> "$NOW_RUN_LOG_FILE" 2>&1 || return 1
     log_success "Dependencies installed"
     
     local caps_json=""
@@ -345,7 +341,7 @@ setup_web_nodejs() {
     # === 8️⃣ Run Tests ===
     log_msg_to "🚀 Running 'npm run test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
     print_tests_running_log_section "npm run test"
-    npm run test >> $NOW_RUN_LOG_FILE 2>&1 || return 1 &
+    npm run test >> "$NOW_RUN_LOG_FILE" 2>&1 || return 1 &
     cmd_pid=$!|| return 1
     
     show_spinner "$cmd_pid"
@@ -367,15 +363,15 @@ setup_app_nodejs() {
     TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
     TEST_FOLDER="/test"
     
-    clone_repository $REPO $TARGET_DIR $TEST_FOLDER
+    clone_repository $REPO "$TARGET_DIR" "$TEST_FOLDER"
     
     # === 2️⃣ Install Dependencies ===
     log_info "Installing dependencies"
     log_msg_to "⚙️ Running 'npm install'"
-    npm install >> $NOW_RUN_LOG_FILE 2>&1 || return 1
+    npm install >> "$NOW_RUN_LOG_FILE" 2>&1 || return 1
     log_success "Dependencies installed"
     
-    caps_json=$(generate_mobile_platforms $TEAM_PARALLELS_MAX_ALLOWED_MOBILE "json")
+    caps_json=$(generate_mobile_platforms "$TEAM_PARALLELS_MAX_ALLOWED_MOBILE" "json")
     
     
     export BSTACK_CAPS_JSON=$caps_json
@@ -444,7 +440,7 @@ run_setup_wrapper() {
             fi
         ;;
         *)
-            log_msg_to "❌ Invalid TEST_TYPE: $TEST_TYPE"
+            log_msg_to "❌ Invalid TEST_TYPE: $test_type"
             exit 1
         ;;
     esac

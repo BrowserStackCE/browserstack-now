@@ -18,7 +18,7 @@ source "$(dirname "$0")/env-prequisite-checks.sh"
 run_setup() {
     local test_type=$1
     local tech_stack=$2
-    setup_environment $test_type $tech_stack
+    setup_environment "$test_type" "$tech_stack"
 }
 
 # ===== Main flow (baseline steps then run) =====
