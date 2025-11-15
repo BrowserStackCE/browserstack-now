@@ -1,4 +1,6 @@
-name: Test Scripts - Mac and Windows
+name: Test Scripts - Mac, Linux and Windows
+permissions:
+  contents: read
 
 on:
   schedule:
