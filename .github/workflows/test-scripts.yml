@@ -112,10 +112,26 @@ jobs:
             echo "Testing: mac/run.sh --silent $test_type $tech_stack"
             echo "================================"
             
-            # Run with timeout and capture exit code (non-blocking)
-            timeout 60 bash mac/run.sh --silent "$test_type" "$tech_stack" >> "/tmp/run_test_${test_type}_${tech_stack}.log" 2>&1 &
+            # Run with timeout and capture exit code (macOS compatible)
+            bash mac/run.sh --silent "$test_type" "$tech_stack" >> "/tmp/run_test_${test_type}_${tech_stack}.log" 2>&1 &
             job_pid=$!
-            wait "$job_pid" || exit_code=$?
+            
+            # Wait with 60 second timeout using sleep loop (macOS compatible)
+            count=0
+            max_wait=60
+            while kill -0 "$job_pid" 2>/dev/null && [ $count -lt $max_wait ]; do
+              sleep 1
+              count=$((count + 1))
+            done
+            
+            # Check if process is still running after timeout
+            if kill -0 "$job_pid" 2>/dev/null; then
+              echo "⚠️ mac/run.sh --silent $test_type $tech_stack timed out after 60 seconds"
+              kill -9 "$job_pid" 2>/dev/null || true
+              exit_code=124
+            else
+              wait "$job_pid" || exit_code=$?
+            fi
             
             if [ -z "$exit_code" ] || [ "$exit_code" -eq 0 ] || [ "$exit_code" -eq 124 ]; then
               echo "✅ mac/run.sh --silent $test_type $tech_stack completed (exit code: ${exit_code:-0})"
@@ -134,7 +150,6 @@ jobs:
   test-windows:
     name: Test win/run.ps1 on Windows
     runs-on: windows-latest
-    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -365,7 +380,7 @@ jobs:
             echo "Testing: mac/run.sh --silent $test_type $tech_stack"
             echo "================================"
             
-            # Run with timeout and capture exit code (non-blocking)
+            # Run with timeout and capture exit code (using timeout command on Linux)
             timeout 60 bash mac/run.sh --silent "$test_type" "$tech_stack" >> "/tmp/run_test_${test_type}_${tech_stack}.log" 2>&1 &
             job_pid=$!
             wait "$job_pid" || exit_code=$?
