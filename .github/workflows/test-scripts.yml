@@ -157,7 +157,7 @@ jobs:
         with:
           name: browserstack-logs-macos
           path: |
-            /Users/runner/.browserstack/NOW/logs/
+            ${{ github.workspace }}/.browserstack/NOW/logs/
             /tmp/run_test_*.log
           retention-days: 30
 
@@ -439,7 +439,7 @@ jobs:
         with:
           name: browserstack-logs-linux
           path: |
-            /home/runner/.browserstack/NOW/logs/
+            ${{ github.workspace }}/.browserstack/NOW/logs/
             /tmp/run_test_*.log
           retention-days: 30
           if-no-files-found: ignore
