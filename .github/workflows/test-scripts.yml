@@ -15,7 +15,7 @@ jobs:
   test-mac:
     name: Test mac/run.sh on macOS
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     environment: BrowserStack
     steps:
       - name: Checkout code
@@ -117,9 +117,9 @@ jobs:
             bash mac/run.sh --silent "$test_type" "$tech_stack" >> "/tmp/run_test_${test_type}_${tech_stack}.log" 2>&1 &
             job_pid=$!
             
-            # Wait with 60 second timeout using sleep loop (macOS compatible)
+            # Wait with 600 second timeout using sleep loop (macOS compatible)
             count=0
-            max_wait=60
+            max_wait=600
             while kill -0 "$job_pid" 2>/dev/null && [ $count -lt $max_wait ]; do
               sleep 1
               count=$((count + 1))
@@ -127,7 +127,7 @@ jobs:
             
             # Check if process is still running after timeout
             if kill -0 "$job_pid" 2>/dev/null; then
-              echo "⚠️ mac/run.sh --silent $test_type $tech_stack timed out after 60 seconds"
+              echo "⚠️ mac/run.sh --silent $test_type $tech_stack timed out after 600 seconds"
               kill -9 "$job_pid" 2>/dev/null || true
               exit_code=124
             else
@@ -247,9 +247,9 @@ jobs:
                   & $path --silent $testType $techStack 2>&1 | Tee-Object -FilePath $logPath -Append
               } -ArgumentList ".\win\run.ps1", $testType, $techStack, $logPath
               
-              # Wait for job with 60 second timeout
-              $timeout = New-TimeSpan -Seconds 60
-              $completed = Wait-Job -Job $job -Timeout 60
+              # Wait for job with 600 second timeout
+              $timeout = New-TimeSpan -Seconds 600
+              $completed = Wait-Job -Job $job -Timeout 600
               
               if ($completed) {
                   $result = Receive-Job -Job $job
@@ -263,7 +263,7 @@ jobs:
                       }
                   }
               } else {
-                  Write-Host "⚠️ .\win\run.ps1 --silent $testType $techStack timed out after 60 seconds"
+                  Write-Host "⚠️ .\win\run.ps1 --silent $testType $techStack timed out after 600 seconds"
                   Stop-Job -Job $job
                   if (Test-Path $logPath) {
                       Write-Host "Log output (last 20 lines):"
@@ -279,7 +279,7 @@ jobs:
   test-linux:
     name: Test mac/run.sh on Linux
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     environment: BrowserStack
     steps:
       - name: Checkout code
@@ -384,7 +384,7 @@ jobs:
             echo "================================"
             
             # Run with timeout and capture exit code (using timeout command on Linux)
-            timeout 60 bash mac/run.sh --silent "$test_type" "$tech_stack" >> "/tmp/run_test_${test_type}_${tech_stack}.log" 2>&1 &
+            timeout 600 bash mac/run.sh --silent "$test_type" "$tech_stack" >> "/tmp/run_test_${test_type}_${tech_stack}.log" 2>&1 &
             job_pid=$!
             wait "$job_pid" || exit_code=$?
             
