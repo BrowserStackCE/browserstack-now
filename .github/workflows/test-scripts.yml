@@ -15,7 +15,7 @@ jobs:
   test-mac:
     name: Test mac/run.sh on macOS
     runs-on: macos-latest
-    timeout-minutes: 60
+    timeout-minutes: 15
     environment: BrowserStack
     steps:
       - name: Checkout code
@@ -148,9 +148,20 @@ jobs:
           
           echo "✅ All integration tests completed"
 
+      - name: Upload BrowserStack Logs as Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserstack-logs-macos
+          path: |
+            ~/.browserstack/NOW/logs/
+            /tmp/run_test_*.log
+          retention-days: 30
+
   test-windows:
     name: Test win/run.ps1 on Windows
     runs-on: windows-latest
+    timeout-minutes: 15
     environment: BrowserStack
     steps:
       - name: Checkout code
@@ -276,10 +287,21 @@ jobs:
           
           Write-Host "✅ All integration tests completed"
 
+      - name: Upload BrowserStack Logs as Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserstack-logs-windows
+          path: |
+            C:\Users\runneradmin\.browserstack\NOW\logs\
+            C:\Temp\run_test_*.log
+          retention-days: 30
+          if-no-files-found: ignore
+
   test-linux:
     name: Test mac/run.sh on Linux
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 15
     environment: BrowserStack
     steps:
       - name: Checkout code
@@ -401,6 +423,17 @@ jobs:
           done
           
           echo "✅ All integration tests completed"
+
+      - name: Upload BrowserStack Logs as Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserstack-logs-linux
+          path: |
+            ~/.browserstack/NOW/logs/
+            /tmp/run_test_*.log
+          retention-days: 30
+          if-no-files-found: ignore
 
   test-summary:
     name: Test Summary

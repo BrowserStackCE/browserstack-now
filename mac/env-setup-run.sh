@@ -310,7 +310,7 @@ setup_web_nodejs() {
     TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
     mkdir -p "$WORKSPACE_DIR/$PROJECT_FOLDER"
     
-    clone_repository $REPO $TARGET_DIR "test"
+    clone_repository $REPO $TARGET_DIR
 
     
     # === 2️⃣ Install Dependencies ===
