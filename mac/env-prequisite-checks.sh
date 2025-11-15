@@ -17,7 +17,7 @@ parse_proxy() {
     p="${p#http://}"
     p="${p#https://}"
     # strip credentials if any user:pass@
-    p="${p#*[@]}"
+    p="${p#*@}"
     
     # extract host and port
     export PROXY_HOST="${p%%:*}"

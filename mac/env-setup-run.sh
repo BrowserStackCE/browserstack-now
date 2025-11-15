@@ -1,9 +1,10 @@
-# Common setup function for both web and mobile
+#!/usr/bin/env bash
+# shellcheck shell=bash
+
 setup_environment() {
     local setup_type=$1  # "web" or "mobile"
     local tech_stack=$2
     local max_parallels
-    local setup_function
     
     log_section "📦 Project Setup"
     
@@ -19,8 +20,6 @@ setup_environment() {
     log_msg_to "Starting ${setup_type} setup for $TECH_STACK" "$NOW_RUN_LOG_FILE"
     
     local local_flag=false
-    local attempt=1
-    local run_status=1
     
     # Calculate parallels
     local total_parallels
@@ -36,19 +35,19 @@ setup_environment() {
         java)
             "setup_${setup_type}_java" "$local_flag" "$parallels_per_platform" "$NOW_RUN_LOG_FILE"
             log_section "✅ Results"
-            run_status=$(identify_run_status_java "$NOW_RUN_LOG_FILE")
+            identify_run_status_java "$NOW_RUN_LOG_FILE"
             check_return_value $? "$NOW_RUN_LOG_FILE" "${setup_type} setup succeeded." "❌ ${setup_type} setup failed. Check $log_file for details"
         ;;
         python)
             "setup_${setup_type}_python" "$local_flag" "$parallels_per_platform" "$NOW_RUN_LOG_FILE"
             log_section "✅ Results"
-            run_status=$(identify_run_status_python "$NOW_RUN_LOG_FILE")
+            identify_run_status_python "$NOW_RUN_LOG_FILE"
             check_return_value $? "$NOW_RUN_LOG_FILE" "${setup_type} setup succeeded." "❌ ${setup_type} setup failed. Check $log_file for details"
         ;;
         nodejs)
             "setup_${setup_type}_nodejs" "$local_flag" "$parallels_per_platform" "$NOW_RUN_LOG_FILE"
             log_section "✅ Results"
-            run_status=$(identify_run_status_nodejs "$NOW_RUN_LOG_FILE")
+            identify_run_status_nodejs "$NOW_RUN_LOG_FILE"
             check_return_value $? "$NOW_RUN_LOG_FILE" "${setup_type} setup succeeded." "❌ ${setup_type} setup failed. Check $log_file for details"
         ;;
         *)
@@ -67,7 +66,7 @@ setup_web_java() {
     
     mkdir -p "$WORKSPACE_DIR/$PROJECT_FOLDER"
 
-    clone_repository $REPO $TARGET_DIR
+    clone_repository "$REPO" "$TARGET_DIR"
     
     cd "$TARGET_DIR"|| return 1
     
@@ -101,7 +100,7 @@ EOF
     # === 6️⃣ Build and Run ===
     log_msg_to "⚙️ Running 'mvn install -DskipTests'"
     log_info "Installing dependencies"
-    mvn install -DskipTests >> $NOW_RUN_LOG_FILE 2>&1 || return 1
+    mvn install -DskipTests >> "$NOW_RUN_LOG_FILE" 2>&1 || return 1
     log_success "Dependencies installed"
 
 
@@ -115,13 +114,13 @@ EOF
     
     print_tests_running_log_section "mvn test -P sample-test"
     log_msg_to "🚀 Running 'mvn test -P sample-test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
-    mvn test -P sample-test >> $NOW_RUN_LOG_FILE 2>&1 &
+    mvn test -P sample-test >> "$NOW_RUN_LOG_FILE" 2>&1 &
     cmd_pid=$!|| return 1
     
     show_spinner "$cmd_pid"
     wait "$cmd_pid"
     
-    cd "$WORKSPACE_DIR/$PROJECT_FOLDER"
+    cd "$WORKSPACE_DIR/$PROJECT_FOLDER" || return 1
     return 0
 }
 
@@ -138,9 +137,9 @@ setup_app_java() {
     clone_repository $REPO $TARGET_DIR
     
     if [[ "$APP_PLATFORM" == "all" || "$APP_PLATFORM" == "android" ]]; then
-        cd android/testng-examples
+        cd "android/testng-examples" || return 1
     else
-        cd ios/testng-examples
+        cd ios/testng-examples || return 1
     fi
     
     
@@ -162,7 +161,7 @@ EOF
     # Run Maven install first
     log_msg_to "⚙️ Running 'mvn clean'"
     log_info "Installing dependencies"
-    if ! mvn clean >> $NOW_RUN_LOG_FILE  2>&1; then
+    if ! mvn clean >> "$NOW_RUN_LOG_FILE"  2>&1; then
         log_msg_to "❌ 'mvn clean' FAILED. See $log_file for details."
         return 1 # Fail the function if clean fails
     fi
@@ -177,7 +176,7 @@ EOF
     
     log_msg_to "🚀 Running 'mvn test -P sample-test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
     print_tests_running_log_section "mvn test -P sample-test"
-    mvn test -P sample-test >> $NOW_RUN_LOG_FILE 2>&1 &
+    mvn test -P sample-test >> "$NOW_RUN_LOG_FILE" 2>&1 &
     cmd_pid=$!|| return 1
     
     show_spinner "$cmd_pid"
@@ -195,11 +194,11 @@ setup_web_python() {
     REPO="browserstack-examples-pytest"
     TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
     
-    clone_repository $REPO $TARGET_DIR
+    clone_repository "$REPO" "$TARGET_DIR"
     
     detect_setup_python_env
     
-    pip3 install -r requirements.txt >> $NOW_RUN_LOG_FILE 2>&1
+    pip3 install -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
     log_success "Dependencies installed"
     
     # Update YAML at root level (browserstack.yml)
@@ -301,7 +300,7 @@ EOF
     )
     
     deactivate
-    cd "$WORKSPACE_DIR/$PROJECT_FOLDER"
+    cd "$WORKSPACE_DIR/$PROJECT_FOLDER" || return 1
     return 0
 }
 
@@ -352,7 +351,7 @@ setup_web_nodejs() {
     show_spinner "$cmd_pid"
     wait "$cmd_pid"
     
-    cd "$WORKSPACE_DIR/$PROJECT_FOLDER"
+    cd "$WORKSPACE_DIR/$PROJECT_FOLDER" || return 1
     return 0
 }
 
@@ -397,7 +396,7 @@ setup_app_nodejs() {
     # === 8️⃣ Run Tests ===
     log_msg_to "🚀 Running 'npm run test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
     print_tests_running_log_section "npm run test"
-    npm run test >> $NOW_RUN_LOG_FILE 2>&1 || return 1 &
+    npm run test >> "$NOW_RUN_LOG_FILE" 2>&1 || return 1 &
     cmd_pid=$!|| return 1
     
     show_spinner "$cmd_pid"
@@ -406,7 +405,7 @@ setup_app_nodejs() {
     # === 9️⃣ Wrap Up ===
     log_msg_to "✅ Mobile JS setup and test execution completed successfully."
     
-    cd "$WORKSPACE_DIR/$PROJECT_FOLDER"
+    cd "$WORKSPACE_DIR/$PROJECT_FOLDER" || return 1
     return 0
 }
 
@@ -415,10 +414,10 @@ clone_repository() {
     install_folder=$2
     test_folder=$3
 
-    rm -rf $install_folder
+    rm -rf "$install_folder"
     log_msg_to "📦 Cloning repo $repo_git into $install_folder"
     log_info "Cloning repository: $repo_git"
-    git clone https://github.com/BrowserStackCE/$repo_git.git "$install_folder" >> $NOW_RUN_LOG_FILE  2>&1 || return 1
+    git clone https://github.com/BrowserStackCE/$repo_git.git "$install_folder" >> "$NOW_RUN_LOG_FILE"  2>&1 || return 1
     log_msg_to "✅ Cloned repository: $repo_git into $install_folder"
     cd "$install_folder/$test_folder" || return 1
 }
@@ -432,35 +431,16 @@ run_setup_wrapper() {
     case "$test_type" in
         Web)
             if [ "$WEB_PLAN_FETCHED" == true ]; then
-                run_setup $test_type $tech_stack
+                run_setup "$test_type" "$tech_stack"
             else
                 log_msg_to "⚠️ Skipping Web setup — Web plan not fetched"
             fi
         ;;
         App)
             if [ "$MOBILE_PLAN_FETCHED" == true ]; then
-                run_setup $test_type $tech_stack
+                run_setup "$test_type" "$tech_stack"
             else
                 log_msg_to "⚠️ Skipping Mobile setup — Mobile plan not fetched"
-            fi
-        ;;
-        Both)
-            local ran_any=false
-            if [ "$WEB_PLAN_FETCHED" == true ]; then
-                run_setup $test_type $tech_stack
-                ran_any=true
-            else
-                log_msg_to "⚠️ Skipping Web setup — Web plan not fetched"
-            fi
-            if [ "$MOBILE_PLAN_FETCHED" == true ]; then
-                run_setup $test_type $tech_stack
-                ran_any=true
-            else
-                log_msg_to "⚠️ Skipping Mobile setup — Mobile plan not fetched"
-            fi
-            if [ "$ran_any" == false ]; then
-                log_msg_to "❌ Both Web and Mobile setup were skipped. Exiting."
-                exit 1
             fi
         ;;
         *)
@@ -531,6 +511,7 @@ detect_setup_python_env() {
         exit 1
     }
     
+    # shellcheck source=/dev/null
     source .venv/bin/activate
     log_success "Virtual environment created and activated."
 }

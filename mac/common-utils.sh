@@ -14,10 +14,6 @@ LOG_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/logs"
 NOW_RUN_LOG_FILE=""
 
 # ===== Global Variables =====
-USERNAME=""
-ACCESS_KEY=""
-TEST_TYPE=""       # Web / App / Both
-TECH_STACK=""      # Java / Python / JS
 CX_TEST_URL="$DEFAULT_TEST_URL"
 
 WEB_PLAN_FETCHED=false
@@ -26,7 +22,6 @@ TEAM_PARALLELS_MAX_ALLOWED_WEB=0
 TEAM_PARALLELS_MAX_ALLOWED_MOBILE=0
 
 # App specific globals
-APP_URL=""
 APP_PLATFORM=""   # ios | android | all
 
 
@@ -133,8 +128,6 @@ upload_sample_app() {
 }
 
 upload_custom_app() {
-    local -n app_url=$1
-    local -n platform=$2
     local app_platform=""
     local file_path
     file_path=$(osascript -e 'choose file with prompt "Select your .apk or .ipa file:" of type {"apk", "ipa"}' 2>/dev/null)
@@ -146,10 +139,8 @@ upload_custom_app() {
     
     # Determine platform from file extension
     if [[ "$file_path" == *.ipa ]]; then
-        platform="ios"
         app_platform="ios"
         elif [[ "$file_path" == *.apk ]]; then
-        platform="android"
         app_platform="android"
     else
         log_msg_to "❌ Invalid file type. Must be .apk or .ipa"
@@ -162,6 +153,7 @@ upload_custom_app() {
         -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
     -F "file=@$file_path")
     
+    local app_url
     app_url=$(echo "$upload_response" | grep -o '"app_url":"[^"]*' | cut -d'"' -f4)
     if [ -z "$app_url" ]; then
         log_msg_to "❌ Failed to upload app"
@@ -182,8 +174,9 @@ generate_web_platforms() {
     local max_total_parallels=$1
     local platformsListContentFormat=$2
     local platform="web"
+    local platformsList=""
     export NOW_PLATFORM="$platform"
-    local platformsList=$(pick_terminal_devices "$NOW_PLATFORM" $max_total_parallels "$platformsListContentFormat")
+    platformsList=$(pick_terminal_devices "$NOW_PLATFORM" "$max_total_parallels" "$platformsListContentFormat")
     echo "$platformsList"
 }
 
@@ -191,7 +184,8 @@ generate_mobile_platforms() {
     local max_total_parallels=$1
     local platformsListContentFormat=$2
     local app_platform="$APP_PLATFORM"
-    local platformsList=$(pick_terminal_devices "$app_platform" $max_total_parallels, "$platformsListContentFormat")
+    local platformsList=""
+    platformsList=$(pick_terminal_devices "$app_platform" "$max_total_parallels", "$platformsListContentFormat")
     echo "$platformsList"
 }
 
@@ -317,7 +311,8 @@ identify_run_status_nodejs() {
     
     local log_file=$1
     log_info "Identifying run status"
-    local line=$(grep -m 1 -E "Spec Files:.*passed.*total" < "$log_file")
+    local line=""
+    line=$(grep -m 1 -E "Spec Files:.*passed.*total" < "$log_file")
     # If not found, fail
     if [[ -z "$line" ]]; then
         log_warn "❌ No test summary line found."
@@ -334,8 +329,6 @@ identify_run_status_nodejs() {
         log_error "❌ Error: No tests passed"
         return 1
     fi
-    
-    return 1
 }
 
 
@@ -348,8 +341,6 @@ identify_run_status_python() {
     passed_sum=$(grep -oE '[0-9]+ passed' "$log_file" | awk '{sum += $1} END {print sum+0}')
     
     echo "✅ Total Passed:  $passed_sum"
-    
-    local completed_test_count=passed_sum+warning_sum
     
     # If not found, fail
     if [[ -z "$passed_sum" ]]; then
@@ -365,8 +356,6 @@ identify_run_status_python() {
         log_error "❌ Error: No tests completed"
         return 1
     fi
-    
-    return 1
 }
 
 clear_old_logs() {

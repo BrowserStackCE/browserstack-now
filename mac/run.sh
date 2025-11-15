@@ -2,10 +2,15 @@
 set -o pipefail
 
 # Import utilities
+# shellcheck source=/dev/null
 source "$(dirname "$0")/common-utils.sh"
+# shellcheck source=/dev/null
 source "$(dirname "$0")/logging-utils.sh"
+# shellcheck source=/dev/null
 source "$(dirname "$0")/env-setup-run.sh"
+# shellcheck source=/dev/null
 source "$(dirname "$0")/user-interaction.sh"
+# shellcheck source=/dev/null
 source "$(dirname "$0")/env-prequisite-checks.sh"
 
 # ===== Web wrapper with retry logic (writes runtime logs to $NOW_RUN_LOG_FILE) =====
@@ -33,23 +38,23 @@ if [[ "$RUN_MODE" == *"--silent"* || "$RUN_MODE" == *"--debug"* ]]; then
     log_file="$LOG_DIR/${TEST_TYPE:unknown}_${TECH_STACK:unknown}_run_result.log"
     log_info "Run Mode: ${RUN_MODE:-default}"
 else
-    get_test_type $RUN_MODE
-    get_tech_stack $RUN_MODE
+    get_test_type "$RUN_MODE"
+    get_tech_stack "$RUN_MODE"
     log_file="$LOG_DIR/${TEST_TYPE:unknown}_${TECH_STACK:unknown}_run_result.log"
-    perform_next_steps_based_on_test_type $TEST_TYPE
+    perform_next_steps_based_on_test_type "$TEST_TYPE"
 fi
 
 log_info "Log file path: $log_file"
 export NOW_RUN_LOG_FILE="$log_file"
 setup_workspace
-get_browserstack_credentials $RUN_MODE
+get_browserstack_credentials "$RUN_MODE"
 
 log_section "⚙️ Platform & Tech Stack"
 log_info "Platform: ${TEST_TYPE:-N/A}"
 log_info "Tech Stack: ${TECH_STACK:-N/A}"
 
-validate_tech_stack_installed $TECH_STACK
-fetch_plan_details $TEST_TYPE
+validate_tech_stack_installed "$TECH_STACK"
+fetch_plan_details "$TEST_TYPE"
 
 if [[ "$RUN_MODE" == *"--silent"* || "$RUN_MODE" == *"--debug"* ]]; then
     if [[ $TEST_TYPE == "app" ]]; then
@@ -67,9 +72,4 @@ log_info "Clearing old logs..."
 
 clear_old_logs
 log_info "Starting $TEST_TYPE setup for $TECH_STACK"
-run_setup $TEST_TYPE $TECH_STACK
-if [ $? -eq 0 ]; then
-    log_section "🎯 IN RUN.sh success!${RESET}"
-else
-    log_section "🎯 IN RUN.sh failed ${RESET}"
-fi
+run_setup "$TEST_TYPE" "$TECH_STACK"
