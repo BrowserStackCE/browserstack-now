@@ -278,9 +278,9 @@ is_domain_private() {
 identify_run_status_java() {
     local log_file=$1
     log_section "✅ Results"
-    
+    local line=""
     # Extract the test summary line
-    local line=$(grep -m 2 -E "[INFO|ERROR].*Tests run" < "$log_file")
+    line=$(grep -m 2 -E "[INFO|ERROR].*Tests run" < "$log_file")
     # If not found, fail
     if [[ -z "$line" ]]; then
         log_warn "❌ No test summary line found."
