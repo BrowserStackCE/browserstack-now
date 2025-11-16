@@ -69,18 +69,17 @@ get_test_url() {
     fi
     
     export CX_TEST_URL="$test_url"
-    log_msg_to "Exported TEST_URL=$TEST_URL" 
+    log_msg_to "Exported TEST_URL $CX_TEST_URL" 
 }
 
 
 get_test_type() {
-    local run_mode=$1
     local test_type=""
     if [[ "$RUN_MODE" == *"--silent"* || "$RUN_MODE" == *"--debug"* ]]; then
         test_type=$TT
         log_msg_to "✅ Selected Testing Type from environment: $TEST_TYPE" 
     else
-        test_type=$(osascript -e 'Tell application "System Events" to display dialog "Select testing type:" buttons {"web", "app", "both"} default button "web" with title "Testing Type"' \
+        test_type=$(osascript -e 'Tell application "System Events" to display dialog "Select testing type:" buttons {"web", "app"} default button "web" with title "Testing Type"' \
         -e 'button returned of result')
         log_msg_to "✅ Selected Testing Type: $TEST_TYPE" 
         RUN_MODE=$test_type

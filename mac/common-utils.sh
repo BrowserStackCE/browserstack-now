@@ -258,6 +258,7 @@ is_domain_private() {
     domain=${domain%%/*}  # remove everything after first "/"
     log_msg_to "Website domain: $domain"
     export NOW_WEB_DOMAIN="$CX_TEST_URL"
+    export CX_TEST_URL="$CX_TEST_URL"
     
     # Resolve domain using Cloudflare DNS
     IP_ADDRESS=$(dig +short "$domain" @1.1.1.1 | head -n1)
@@ -277,7 +278,6 @@ is_domain_private() {
 
 identify_run_status_java() {
     local log_file=$1
-    log_section "✅ Results"
     local line=""
     # Extract the test summary line
     line=$(grep -m 2 -E "[INFO|ERROR].*Tests run" < "$log_file")
@@ -367,29 +367,29 @@ clear_old_logs() {
 
 
 detect_os() {
-  local unameOut=""
-  unameOut="$(uname -s 2>/dev/null | tr '[:upper:]' '[:lower:]')"
-  local response=""
-  case "$unameOut" in
-    linux*)
-      # Detect WSL vs normal Linux
-      if grep -qi "microsoft" /proc/version 2>/dev/null; then
-        response="wsl"
-      else
-        response="linux"
-      fi
-      ;;
-    darwin*)
-      response="macos"
-      ;;
-    msys*|mingw*|cygwin*)
-      response="windows"
-      ;;
-    *)
-      response="unknown"
-      ;;
-  esac
-
-  export NOW_OS=$response
+    local unameOut=""
+    unameOut="$(uname -s 2>/dev/null | tr '[:upper:]' '[:lower:]')"
+    local response=""
+    case "$unameOut" in
+        linux*)
+            # Detect WSL vs normal Linux
+            if grep -qi "microsoft" /proc/version 2>/dev/null; then
+                response="wsl"
+            else
+                response="linux"
+            fi
+            ;;
+        darwin*)
+            response="macos"
+            ;;
+        msys*|mingw*|cygwin*)
+            response="windows"
+            ;;
+        *)
+            response="unknown"
+            ;;
+    esac
+    
+    export NOW_OS=$response
 }
 

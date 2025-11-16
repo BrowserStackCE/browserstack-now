@@ -2,7 +2,7 @@
 # shellcheck shell=bash
 
 setup_environment() {
-    local setup_type=$1  
+    local setup_type=$1
     local tech_stack=$2
     local max_parallels
     
@@ -51,7 +51,7 @@ setup_environment() {
             check_return_value $? "$NOW_RUN_LOG_FILE" "${setup_type} setup succeeded." "❌ ${setup_type} setup failed. Check $log_file for details"
         ;;
         *)
-            log_warn "Unknown TECH_STACK: $TECH_STACK" "$NOW_RUN_LOG_FILE"
+            log_warn "Unknown TECH_STACK: $tech_stack" "$NOW_RUN_LOG_FILE"
             return 1
         ;;
     esac
@@ -65,7 +65,7 @@ setup_web_java() {
     TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
     
     mkdir -p "$WORKSPACE_DIR/$PROJECT_FOLDER"
-
+    
     clone_repository "$REPO" "$TARGET_DIR"
     
     cd "$TARGET_DIR"|| return 1
@@ -91,19 +91,19 @@ platforms:
 $platform_yaml
 EOF
     
-    export BSTACK_PARALLELS=$parallels 
+    export BSTACK_PARALLELS=$parallels
     export BSTACK_PLATFORMS=$platform_yaml
-    export BROWSERSTACK_LOCAL=$local_flag 
+    export BROWSERSTACK_LOCAL=$local_flag
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-web-java-testng"
-    export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-app"
-
+    export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-web"
+    
     # === 6️⃣ Build and Run ===
     log_msg_to "⚙️ Running 'mvn install -DskipTests'"
     log_info "Installing dependencies"
     mvn install -DskipTests >> "$NOW_RUN_LOG_FILE" 2>&1 || return 1
     log_success "Dependencies installed"
-
-
+    
+    
     log_section "Validate Environment Variables"
     log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
     log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
@@ -134,7 +134,7 @@ setup_app_java() {
     TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
     local app_url=$BROWSERSTACK_APP
     log_msg_to "APP_PLATFORM: $APP_PLATFORM" >> "$NOW_RUN_LOG_FILE" 2>&1
-
+    
     clone_repository "$REPO" "$TARGET_DIR"
     
     if [[ "$APP_PLATFORM" == "all" || "$APP_PLATFORM" == "android" ]]; then
@@ -169,7 +169,7 @@ EOF
         return 1 # Fail the function if clean fails
     fi
     log_success "Dependencies installed"
-
+    
     log_section "Validate Environment Variables"
     log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
     log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
@@ -195,10 +195,10 @@ setup_web_python() {
     local parallels=$2
     local log_file=$3
     
-    REPO="browserstack-examples-pytest"
+    REPO="now-pytest-browserstack"
     TARGET_DIR="$WORKSPACE_DIR/$PROJECT_FOLDER/$REPO"
     
-    clone_repository "$REPO" "$TARGET_DIR"
+    clone_repository "$REPO" "$TARGET_DIR" ""
     
     detect_setup_python_env
     
@@ -206,18 +206,20 @@ setup_web_python() {
     log_success "Dependencies installed"
     
     # Update YAML at root level (browserstack.yml)
-    export BROWSERSTACK_CONFIG_FILE="./src/conf/browserstack_parallel.yml"
+    export BROWSERSTACK_CONFIG_FILE="./browserstack.yml"
     platform_yaml=$(generate_web_platforms "$TEAM_PARALLELS_MAX_ALLOWED_WEB" "yaml")
     export BSTACK_PLATFORMS=$platform_yaml
       cat >> "$BROWSERSTACK_CONFIG_FILE" <<EOF
-
 platforms:
 $platform_yaml
 EOF
     
     if is_domain_private; then
         local_flag=true
+    else
+        local_flag=false
     fi
+    
     
     export BSTACK_PARALLELS=1
     export BROWSERSTACK_LOCAL=$local_flag
@@ -226,7 +228,7 @@ EOF
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-web"
     
     report_bstack_local_status "$local_flag"
-
+    
     log_section "Validate Environment Variables"
     log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
     log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
@@ -236,15 +238,12 @@ EOF
     log_info "Platforms: \n$BSTACK_PLATFORMS"
     
     
-    print_tests_running_log_section "browserstack-sdk pytest -s src/test/suites/*.py --browserstack.config ./src/conf/browserstack_parallel.yml"
-    log_msg_to "🚀 Running 'browserstack-sdk pytest -s tests/bstack-sample-test.py'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
+    print_tests_running_log_section "browserstack-sdk pytest -s tests/*.py"
+    log_msg_to "🚀 Running 'browserstack-sdk pytest -s tests/*.py'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
     # Run tests
-    browserstack-sdk pytest -s src/test/suites/*.py --browserstack.config ./src/conf/browserstack_parallel.yml >> "$NOW_RUN_LOG_FILE" 2>&1
-    # &
-    # cmd_pid=$!|| return 1
-    
-    # show_spinner "$cmd_pid"
-    # wait "$cmd_pid"
+    browserstack-sdk pytest -s tests/*.py >> "$NOW_RUN_LOG_FILE" 2>&1 & cmd_pid=$!|| return 1
+    show_spinner "$cmd_pid"
+    wait "$cmd_pid"
     
     cd "$WORKSPACE_DIR/$PROJECT_FOLDER" || return 1
     return 0
@@ -289,7 +288,7 @@ EOF
     export BROWSERSTACK_LOCAL=true
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-app-python-pytest"
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-app"
-
+    
     log_section "Validate Environment Variables"
     log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
     log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
@@ -319,7 +318,7 @@ setup_web_nodejs() {
     mkdir -p "$WORKSPACE_DIR/$PROJECT_FOLDER"
     
     clone_repository "$REPO" "$TARGET_DIR"
-
+    
     
     # === 2️⃣ Install Dependencies ===
     log_msg_to "⚙️ Running 'npm install'"
@@ -342,14 +341,14 @@ setup_web_nodejs() {
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-web"
     
     report_bstack_local_status "$local_flag"
-
+    
     log_section "Validate Environment Variables"
     log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
     log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
     log_info "Web Application Endpoint: $CX_TEST_URL"
     log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
     log_info "Parallels per platform: $BSTACK_PARALLELS"
-    log_info "Platforms: \n$BSTACK_CAPS_JSON"    
+    log_info "Platforms: \n$BSTACK_CAPS_JSON"
     
     # === 8️⃣ Run Tests ===
     log_msg_to "🚀 Running 'npm run test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
@@ -396,7 +395,7 @@ setup_app_nodejs() {
     export BROWSERSTACK_APP=$app_url
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-app-nodejs-wdio"
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-app"
-
+    
     log_section "Validate Environment Variables"
     log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
     log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
@@ -422,14 +421,24 @@ setup_app_nodejs() {
 }
 
 clone_repository() {
-    repo_git=$1
-    install_folder=$2
-    test_folder=$3
-
+    local repo_git=$1
+    local install_folder=$2
+    local test_folder=$3
+    local git_branch=$4
+    
     rm -rf "$install_folder"
     log_msg_to "📦 Cloning repo $repo_git into $install_folder"
     log_info "Cloning repository: $repo_git"
-    git clone https://github.com/BrowserStackCE/$repo_git.git "$install_folder" >> "$NOW_RUN_LOG_FILE"  2>&1 || return 1
+    # git clone https://github.com/BrowserStackCE/"$repo_git".git "$install_folder" >> "$NOW_RUN_LOG_FILE"  2>&1 || return 1
+    if [ -z "$git_branch" ]; then
+        # git_branch is null or empty
+        git clone "https://github.com/BrowserStackCE/$repo_git.git" \
+        "$install_folder" >> "$NOW_RUN_LOG_FILE" 2>&1 || return 1
+    else
+        # git_branch has a value
+        git clone -b "$git_branch" "https://github.com/BrowserStackCE/$repo_git.git" \
+        "$install_folder" >> "$NOW_RUN_LOG_FILE" 2>&1 || return 1
+    fi
     log_msg_to "✅ Cloned repository: $repo_git into $install_folder"
     cd "$install_folder/$test_folder" || return 1
 }

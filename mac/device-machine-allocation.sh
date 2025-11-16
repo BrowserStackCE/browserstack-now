@@ -116,7 +116,15 @@ pick_terminal_devices() {
     entry="${matching_devices[$index]}"
     suffixEntry="${entry#*|}"
     prefixEntry="${entry%%|*}"
+    bVersionLiteral=""
+    mod=$(( i % 4 ))
 
+    if [ $((i % 4)) -ne 0 ]; then
+      bVersionLiteral="-$mod"
+    else
+      bVersionLiteral=""
+    fi
+    bVersion="latest$bVersionLiteral"
     if [[ "$platformsListContentFormat" == "yaml" ]]; then
       if [[ "$prefixEntry" == "android" || "$prefixEntry" == "ios" ]]; then  
         yaml+="  - platformName: $prefixEntry
@@ -125,7 +133,7 @@ pick_terminal_devices() {
       else
         yaml+="  - osVersion: $prefixEntry
     browserName: $suffixEntry
-    browserVersion: latest
+    browserVersion: $bVersion
 "
       fi
 
@@ -139,7 +147,7 @@ pick_terminal_devices() {
       if [[ "$prefixEntry" == "android" || "$prefixEntry" == "ios" ]]; then
         json+=$'{"platformName": "'"$prefixEntry"'","bstack:options":{"deviceName": "'"$suffixEntry"'"}},'
       else
-        json+=$'{"bstack:options":{ "os": "'"$prefixEntry"'"},"browserName": "'"$suffixEntry"'","browserVersion": "latest"},'
+        json+=$'{"bstack:options":{ "os": "'"$prefixEntry"'"},"browserName": "'"$suffixEntry"'","browserVersion": "'"$bVersion"'"},'
       fi
 
       # Stop if max reached

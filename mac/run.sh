@@ -68,8 +68,11 @@ log_msg_to "Checking proxy in environment"
 set_proxy_in_env
 
 log_section "🧹 Getting Ready"
-log_info "Clearing old logs..."
+detect_os
+log_info "Detected Operating system: $NOW_OS"
+log_info "Clearing old logs fron NOW Home Directory inside .browserstack"
 
 clear_old_logs
+
 log_info "Starting $TEST_TYPE setup for $TECH_STACK"
 run_setup "$TEST_TYPE" "$TECH_STACK"
