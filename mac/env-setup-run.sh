@@ -31,7 +31,7 @@ setup_environment() {
     log_msg_to "Total parallels allocated: $total_parallels" "$NOW_RUN_LOG_FILE"
     
     
-    case "$TECH_STACK" in
+    case "$tech_stack" in
         java)
             "setup_${setup_type}_java" "$local_flag" "$parallels_per_platform" "$NOW_RUN_LOG_FILE"
             log_section "✅ Results"
@@ -76,8 +76,6 @@ setup_web_java() {
         local_flag=true
     fi
     
-    export BROWSERSTACK_LOCAL=$local_flag
-    
     report_bstack_local_status "$local_flag"
     
     # === 5️⃣ YAML Setup ===
@@ -96,6 +94,8 @@ EOF
     export BSTACK_PARALLELS=$parallels 
     export BSTACK_PLATFORMS=$platform_yaml
     export BROWSERSTACK_LOCAL=$local_flag 
+    export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-web-java-testng"
+    export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-app"
 
     # === 6️⃣ Build and Run ===
     log_msg_to "⚙️ Running 'mvn install -DskipTests'"
@@ -106,6 +106,7 @@ EOF
 
     log_section "Validate Environment Variables"
     log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
+    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
     log_info "Web Application Endpoint: $CX_TEST_URL"
     log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
     log_info "Parallels per platform: $BSTACK_PARALLELS"
@@ -156,6 +157,8 @@ EOF
     export BSTACK_PARALLELS=$parallels
     export BROWSERSTACK_LOCAL=true
     export BSTACK_PLATFORMS=$platform_yaml
+    export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-app-java-testng"
+    export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-app"
     
     
     # Run Maven install first
@@ -169,6 +172,7 @@ EOF
 
     log_section "Validate Environment Variables"
     log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
+    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
     log_info "Native App Endpoint: $BROWSERSTACK_APP"
     log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
     log_info "Parallels per platform: $BSTACK_PARALLELS"
@@ -218,11 +222,14 @@ EOF
     export BSTACK_PARALLELS=1
     export BROWSERSTACK_LOCAL=$local_flag
     export BSTACK_PLATFORMS=$platform_yaml
+    export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-web-python-pytest"
+    export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-web"
     
     report_bstack_local_status "$local_flag"
 
     log_section "Validate Environment Variables"
     log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
+    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
     log_info "Web Application Endpoint: $CX_TEST_URL"
     log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
     log_info "Parallels per platform: $BSTACK_PARALLELS"
@@ -280,9 +287,12 @@ EOF
     
     export BSTACK_PLATFORMS=$platform_yaml
     export BROWSERSTACK_LOCAL=true
+    export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-app-python-pytest"
+    export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-app"
 
     log_section "Validate Environment Variables"
     log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
+    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
     log_info "Native App Endpoint: $BROWSERSTACK_APP"
     log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
     log_info "Parallels per platform: $BSTACK_PARALLELS"
@@ -328,11 +338,14 @@ setup_web_nodejs() {
     fi
     
     export BROWSERSTACK_LOCAL=$local_flag
+    export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-web-nodejs-wdio"
+    export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-web"
     
     report_bstack_local_status "$local_flag"
 
     log_section "Validate Environment Variables"
     log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
+    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
     log_info "Web Application Endpoint: $CX_TEST_URL"
     log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
     log_info "Parallels per platform: $BSTACK_PARALLELS"
@@ -381,9 +394,12 @@ setup_app_nodejs() {
     export BSTACK_PARALLELS=$parallels
     export BROWSERSTACK_LOCAL=true
     export BROWSERSTACK_APP=$app_url
+    export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-app-nodejs-wdio"
+    export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-app"
 
     log_section "Validate Environment Variables"
     log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
+    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
     log_info "Native App Endpoint: $BROWSERSTACK_APP"
     log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
     log_info "Parallels per platform: $BSTACK_PARALLELS"
