@@ -150,16 +150,26 @@ jobs:
           done
           
           echo "✅ All integration tests completed"
-
+    
+      - name: Sync BrowserStack logs to workspace
+        if: always()
+        run: |
+          mkdir -p ${{ github.workspace }}/bs-logs
+          if [ -d ~/.browserstack/NOW/logs ]; then
+            cp -R ~/.browserstack/NOW/logs/* ${{ github.workspace }}/bs-logs/ || true
+          else
+            echo "No logs found in ~/.browserstack/NOW/logs"
+          fi
       - name: Upload BrowserStack Logs as Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: browserstack-logs-macos
           path: |
-            ${{ github.workspace }}/.browserstack/NOW/logs/
-            /tmp/run_test_*.log
+             ${{ github.workspace }}/bs-logs
+             /tmp/run_test_*.log
           retention-days: 30
+          if-no-files-found: ignore
 
   # test-windows:
   #   name: Test win/run.ps1 on Windows
@@ -433,13 +443,23 @@ jobs:
           
           echo "✅ All integration tests completed"
 
+      - name: Sync BrowserStack logs to workspace
+        if: always()
+        run: |
+          mkdir -p ${{ github.workspace }}/bs-logs
+          if [ -d ~/.browserstack/NOW/logs ]; then
+            cp -R ~/.browserstack/NOW/logs/* ${{ github.workspace }}/bs-logs/ || true
+          else
+            echo "No logs found in ~/.browserstack/NOW/logs"
+          fi
+
       - name: Upload BrowserStack Logs as Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: browserstack-logs-linux
           path: |
-            ${{ github.workspace }}/.browserstack/NOW/logs/
+            ${{ github.workspace }}/bs-logs
             /tmp/run_test_*.log
           retention-days: 30
           if-no-files-found: ignore
