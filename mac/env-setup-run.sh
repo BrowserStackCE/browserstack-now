@@ -297,7 +297,7 @@ EOF
     log_info "Parallels per platform: $BSTACK_PARALLELS"
     log_info "Platforms: \n$BSTACK_PLATFORMS"
     
-    print_tests_running_log_section "browserstack-sdk pytest -s bstack-sample.py"
+    print_tests_running_log_section "cd $run_dir && browserstack-sdk pytest -s bstack-sample.py"
     # Run pytest with BrowserStack SDK from the chosen platform directory
     log_msg_to "🚀 Running 'cd $run_dir && browserstack-sdk pytest -s bstack_sample.py'"
     (
