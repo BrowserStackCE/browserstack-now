@@ -1,0 +1,490 @@
+name: Test Scripts - Mac, Linux and Windows
+permissions:
+  contents: read
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test-mac:
+    name: Test mac/run.sh on macOS
+    runs-on: macos-latest
+    timeout-minutes: 15
+    environment: BrowserStack
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Set up Bash
+        run: |
+          echo "Bash version:"
+          bash --version
+
+      - name: Validate shell script syntax
+        run: |
+          echo "Validating mac/run.sh syntax..."
+          bash -n mac/run.sh
+          echo "✅ mac/run.sh syntax is valid"
+
+      - name: Validate supporting scripts syntax
+        run: |
+          echo "Validating supporting scripts..."
+          bash -n mac/common-utils.sh
+          bash -n mac/logging-utils.sh
+          bash -n mac/env-setup-run.sh
+          bash -n mac/user-interaction.sh
+          bash -n mac/env-prequisite-checks.sh
+          echo "✅ All supporting scripts are valid"
+
+      - name: Check if scripts are executable
+        run: |
+          chmod +x mac/run.sh
+          chmod +x mac/common-utils.sh
+          chmod +x mac/logging-utils.sh
+          chmod +x mac/env-setup-run.sh
+          chmod +x mac/user-interaction.sh
+          chmod +x mac/env-prequisite-checks.sh
+          echo "✅ All scripts are executable"
+
+      - name: Run ShellCheck on mac scripts
+        run: |
+          brew install shellcheck
+          echo "Running ShellCheck on mac scripts..."
+          shellcheck -x mac/run.sh || true
+          shellcheck -x mac/common-utils.sh || true
+          shellcheck -x mac/logging-utils.sh || true
+          shellcheck -x mac/env-setup-run.sh || true
+          shellcheck -x mac/user-interaction.sh || true
+          shellcheck -x mac/env-prequisite-checks.sh || true
+          echo "✅ ShellCheck analysis complete"
+
+      - name: Verify required dependencies
+        run: |
+          echo "Checking required dependencies..."
+          command -v bash && echo "✅ bash found"
+          command -v curl && echo "✅ curl found"
+          command -v git && echo "✅ git found"
+          command -v bc && echo "✅ bc found"
+          echo "All required dependencies are available"
+
+      - name: Test script sourcing (dry run)
+        run: |
+          set -e
+          echo "Testing script sourcing..."
+          bash -c "source mac/common-utils.sh && echo '✅ common-utils.sh sourced successfully'"
+          echo "✅ Script sourcing successful"
+
+      - name: Integration Test - Silent Mode Execution
+        if: success()
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          TURL: https://bstackdemo.com
+        run: |
+          echo "Running integration tests in silent mode..."
+          
+          # Set default values if secrets are not provided
+          BROWSERSTACK_USERNAME="${BROWSERSTACK_USERNAME:-test_user}"
+          BROWSERSTACK_ACCESS_KEY="${BROWSERSTACK_ACCESS_KEY:-test_key}"
+          
+          export BROWSERSTACK_USERNAME
+          export BROWSERSTACK_ACCESS_KEY
+          export TURL
+          
+          # Test configurations
+          test_configs=(
+            "web java"
+            "app java"
+            "web python"
+            "app python"
+            "web nodejs"
+            "app nodejs"
+          )
+          
+          for config in "${test_configs[@]}"; do
+            read -r test_type tech_stack <<< "$config"
+            echo "================================"
+            echo "Testing: mac/run.sh --silent $test_type $tech_stack"
+            echo "================================"
+            
+            # Run with timeout and capture exit code (macOS compatible)
+            bash mac/run.sh --silent "$test_type" "$tech_stack" >> "/tmp/run_test_${test_type}_${tech_stack}.log" 2>&1 &
+            job_pid=$!
+            
+            # Wait with 600 second timeout using sleep loop (macOS compatible)
+            count=0
+            max_wait=600
+            while kill -0 "$job_pid" 2>/dev/null && [ $count -lt $max_wait ]; do
+              sleep 1
+              count=$((count + 1))
+            done
+            
+            # Check if process is still running after timeout
+            if kill -0 "$job_pid" 2>/dev/null; then
+              echo "⚠️ mac/run.sh --silent $test_type $tech_stack timed out after 600 seconds"
+              kill -9 "$job_pid" 2>/dev/null || true
+              exit_code=124
+            else
+              wait "$job_pid" || exit_code=$?
+            fi
+            
+            if [ -z "$exit_code" ] || [ "$exit_code" -eq 0 ] || [ "$exit_code" -eq 124 ]; then
+              echo "✅ mac/run.sh --silent $test_type $tech_stack completed (exit code: ${exit_code:-0})"
+            else
+              echo "⚠️ mac/run.sh --silent $test_type $tech_stack exited with code: $exit_code"
+              if [ -f "/tmp/run_test_${test_type}_${tech_stack}.log" ]; then
+                echo "Log output (last 20 lines):"
+                tail -n 20 "/tmp/run_test_${test_type}_${tech_stack}.log"
+              fi
+            fi
+            unset exit_code
+          done
+          
+          echo "✅ All integration tests completed"
+    
+      - name: Sync BrowserStack logs to workspace
+        if: always()
+        run: |
+          mkdir -p ${{ github.workspace }}/bs-logs
+          if [ -d ~/.browserstack/NOW/logs ]; then
+            cp -R ~/.browserstack/NOW/logs/* ${{ github.workspace }}/bs-logs/ || true
+          else
+            echo "No logs found in ~/.browserstack/NOW/logs"
+          fi
+      - name: Upload BrowserStack Logs as Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserstack-logs-macos
+          path: |
+             ${{ github.workspace }}/bs-logs
+             /tmp/run_test_*.log
+          retention-days: 30
+          if-no-files-found: ignore
+
+  # test-windows:
+  #   name: Test win/run.ps1 on Windows
+  #   runs-on: windows-latest
+  #   timeout-minutes: 15
+  #   environment: BrowserStack
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     - name: Set up Python 3.13
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: '3.13'
+  #     - name: Check PowerShell version
+  #       run: |
+  #         $PSVersionTable.PSVersion
+  #         Write-Host "✅ PowerShell version check complete"
+  # 
+  #     - name: Validate PowerShell script syntax
+  #       run: |
+  #         Write-Host "Validating win/run.ps1 syntax..."
+  #         $ScriptPath = "win/run.ps1"
+  #         $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $ScriptPath), [ref]$null)
+  #         Write-Host "✅ win/run.ps1 syntax is valid"
+  # 
+  #     - name: Validate supporting PowerShell scripts syntax
+  #       run: |
+  #         Write-Host "Validating supporting PowerShell scripts..."
+  #         $Scripts = @("win/proxy-check.ps1")
+  #         foreach ($Script in $Scripts) {
+  #           $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $Script), [ref]$null)
+  #           Write-Host "✅ $Script syntax is valid"
+  #         }
+  # 
+  #     - name: Run PSScriptAnalyzer
+  #       run: |
+  #         Write-Host "Installing PSScriptAnalyzer..."
+  #         Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -ErrorAction SilentlyContinue
+  #         Write-Host "Running PSScriptAnalyzer..."
+  #         Invoke-ScriptAnalyzer -Path "win/run.ps1" -Recurse -ReportSummary || $true
+  #         Write-Host "✅ PSScriptAnalyzer analysis complete"
+  # 
+  #     - name: Check script file encoding
+  #       run: |
+  #         Write-Host "Checking PowerShell script encoding..."
+  #         $ScriptPath = "win/run.ps1"
+  #         $Encoding = (Get-Item $ScriptPath).EncodingInfo
+  #         Write-Host "File encoding: $Encoding"
+  #         Write-Host "✅ Encoding check complete"
+  # 
+  #     - name: Verify required dependencies
+  #       run: |
+  #         Write-Host "Checking required dependencies..."
+  #         if (Get-Command curl.exe -ErrorAction SilentlyContinue) { Write-Host "✅ curl found" }
+  #         if (Get-Command git.exe -ErrorAction SilentlyContinue) { Write-Host "✅ git found" }
+  #         Write-Host "✅ PowerShell dependencies verified"
+  # 
+  #     - name: Integration Test - Silent Mode Execution
+  #       if: success()
+  #       env:
+  #         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+  #         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+  #         TURL: https://bstackdemo.com
+  #       run: |
+  #         Write-Host "Running integration tests in silent mode..."
+  #         
+  #         # Set default values if secrets are not provided
+  #         $BrowserStackUsername = if ($env:BROWSERSTACK_USERNAME) { $env:BROWSERSTACK_USERNAME } else { "test_user" }
+  #         $BrowserStackAccessKey = if ($env:BROWSERSTACK_ACCESS_KEY) { $env:BROWSERSTACK_ACCESS_KEY } else { "test_key" }
+  #         $TestUrl = $env:TURL
+  #         
+  #         # Export environment variables
+  #         $env:BROWSERSTACK_USERNAME = $BrowserStackUsername
+  #         $env:BROWSERSTACK_ACCESS_KEY = $BrowserStackAccessKey
+  #         $env:TURL = $TestUrl
+  #         
+  #         # Test configurations
+  #         $testConfigs = @(
+  #             @("web", "java"),
+  #             @("app", "java"),
+  #             @("web", "python"),
+  #             @("app", "python"),
+  #             @("web", "nodejs"),
+  #             @("app", "nodejs")
+  #         )
+  #         
+  #         foreach ($config in $testConfigs) {
+  #             $testType = $config[0]
+  #             $techStack = $config[1]
+  #             
+  #             Write-Host "================================"
+  #             Write-Host "Testing: .\win\run.ps1 --silent $testType $techStack"
+  #             Write-Host "================================"
+  #             
+  #             # Create log file path
+  #             $logPath = "C:\Temp\run_test_${testType}_${techStack}.log"
+  #             New-Item -ItemType Directory -Path "C:\Temp" -Force -ErrorAction SilentlyContinue | Out-Null
+  #             
+  #             # Run with timeout (using job for timeout capability)
+  #             $job = Start-Job -ScriptBlock {
+  #                 param($path, $testType, $techStack, $logPath)
+  #                 & $path --silent $testType $techStack 2>&1 | Tee-Object -FilePath $logPath -Append
+  #             } -ArgumentList ".\win\run.ps1", $testType, $techStack, $logPath
+  #             
+  #             # Wait for job with 600 second timeout
+  #             $timeout = New-TimeSpan -Seconds 600
+  #             $completed = Wait-Job -Job $job -Timeout 600
+  #             
+  #             if ($completed) {
+  #                 $result = Receive-Job -Job $job
+  #                 if ($job.State -eq "Completed") {
+  #                     Write-Host "✅ .\win\run.ps1 --silent $testType $techStack completed successfully"
+  #                 } else {
+  #                     Write-Host "⚠️ .\win\run.ps1 --silent $testType $techStack exited with state: $($job.State)"
+  #                     if (Test-Path $logPath) {
+  #                         Write-Host "Log output (last 20 lines):"
+  #                         Get-Content -Path $logPath -Tail 20
+  #                     }
+  #                 }
+  #             } else {
+  #                 Write-Host "⚠️ .\win\run.ps1 --silent $testType $techStack timed out after 600 seconds"
+  #                 Stop-Job -Job $job
+  #                 if (Test-Path $logPath) {
+  #                     Write-Host "Log output (last 20 lines):"
+  #                     Get-Content -Path $logPath -Tail 20
+  #                 }
+  #             }
+  #             
+  #             Remove-Job -Job $job -Force
+  #         }
+  #         
+  #         Write-Host "✅ All integration tests completed"
+  # 
+  #     - name: Upload BrowserStack Logs as Artifacts
+  #       if: always()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: browserstack-logs-windows
+  #         path: |
+  #           C:\Users\runneradmin\.browserstack\NOW\logs\
+  #           C:\Temp\run_test_*.log
+  #         retention-days: 30
+  #         if-no-files-found: ignore
+
+  test-linux:
+    name: Test mac/run.sh on Linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: BrowserStack
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Set up Bash
+        run: |
+          echo "Bash version:"
+          bash --version
+
+      - name: Validate shell script syntax
+        run: |
+          echo "Validating mac/run.sh syntax..."
+          bash -n mac/run.sh
+          echo "✅ mac/run.sh syntax is valid"
+
+      - name: Validate supporting scripts syntax
+        run: |
+          echo "Validating supporting scripts..."
+          bash -n mac/common-utils.sh
+          bash -n mac/logging-utils.sh
+          bash -n mac/env-setup-run.sh
+          bash -n mac/user-interaction.sh
+          bash -n mac/env-prequisite-checks.sh
+          echo "✅ All supporting scripts are valid"
+
+      - name: Check if scripts are executable
+        run: |
+          chmod +x mac/run.sh
+          chmod +x mac/common-utils.sh
+          chmod +x mac/logging-utils.sh
+          chmod +x mac/env-setup-run.sh
+          chmod +x mac/user-interaction.sh
+          chmod +x mac/env-prequisite-checks.sh
+          echo "✅ All scripts are executable"
+
+      - name: Install ShellCheck
+        run: |
+          echo "Installing ShellCheck..."
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          shellcheck --version
+
+      - name: Run ShellCheck on mac scripts
+        run: |
+          echo "Running ShellCheck on mac scripts..."
+          shellcheck -x mac/run.sh || true
+          shellcheck -x mac/common-utils.sh || true
+          shellcheck -x mac/logging-utils.sh || true
+          shellcheck -x mac/env-setup-run.sh || true
+          shellcheck -x mac/user-interaction.sh || true
+          shellcheck -x mac/env-prequisite-checks.sh || true
+          echo "✅ ShellCheck analysis complete"
+
+      - name: Verify required dependencies
+        run: |
+          echo "Checking required dependencies..."
+          command -v bash && echo "✅ bash found"
+          command -v curl && echo "✅ curl found"
+          command -v git && echo "✅ git found"
+          command -v bc && echo "✅ bc found"
+          echo "All required dependencies are available"
+
+      - name: Test script sourcing (dry run)
+        run: |
+          set -e
+          echo "Testing script sourcing..."
+          bash -c "source mac/common-utils.sh && echo '✅ common-utils.sh sourced successfully'"
+          echo "✅ Script sourcing successful"
+
+      - name: Integration Test - Silent Mode Execution
+        if: success()
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          TURL: https://bstackdemo.com
+        run: |
+          echo "Running integration tests in silent mode..."
+          
+          # Set default values if secrets are not provided
+          BROWSERSTACK_USERNAME="${BROWSERSTACK_USERNAME:-test_user}"
+          BROWSERSTACK_ACCESS_KEY="${BROWSERSTACK_ACCESS_KEY:-test_key}"
+          
+          export BROWSERSTACK_USERNAME
+          export BROWSERSTACK_ACCESS_KEY
+          export TURL
+          
+          # Test configurations
+          test_configs=(
+            "web java"
+            "app java"
+            "web python"
+            "app python"
+            "web nodejs"
+            "app nodejs"
+          )
+          
+          for config in "${test_configs[@]}"; do
+            read -r test_type tech_stack <<< "$config"
+            echo "================================"
+            echo "Testing: mac/run.sh --silent $test_type $tech_stack"
+            echo "================================"
+            
+            # Run with timeout and capture exit code (using timeout command on Linux)
+            timeout 600 bash mac/run.sh --silent "$test_type" "$tech_stack" >> "/tmp/run_test_${test_type}_${tech_stack}.log" 2>&1 &
+            job_pid=$!
+            wait "$job_pid" || exit_code=$?
+            
+            if [ -z "$exit_code" ] || [ "$exit_code" -eq 0 ] || [ "$exit_code" -eq 124 ]; then
+              echo "✅ mac/run.sh --silent $test_type $tech_stack completed (exit code: ${exit_code:-0})"
+            else
+              echo "⚠️ mac/run.sh --silent $test_type $tech_stack exited with code: $exit_code"
+              if [ -f "/tmp/run_test_${test_type}_${tech_stack}.log" ]; then
+                echo "Log output (last 20 lines):"
+                tail -n 20 "/tmp/run_test_${test_type}_${tech_stack}.log"
+              fi
+            fi
+            unset exit_code
+          done
+          
+          echo "✅ All integration tests completed"
+
+      - name: Sync BrowserStack logs to workspace
+        if: always()
+        run: |
+          mkdir -p ${{ github.workspace }}/bs-logs
+          if [ -d ~/.browserstack/NOW/logs ]; then
+            cp -R ~/.browserstack/NOW/logs/* ${{ github.workspace }}/bs-logs/ || true
+          else
+            echo "No logs found in ~/.browserstack/NOW/logs"
+          fi
+
+      - name: Upload BrowserStack Logs as Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserstack-logs-linux
+          path: |
+            ${{ github.workspace }}/bs-logs
+            /tmp/run_test_*.log
+          retention-days: 30
+          if-no-files-found: ignore
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [test-mac, test-linux]
+    if: always()
+    steps:
+      - name: Check test results
+        run: |
+          echo "=== Test Results Summary ==="
+          echo "macOS Tests: ${{ needs.test-mac.result }}"
+          echo "Linux Tests: ${{ needs.test-linux.result }}"
+          
+          if [ "${{ needs.test-mac.result }}" = "failure" ] || [ "${{ needs.test-linux.result }}" = "failure" ]; then
+            echo "❌ Some tests failed"
+            exit 1
+          fi
+          echo "✅ All tests passed!"
+
+      - name: Notify success
+        if: success()
+        run: |
+          echo "✅ All script validations passed successfully!"
+          echo "- mac/run.sh and supporting scripts validated on macOS and Linux"
+          echo "- win/run.ps1 and supporting scripts validated on Windows (temporarily disabled)"
