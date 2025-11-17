@@ -37,11 +37,11 @@ get_browserstack_credentials() {
 get_tech_stack() {
     local run_mode=$1
     local tech_stack=""
-    if [[ "$RUN_MODE" == *"--silent"* || "$RUN_MODE" == *"--debug"* ]]; then
+    if [[ "$run_mode" == *"--silent"* || "$run_mode" == *"--debug"* ]]; then
         tech_stack="$TSTACK"
         log_msg_to "✅ Selected Tech Stack from environment: $tech_stack" 
     else
-        tech_stack=$(osascript -e 'Tell application "System Events" to display dialog "Select installed tech stack:" buttons {"java", "python", "nodejs"} default button "java" with title "Testing Framework Technology Stack"' \
+        tech_stack=$(osascript -e 'Tell application "System Events" to display dialog "Select installed tech stack:" buttons {"java", "nodejs"} default button "java" with title "Testing Framework Technology Stack"' \
         -e 'button returned of result')
     fi
     log_msg_to "✅ Selected Tech Stack: $tech_stack" 
