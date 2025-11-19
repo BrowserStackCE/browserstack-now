@@ -101,7 +101,7 @@ handle_app_upload() {
             app_platform="android"
             export APP_PLATFORM="$app_platform"
             log_msg_to "Exported APP_PLATFORM=$APP_PLATFORM"
-            elif [[ "$choice" == *"Upload my App"* ]]; then
+        elif [[ "$choice" == *"Upload my App"* ]]; then
             upload_custom_app
         else
             return 1
@@ -168,7 +168,6 @@ upload_custom_app() {
     
     export APP_PLATFORM="$app_platform"
     log_msg_to "Exported APP_PLATFORM=$APP_PLATFORM"
-    return 0
 }
 
 # ===== Dynamic config generators =====
