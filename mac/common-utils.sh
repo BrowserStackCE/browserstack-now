@@ -101,7 +101,7 @@ handle_app_upload() {
             app_platform="android"
             export APP_PLATFORM="$app_platform"
             log_msg_to "Exported APP_PLATFORM=$APP_PLATFORM"
-            elif [[ "$choice" == *"Upload my App"* ]]; then
+        elif [[ "$choice" == *"Upload my App"* ]]; then
             upload_custom_app
         else
             return 1
@@ -119,6 +119,7 @@ upload_sample_app() {
     app_url=$(echo "$upload_response" | grep -o '"app_url":"[^"]*' | cut -d'"' -f4)
     export BROWSERSTACK_APP=$app_url
     log_msg_to "Exported BROWSERSTACK_APP=$BROWSERSTACK_APP"
+    log_info "Uploaded app URL: $app_url"
     
     if [ -z "$app_url" ]; then
         log_msg_to "❌ Upload failed. Response: $upload_response"
@@ -132,13 +133,21 @@ upload_sample_app() {
 upload_custom_app() {
     local app_platform=""
     local file_path
-    file_path=$(osascript -e 'choose file with prompt "Select your .apk or .ipa file:" of type {"apk", "ipa"}' 2>/dev/null)
+
+      # Convert to POSIX path
+    file_path=$(osascript -e \
+        'POSIX path of (choose file with prompt "Select your .apk or .ipa file:" of type {"apk", "ipa"})' \
+        2>/dev/null)
+
+    # Trim whitespace
+    file_path="${file_path%"${file_path##*[![:space:]]}"}"
     
     if [ -z "$file_path" ]; then
         log_msg_to "❌ No file selected"
         return 1
     fi
     
+    log_info "Selected file: $file_path"
     # Determine platform from file extension
     if [[ "$file_path" == *.ipa ]]; then
         app_platform="ios"
@@ -164,6 +173,7 @@ upload_custom_app() {
     
     export BROWSERSTACK_APP=$app_url
     log_msg_to "✅ App uploaded successfully"
+    log_info "Uploaded app URL: $app_url"
     log_msg_to "Exported BROWSERSTACK_APP=$BROWSERSTACK_APP"
     
     export APP_PLATFORM="$app_platform"
