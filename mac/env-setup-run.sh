@@ -270,7 +270,14 @@ setup_app_python() {
     local platform_yaml
     
     export BSTACK_PARALLELS=1
-    export BROWSERSTACK_CONFIG_FILE="./android/browserstack.yml"
+    
+    # Decide which directory to run based on APP_PLATFORM (default to android)
+    local run_dir="android"
+    if [ "$APP_PLATFORM" = "ios" ]; then
+        run_dir="ios"
+    fi
+
+        export BROWSERSTACK_CONFIG_FILE="./$run_dir/browserstack.yml"
     platform_yaml=$(generate_mobile_platforms "$TEAM_PARALLELS_MAX_ALLOWED_MOBILE" "yaml")
     
     cat >> "$BROWSERSTACK_CONFIG_FILE" <<EOF
@@ -278,12 +285,6 @@ setup_app_python() {
 platforms:
 $platform_yaml
 EOF
-    
-    # Decide which directory to run based on APP_PLATFORM (default to android)
-    local run_dir="android"
-    if [ "$APP_PLATFORM" = "ios" ]; then
-        run_dir="ios"
-    fi
     
     export BSTACK_PLATFORMS=$platform_yaml
     export BROWSERSTACK_LOCAL=true
@@ -302,7 +303,9 @@ EOF
     # Run pytest with BrowserStack SDK from the chosen platform directory
     log_msg_to "🚀 Running 'cd $run_dir && browserstack-sdk pytest -s bstack_sample.py'"
     (
-        cd "$run_dir" && browserstack-sdk pytest -s bstack_sample.py >> "$NOW_RUN_LOG_FILE" 2>&1 || return 1
+        cd "$run_dir" && browserstack-sdk pytest -s bstack_sample.py >> "$NOW_RUN_LOG_FILE" 2>&1 || return 1 & cmd_pid=$!|| return 1
+        show_spinner "$cmd_pid"
+        wait "$cmd_pid"
     )
     
     deactivate
