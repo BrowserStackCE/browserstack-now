@@ -41,7 +41,7 @@ get_tech_stack() {
         tech_stack="$TSTACK"
         log_msg_to "✅ Selected Tech Stack from environment: $tech_stack" 
     else
-        tech_stack=$(osascript -e 'Tell application "System Events" to display dialog "Select installed tech stack:" buttons {"java", "nodejs"} default button "java" with title "Testing Framework Technology Stack"' \
+        tech_stack=$(osascript -e 'Tell application "System Events" to display dialog "Select installed tech stack:" buttons {"java", "python", "nodejs"} default button "java" with title "Testing Framework Technology Stack"' \
         -e 'button returned of result')
     fi
     log_msg_to "✅ Selected Tech Stack: $tech_stack" 
