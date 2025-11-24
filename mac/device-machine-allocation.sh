@@ -119,6 +119,8 @@ pick_terminal_devices() {
     bVersionLiteral=""
     mod=$(( i % 4 ))
 
+    local hardcodedBVersion=140 # python doesn't support dynamic latest versioning yet
+
     if [ $((i % 4)) -ne 0 ]; then
       bVersionLiteral="-$mod"
     else
@@ -133,7 +135,7 @@ pick_terminal_devices() {
       else
         yaml+="  - osVersion: $prefixEntry
     browserName: $suffixEntry
-    browserVersion: $bVersion
+    browserVersion: $(( hardcodedBVersion-i ))
 "
       fi
 
