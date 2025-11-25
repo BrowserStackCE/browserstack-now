@@ -77,7 +77,7 @@ pick_terminal_devices() {
   # Check for valid input
   # ---------------------------
   if [[ -z "$platformName" || -z "$count" ]]; then
-    log_msg_to "Platform name for parallel count is invalid: $0 $platformName $count"
+    log_msg_to "Platform name for parallel count is invalid: $platformName $count"
     return 1
   fi
 

@@ -178,7 +178,6 @@ upload_custom_app() {
     
     export APP_PLATFORM="$app_platform"
     log_msg_to "Exported APP_PLATFORM=$APP_PLATFORM"
-    return 0
 }
 
 # ===== Dynamic config generators =====
