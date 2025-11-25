@@ -202,7 +202,7 @@ setup_web_python() {
     
     detect_setup_python_env
     
-    pip3 install -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
+    pip3 install --only-binary grpcio -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
     pip3 uninstall -y pytest-html pytest-rerunfailures >> "$NOW_RUN_LOG_FILE" 2>&1
     log_success "Dependencies installed"
     
@@ -263,7 +263,7 @@ setup_app_python() {
     detect_setup_python_env
     
     # Install dependencies
-    pip3 install -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
+    pip install --only-binary grpcio -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
     log_success "Dependencies installed"
     
     local app_url=$BROWSERSTACK_APP
