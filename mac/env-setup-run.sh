@@ -200,7 +200,7 @@ setup_web_python() {
     
     clone_repository "$REPO" "$TARGET_DIR" ""
     
-    detect_setup_python_env
+    # detect_setup_python_env
     
     pip3 install --only-binary grpcio -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
     pip3 uninstall -y pytest-html pytest-rerunfailures >> "$NOW_RUN_LOG_FILE" 2>&1
@@ -260,7 +260,7 @@ setup_app_python() {
     
     clone_repository "$REPO" "$TARGET_DIR"
     
-    detect_setup_python_env
+    # detect_setup_python_env
     
     # Install dependencies
     pip install --only-binary grpcio -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
