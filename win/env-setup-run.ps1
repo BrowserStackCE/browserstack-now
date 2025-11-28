@@ -269,48 +269,6 @@ $platformYamlIos
 
     Log-Line "✅ Wrote platform YAMLs to android/browserstack.yml and ios/browserstack.yml" $GLOBAL_LOG
 
-    # Replace sample tests in both android and ios with universal, locator-free test
-    $testContent = @"
-import pytest
-
-
-@pytest.mark.usefixtures('setWebdriver')
-class TestUniversalAppCheck:
-
-    def test_app_health_check(self):
-
-        # 1. Get initial app and device state (no locators)
-        initial_package = self.driver.current_package
-        initial_activity = self.driver.current_activity
-        initial_orientation = self.driver.orientation
-
-        # 2. Log the captured data to BrowserStack using 'annotate'
-        log_data = f"Initial State: Package='{initial_package}', Activity='{initial_activity}', Orientation='{initial_orientation}'"
-        self.driver.execute_script(
-            'browserstack_executor: {"action": "annotate", "arguments": {"data": "' + log_data + '", "level": "info"}}'
-        )
-
-        # 3. Perform a locator-free action: change device orientation
-        self.driver.orientation = 'LANDSCAPE'
-
-        # 4. Perform locator-free assertions
-        assert self.driver.orientation == 'LANDSCAPE'
-
-        # 5. Log the successful state change
-        self.driver.execute_script(
-            'browserstack_executor: {"action": "annotate", "arguments": {"data": "Successfully changed orientation to LANDSCAPE", "level": "info"}}'
-        )
-        
-        # 6. Set the final session status to 'passed'
-        self.driver.execute_script(
-            'browserstack_executor: {"action": "setSessionStatus", "arguments": {"status": "passed", "reason": "App state verified and orientation changed!"}}'
-        )
-"@
-    $androidTestPath = Join-Path $TARGET "android\bstack_sample.py"
-    $iosTestPath = Join-Path $TARGET "ios\bstack_sample.py"
-    Set-ContentNoBom -Path $androidTestPath -Value $testContent
-    Set-ContentNoBom -Path $iosTestPath -Value $testContent
-
     # Decide which directory to run based on APP_PLATFORM (default to android)
     $runDirName = "android"
     if ($APP_PLATFORM -eq "ios") {
