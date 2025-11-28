@@ -1,16 +1,70 @@
-# ==============================================
-# 🛠️ COMMON UTILITIES
-# ==============================================
+﻿# Common helpers shared by the Windows BrowserStack NOW scripts.
 
+# ===== Global Variables =====
+$script:WORKSPACE_DIR = Join-Path $env:USERPROFILE ".browserstack"
+$script:PROJECT_FOLDER = "NOW"
+
+$script:GLOBAL_DIR = Join-Path $WORKSPACE_DIR $PROJECT_FOLDER
+$script:LOG_DIR     = Join-Path $GLOBAL_DIR "logs"
+$script:GLOBAL_LOG  = Join-Path $LOG_DIR "global.log"
+$script:WEB_LOG     = Join-Path $LOG_DIR "web_run_result.log"
+$script:MOBILE_LOG  = Join-Path $LOG_DIR "mobile_run_result.log"
+
+# Script state
+$script:BROWSERSTACK_USERNAME = ""
+$script:BROWSERSTACK_ACCESS_KEY = ""
+$script:TEST_TYPE = ""     # Web / App / Both
+$script:TECH_STACK = ""    # Java / Python / JS
+[double]$script:PARALLEL_PERCENTAGE = 1.00
+
+$script:WEB_PLAN_FETCHED = $false
+$script:MOBILE_PLAN_FETCHED = $false
+[int]$script:TEAM_PARALLELS_MAX_ALLOWED_WEB = 0
+[int]$script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE = 0
+
+# URL handling
+$script:DEFAULT_TEST_URL = "https://bstackdemo.com"
+$script:CX_TEST_URL = $DEFAULT_TEST_URL
+
+# App handling
+$script:APP_URL = ""
+$script:APP_PLATFORM = ""  # ios | android | all
+
+# Chosen Python command tokens (set during validation when Python is selected)
+$script:PY_CMD = @()
+
+# ===== Error patterns =====
+$script:WEB_SETUP_ERRORS   = @("")
+$script:WEB_LOCAL_ERRORS   = @("")
+$script:MOBILE_SETUP_ERRORS= @("")
+$script:MOBILE_LOCAL_ERRORS= @("")
+
+# ===== Workspace Management =====
 function Ensure-Workspace {
   if (!(Test-Path $GLOBAL_DIR)) {
     New-Item -ItemType Directory -Path $GLOBAL_DIR | Out-Null
     Log-Line "✅ Created Onboarding workspace: $GLOBAL_DIR" $GLOBAL_LOG
   } else {
-    Log-Line "ℹ️ Onboarding Workspace already exists: $GLOBAL_DIR" $GLOBAL_LOG
+    Log-Line "✅ Onboarding workspace found at: $GLOBAL_DIR" $GLOBAL_LOG
   }
 }
 
+function Setup-Workspace {
+  Log-Section "⚙️ Environment & Credentials" $GLOBAL_LOG
+  Ensure-Workspace
+}
+
+function Clear-OldLogs {
+  if (!(Test-Path $LOG_DIR)) { 
+    New-Item -ItemType Directory -Path $LOG_DIR | Out-Null 
+  }
+  '' | Out-File -FilePath $GLOBAL_LOG -Encoding UTF8
+  '' | Out-File -FilePath $WEB_LOG -Encoding UTF8
+  '' | Out-File -FilePath $MOBILE_LOG -Encoding UTF8
+  Log-Line "✅ Logs cleared and fresh run initiated." $GLOBAL_LOG
+}
+
+# ===== Git Clone =====
 function Invoke-GitClone {
   param(
     [Parameter(Mandatory)] [string]$Url,
@@ -59,7 +113,6 @@ function Set-ContentNoBom {
   [System.IO.File]::WriteAllText($Path, $Value, $enc)
 }
 
-# Run external tools capturing stdout/stderr without throwing on STDERR
 function Invoke-External {
   param(
     [Parameter(Mandatory)][string]$Exe,
@@ -71,7 +124,6 @@ function Invoke-External {
   $exeToRun = $Exe
   $argLine  = ($Arguments | ForEach-Object { if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ } }) -join ' '
 
-  # .cmd/.bat need to be invoked via cmd.exe when UseShellExecute=false
   $ext = [System.IO.Path]::GetExtension($Exe)
   if ($ext -and ($ext.ToLowerInvariant() -in @('.cmd','.bat'))) {
     if (-not (Test-Path $Exe)) { throw "Command not found: $Exe" }
@@ -94,14 +146,11 @@ function Invoke-External {
 
   $p = New-Object System.Diagnostics.Process
   $p.StartInfo = $psi
-  
-  # Stream output to log file in real-time if LogFile is specified
+
   if ($LogFile) {
-    # Ensure the log file directory exists
     $logDir = Split-Path -Parent $LogFile
     if ($logDir -and !(Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }
-    
-    # Create script blocks to handle output streaming
+
     $stdoutAction = {
       if (-not [string]::IsNullOrEmpty($EventArgs.Data)) {
         Add-Content -Path $Event.MessageData -Value $EventArgs.Data
@@ -112,33 +161,29 @@ function Invoke-External {
         Add-Content -Path $Event.MessageData -Value $EventArgs.Data
       }
     }
-    
-    # Register events to capture output line by line as it's produced
+
     $stdoutEvent = Register-ObjectEvent -InputObject $p -EventName OutputDataReceived -Action $stdoutAction -MessageData $LogFile
     $stderrEvent = Register-ObjectEvent -InputObject $p -EventName ErrorDataReceived -Action $stderrAction -MessageData $LogFile
-    
+
     [void]$p.Start()
     $p.BeginOutputReadLine()
     $p.BeginErrorReadLine()
     $p.WaitForExit()
-    
-    # Clean up event handlers
+
     Unregister-Event -SourceIdentifier $stdoutEvent.Name
     Unregister-Event -SourceIdentifier $stderrEvent.Name
     Remove-Job -Id $stdoutEvent.Id -Force
     Remove-Job -Id $stderrEvent.Id -Force
   } else {
-    # If no log file, just read all output at once (original behavior)
     [void]$p.Start()
     $stdout = $p.StandardOutput.ReadToEnd()
     $stderr = $p.StandardError.ReadToEnd()
     $p.WaitForExit()
   }
-  
+
   return $p.ExitCode
 }
 
-# Return a Maven executable path or wrapper for a given repo directory
 function Get-MavenCommand {
   param([Parameter(Mandatory)][string]$RepoDir)
   $mvnCmd = Get-Command mvn -ErrorAction SilentlyContinue
@@ -148,7 +193,6 @@ function Get-MavenCommand {
   throw "Maven not found in PATH and 'mvnw.cmd' not present under $RepoDir. Install Maven or ensure the wrapper exists."
 }
 
-# Get the python.exe inside a Windows venv
 function Get-VenvPython {
   param([Parameter(Mandatory)][string]$VenvDir)
   $py = Join-Path $VenvDir "Scripts\python.exe"
@@ -156,7 +200,6 @@ function Get-VenvPython {
   throw "Python interpreter not found in venv: $VenvDir"
 }
 
-# Detect a working Python interpreter and set $PY_CMD accordingly
 function Set-PythonCmd {
   $candidates = @(
     @("python3"),
@@ -179,7 +222,6 @@ function Set-PythonCmd {
   throw "Python not found via python3/python/py. Please install Python 3 and ensure it's on PATH."
 }
 
-# Invoke Python with arguments using the detected interpreter
 function Invoke-Py {
   param(
     [Parameter(Mandatory)][string[]]$Arguments,
@@ -193,11 +235,21 @@ function Invoke-Py {
   return (Invoke-External -Exe $exe -Arguments ($baseArgs + $Arguments) -LogFile $LogFile -WorkingDirectory $WorkingDirectory)
 }
 
-# Check if IP is private
+function Show-Spinner {
+  param([Parameter(Mandatory)][System.Diagnostics.Process]$Process)
+  $spin = @('|','/','-','\')
+  $i = 0
+  $ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+  while (!$Process.HasExited) {
+    Write-Host "`r[$ts] ⏳ Processing... $($spin[$i])" -NoNewline
+    $i = ($i + 1) % 4
+    Start-Sleep -Milliseconds 100
+  }
+  Write-Host "`r[$ts] ✅ Done!                    "
+}
+
 function Test-PrivateIP {
   param([string]$IP)
-  # If IP resolution failed (empty), assume it's a public domain
-  # BrowserStack Local should only be enabled for confirmed private IPs
   if ([string]::IsNullOrWhiteSpace($IP)) { return $false }
   $parts = $IP.Split('.')
   if ($parts.Count -ne 4) { return $false }
@@ -209,25 +261,20 @@ function Test-PrivateIP {
   return $false
 }
 
-# Check if domain is private
 function Test-DomainPrivate {
   $domain = $CX_TEST_URL -replace '^https?://', '' -replace '/.*$', ''
   Log-Line "Website domain: $domain" $GLOBAL_LOG
   $env:NOW_WEB_DOMAIN = $CX_TEST_URL
-  
-  # Resolve domain using Resolve-DnsName (more reliable than nslookup)
+
   $IP_ADDRESS = ""
   try {
-    # Try using Resolve-DnsName first (Windows PowerShell 5.1+)
     $dnsResult = Resolve-DnsName -Name $domain -Type A -ErrorAction Stop | Where-Object { $_.Type -eq 'A' } | Select-Object -First 1
     if ($dnsResult) {
       $IP_ADDRESS = $dnsResult.IPAddress
     }
   } catch {
-    # Fallback to nslookup if Resolve-DnsName fails
     try {
       $nslookupOutput = nslookup $domain 2>&1 | Out-String
-      # Extract IP addresses from nslookup output (match IPv4 pattern)
       if ($nslookupOutput -match '(?:Address|Addresses):\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})') {
         $IP_ADDRESS = $matches[1]
       }
@@ -236,23 +283,32 @@ function Test-DomainPrivate {
       $IP_ADDRESS = ""
     }
   }
-  
+
   if ([string]::IsNullOrWhiteSpace($IP_ADDRESS)) {
     Log-Line "⚠️ DNS resolution failed for: $domain (treating as public domain, BrowserStack Local will be DISABLED)" $GLOBAL_LOG
   } else {
     Log-Line "✅ Resolved IP: $IP_ADDRESS" $GLOBAL_LOG
   }
-  
+
   return (Test-PrivateIP -IP $IP_ADDRESS)
+}
+
+function Get-BasicAuthHeader {
+  param([string]$User, [string]$Key)
+  $pair = "{0}:{1}" -f $User,$Key
+  $bytes = [System.Text.Encoding]::UTF8.GetBytes($pair)
+  "Basic {0}" -f [System.Convert]::ToBase64String($bytes)
 }
 
 # ===== Fetch plan details =====
 function Fetch-Plan-Details {
-  Log-Line "ℹ️ Fetching BrowserStack Plan Details..." $GLOBAL_LOG
+  param([string]$TestType)
+  
+  Log-Line "ℹ️ Fetching BrowserStack plan for $TestType" $GLOBAL_LOG
   $auth = Get-BasicAuthHeader -User $BROWSERSTACK_USERNAME -Key $BROWSERSTACK_ACCESS_KEY
   $headers = @{ Authorization = $auth }
 
-  if ($TEST_TYPE -in @("Web","Both")) {
+  if ($TestType -in @("Web","Both","web","both")) {
     try {
       $resp = Invoke-RestMethod -Method Get -Uri "https://api.browserstack.com/automate/plan.json" -Headers $headers
       $script:WEB_PLAN_FETCHED = $true
@@ -262,7 +318,7 @@ function Fetch-Plan-Details {
       Log-Line "❌ Web Testing Plan fetch failed ($($_.Exception.Message))" $GLOBAL_LOG
     }
   }
-  if ($TEST_TYPE -in @("App","Both")) {
+  if ($TestType -in @("App","Both","app","both")) {
     try {
       $resp2 = Invoke-RestMethod -Method Get -Uri "https://api-cloud.browserstack.com/app-automate/plan.json" -Headers $headers
       $script:MOBILE_PLAN_FETCHED = $true
@@ -273,10 +329,14 @@ function Fetch-Plan-Details {
     }
   }
 
-  if ( ($TEST_TYPE -eq "Web"   -and -not $WEB_PLAN_FETCHED) -or
-       ($TEST_TYPE -eq "App"   -and -not $MOBILE_PLAN_FETCHED) -or
-       ($TEST_TYPE -eq "Both"  -and -not ($WEB_PLAN_FETCHED -or $MOBILE_PLAN_FETCHED)) ) {
+  if ( ($TestType -match "^Web$|^web$" -and -not $WEB_PLAN_FETCHED) -or
+       ($TestType -match "^App$|^app$" -and -not $MOBILE_PLAN_FETCHED) -or
+       ($TestType -match "^Both$|^both$" -and -not ($WEB_PLAN_FETCHED -or $MOBILE_PLAN_FETCHED)) ) {
     Log-Line "❌ Unauthorized to fetch required plan(s) or failed request(s). Exiting." $GLOBAL_LOG
     throw "Plan fetch failed"
   }
+  
+  Log-Line "ℹ️ Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)" $GLOBAL_LOG
 }
+
+

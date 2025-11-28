@@ -1,17 +1,98 @@
-# ==============================================
-# 🧩 ENVIRONMENT PREREQUISITE CHECKS
-# ==============================================
+﻿# Environment prerequisite checks (proxy + tech stack validation).
+
+$PROXY_TEST_URL = "https://www.browserstack.com/automate/browsers.json"
+
+function Parse-ProxyUrl {
+  param([string]$ProxyUrl)
+  if ([string]::IsNullOrWhiteSpace($ProxyUrl)) {
+    return $null
+  }
+
+  $cleaned = $ProxyUrl -replace '^https?://', ''
+  if ($cleaned -match '@') {
+    $cleaned = $cleaned.Substring($cleaned.IndexOf('@') + 1)
+  }
+
+  if ($cleaned -match '^([^:]+):(\d+)') {
+    return @{
+      Host = $matches[1]
+      Port = $matches[2]
+    }
+  } elseif ($cleaned -match '^([^:]+)') {
+    return @{
+      Host = $matches[1]
+      Port = "8080"
+    }
+  }
+  return $null
+}
+
+function Set-ProxyInEnv {
+  param(
+    [string]$Username,
+    [string]$AccessKey
+  )
+
+  Log-Section "🌐 Network & Proxy Validation" $GLOBAL_LOG
+
+  $proxy = $env:http_proxy
+  if ([string]::IsNullOrWhiteSpace($proxy)) { $proxy = $env:HTTP_PROXY }
+  if ([string]::IsNullOrWhiteSpace($proxy)) { $proxy = $env:https_proxy }
+  if ([string]::IsNullOrWhiteSpace($proxy)) { $proxy = $env:HTTPS_PROXY }
+
+  $env:PROXY_HOST = ""
+  $env:PROXY_PORT = ""
+
+  if ([string]::IsNullOrWhiteSpace($proxy)) {
+    Log-Line "No proxy found in environment. Using direct connection." $GLOBAL_LOG
+    return
+  }
+
+  Log-Line "Proxy detected: $proxy" $GLOBAL_LOG
+  $proxyInfo = Parse-ProxyUrl -ProxyUrl $proxy
+  if (-not $proxyInfo) {
+    Log-Line "❌ Failed to parse proxy URL: $proxy" $GLOBAL_LOG
+    return
+  }
+
+  $pair = if ($Username -and $AccessKey) { "$Username`:$AccessKey" } else { "" }
+  $base64Creds = ""
+  if ($pair) {
+    $base64Creds = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($pair))
+  }
+
+  try {
+    $proxyUri = "http://$($proxyInfo.Host):$($proxyInfo.Port)"
+    $webProxy = New-Object System.Net.WebProxy($proxyUri)
+    $webClient = New-Object System.Net.WebClient
+    $webClient.Proxy = $webProxy
+    if ($base64Creds) {
+      $webClient.Headers.Add("Authorization", "Basic $base64Creds")
+    }
+
+    $null = $webClient.DownloadString($PROXY_TEST_URL)
+
+    Log-Line "✅ Reachable via proxy. HTTP 200" $GLOBAL_LOG
+    Log-Line "Exporting PROXY_HOST=$($proxyInfo.Host)" $GLOBAL_LOG
+    Log-Line "Exporting PROXY_PORT=$($proxyInfo.Port)" $GLOBAL_LOG
+    $env:PROXY_HOST = $proxyInfo.Host
+    $env:PROXY_PORT = $proxyInfo.Port
+  } catch {
+    $statusMsg = $_.Exception.Message
+    Log-Line "❌ Not reachable via proxy. Error: $statusMsg" $GLOBAL_LOG
+    $env:PROXY_HOST = ""
+    $env:PROXY_PORT = ""
+  }
+}
 
 function Validate-Tech-Stack {
   Log-Line "ℹ️ Checking prerequisites for $script:TECH_STACK" $GLOBAL_LOG
   switch ($script:TECH_STACK) {
     "Java" {
-      Log-Line "🔍 Checking if 'java' command exists..." $GLOBAL_LOG
       if (-not (Get-Command java -ErrorAction SilentlyContinue)) {
         Log-Line "❌ Java command not found in PATH." $GLOBAL_LOG
         throw "Java not found"
       }
-      Log-Line "🔍 Checking if Java runs correctly..." $GLOBAL_LOG
       $verInfo = & cmd /c 'java -version 2>&1'
       if (-not $verInfo) {
         Log-Line "❌ Java exists but failed to run." $GLOBAL_LOG
@@ -21,10 +102,8 @@ function Validate-Tech-Stack {
       ($verInfo -split "`r?`n") | ForEach-Object { if ($_ -ne "") { Log-Line "  $_" $GLOBAL_LOG } }
     }
     "Python" {
-      Log-Line "🔍 Checking if 'python3' command exists..." $GLOBAL_LOG
       try {
         Set-PythonCmd
-        Log-Line "🔍 Checking if Python3 runs correctly..." $GLOBAL_LOG
         $code = Invoke-Py -Arguments @("--version") -LogFile $null -WorkingDirectory (Get-Location).Path
         if ($code -eq 0) {
           Log-Line ("✅ Python3 is installed: {0}" -f ( ($PY_CMD -join ' ') )) $GLOBAL_LOG
@@ -36,25 +115,20 @@ function Validate-Tech-Stack {
         throw
       }
     }
-
     "NodeJS" {
-      Log-Line "🔍 Checking if 'node' command exists..." $GLOBAL_LOG
       if (-not (Get-Command node -ErrorAction SilentlyContinue)) { 
         Log-Line "❌ Node.js command not found in PATH." $GLOBAL_LOG
         throw "Node not found" 
       }
-      Log-Line "🔍 Checking if 'npm' command exists..." $GLOBAL_LOG
       if (-not (Get-Command npm -ErrorAction SilentlyContinue)) { 
         Log-Line "❌ npm command not found in PATH." $GLOBAL_LOG
         throw "npm not found" 
       }
-      Log-Line "🔍 Checking if Node.js runs correctly..." $GLOBAL_LOG
       $nodeVer = & node -v 2>&1
       if (-not $nodeVer) {
         Log-Line "❌ Node.js exists but failed to run." $GLOBAL_LOG
         throw "Node.js invocation failed"
       }
-      Log-Line "🔍 Checking if npm runs correctly..." $GLOBAL_LOG
       $npmVer = & npm -v 2>&1
       if (-not $npmVer) {
         Log-Line "❌ npm exists but failed to run." $GLOBAL_LOG
@@ -63,13 +137,12 @@ function Validate-Tech-Stack {
       Log-Line "✅ Node.js is installed: $nodeVer" $GLOBAL_LOG
       Log-Line "✅ npm is installed: $npmVer" $GLOBAL_LOG
     }
-    default { Log-Line "❌ Unknown tech stack selected: $script:TECH_STACK" $GLOBAL_LOG; throw "Unknown tech stack" }
+    default {
+      Log-Line "❌ Unknown TECH_STACK: $script:TECH_STACK" $GLOBAL_LOG
+      throw "Unknown tech stack"
+    }
   }
-  Log-Line "✅ Prerequisites validated for $script:TECH_STACK" $GLOBAL_LOG
 }
 
-# fix Python branch without ternary
-function Get-PythonCmd {
-  if (Get-Command python3 -ErrorAction SilentlyContinue) { return "python3" }
-  return "python"
-}
+
+

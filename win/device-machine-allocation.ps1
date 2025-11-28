@@ -1,6 +1,5 @@
-# ==============================================
-# 📱 DEVICE & MACHINE ALLOCATION
-# ==============================================
+﻿# Device and platform allocation utilities for the Windows BrowserStack NOW flow.
+# Mirrors the macOS shell script structure so we can share logic between both platforms.
 
 # ===== Example Platform Templates =====
 $WEB_PLATFORM_TEMPLATES = @(
@@ -213,25 +212,31 @@ function Generate-Mobile-Platforms-Yaml {
 
 function Generate-Mobile-Caps-Json {
   param([int]$MaxTotalParallels, [string]$OutputFile)
+  $json = Generate-Mobile-Caps-Json-String -MaxTotalParallels $MaxTotalParallels
+  Set-ContentNoBom -Path $OutputFile -Value $json
+  return $json
+}
+
+function Generate-Mobile-Caps-Json-String {
+  param([int]$MaxTotalParallels)
   $max = $MaxTotalParallels
   if ($max -lt 1) { $max = 1 }
-  
+
   $items = @()
   $count = 0
-  
+
   foreach ($t in $MOBILE_ALL) {
     $parts = $t.Split('|')
     $platformName = $parts[0]
     $deviceName   = $parts[1]
     $platformVer  = $parts[2]
-    
+
     # Filter based on APP_PLATFORM
     if (-not [string]::IsNullOrWhiteSpace($APP_PLATFORM)) {
       if ($APP_PLATFORM -eq 'ios' -and $platformName -ne 'ios') { continue }
       if ($APP_PLATFORM -eq 'android' -and $platformName -ne 'android') { continue }
-      # If APP_PLATFORM is 'all', include both ios and android (no filtering)
     }
-    
+
     $items += [pscustomobject]@{
       'bstack:options' = @{
         deviceName = $deviceName
@@ -241,13 +246,8 @@ function Generate-Mobile-Caps-Json {
     $count++
     if ($count -ge $max) { break }
   }
-  
-  # Convert to JSON
-  $json = ($items | ConvertTo-Json -Depth 5)
-  
-  # Write to file
-  Set-ContentNoBom -Path $OutputFile -Value $json
-  
+
+  $json = ($items | ConvertTo-Json -Depth 5 -Compress)
   return $json
 }
 
@@ -255,7 +255,7 @@ function Generate-Web-Caps-Json {
   param([int]$MaxTotalParallels)
   $max = [Math]::Floor($MaxTotalParallels * $PARALLEL_PERCENTAGE)
   if ($max -lt 1) { $max = 1 }
-  
+
   $items = @()
   $count = 0
   foreach ($t in $WEB_PLATFORM_TEMPLATES) {
@@ -263,8 +263,8 @@ function Generate-Web-Caps-Json {
     $os = $parts[0]; $osVersion = $parts[1]; $browserName = $parts[2]
     foreach ($version in @('latest','latest-1','latest-2')) {
       $items += [pscustomobject]@{
-        browserName   = $browserName
-        browserVersion= $version
+        browserName    = $browserName
+        browserVersion = $version
         'bstack:options' = @{
           os        = $os
           osVersion = $osVersion
@@ -275,21 +275,11 @@ function Generate-Web-Caps-Json {
     }
     if ($count -ge $max) { break }
   }
-  
-  # Convert to JSON and remove outer brackets to match macOS behavior
-  # The test code adds brackets: JSON.parse("[" + process.env.BSTACK_CAPS_JSON + "]")
-  $json = ($items | ConvertTo-Json -Depth 5)
-  
-  # Remove leading [ and trailing ]
-  if ($json.StartsWith('[')) {
-    $json = $json.Substring(1)
-  }
-  if ($json.EndsWith(']')) {
-    $json = $json.Substring(0, $json.Length - 1)
-  }
-  
-  # Trim any leading/trailing whitespace
-  $json = $json.Trim()
-  
+
+  # Return valid JSON array (keep the brackets!)
+  $json = ($items | ConvertTo-Json -Depth 5 -Compress)
   return $json
 }
+
+
+

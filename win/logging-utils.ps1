@@ -1,12 +1,32 @@
-# ==============================================
-# 🪄 LOGGING HELPERS
-# ==============================================
+﻿# Logging helpers shared across the Windows BrowserStack NOW scripts.
+
+if (-not (Get-Variable -Name NOW_RUN_LOG_FILE -Scope Script -ErrorAction SilentlyContinue)) {
+  $script:NOW_RUN_LOG_FILE = ""
+}
+
+function Set-RunLogFile {
+  param([string]$Path)
+  $script:NOW_RUN_LOG_FILE = $Path
+  if ($Path) {
+    $env:NOW_RUN_LOG_FILE = $Path
+  } else {
+    Remove-Item Env:NOW_RUN_LOG_FILE -ErrorAction SilentlyContinue
+  }
+}
+
+function Get-RunLogFile {
+  return $script:NOW_RUN_LOG_FILE
+}
 
 function Log-Line {
   param(
-    [Parameter(Mandatory=$true)][string]$Message,
+    [Parameter(Mandatory=$true)][AllowEmptyString()][string]$Message,
     [string]$DestFile
   )
+  if (-not $DestFile) {
+    $DestFile = Get-RunLogFile
+  }
+
   $ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
   $line = "[$ts] $Message"
   Write-Host $line
@@ -17,15 +37,20 @@ function Log-Line {
   }
 }
 
-function Show-Spinner {
-  param([Parameter(Mandatory)][System.Diagnostics.Process]$Process)
-  $spin = @('|','/','-','\')
-  $i = 0
-  $ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-  while (!$Process.HasExited) {
-    Write-Host "`r[$ts] ⏳ Processing... $($spin[$i])" -NoNewline
-    $i = ($i + 1) % 4
-    Start-Sleep -Milliseconds 100
-  }
-  Write-Host "`r[$ts] ✅ Done!                    "
+function Log-Section {
+  param(
+    [Parameter(Mandatory)][AllowEmptyString()][string]$Title,
+    [string]$DestFile
+  )
+  $divider = "───────────────────────────────────────────────"
+  Log-Line "" $DestFile
+  Log-Line $divider $DestFile
+  Log-Line ("{0}" -f $Title) $DestFile
+  Log-Line $divider $DestFile
 }
+
+function Log-Info    { param([string]$Message,[string]$DestFile) Log-Line ("ℹ️  $Message") $DestFile }
+function Log-Success { param([string]$Message,[string]$DestFile) Log-Line ("✅  $Message") $DestFile }
+function Log-Warn    { param([string]$Message,[string]$DestFile) Log-Line ("⚠️  $Message") $DestFile }
+function Log-Error   { param([string]$Message,[string]$DestFile) Log-Line ("❌  $Message") $DestFile }
+
