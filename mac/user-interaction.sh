@@ -10,16 +10,29 @@ get_browserstack_credentials() {
         access_key="$BROWSERSTACK_ACCESS_KEY"
         log_info "BrowserStack credentials loaded from environment variables for user: $username" 
     else
+    if [[ "$NOW_OS" == "macos" ]]; then
         username=$(osascript -e 'Tell application "System Events" to display dialog "Please enter your BrowserStack Username.\n\nNote: Locate it in your BrowserStack account profile page.\nhttps://www.browserstack.com/accounts/profile/details" default answer "" with title "BrowserStack Setup" buttons {"OK"} default button "OK"' \
         -e 'text returned of result')
+    else
+        echo "Please enter your BrowserStack Username."
+        echo "Note: Locate it in your BrowserStack account profile page: https://www.browserstack.com/accounts/profile/details"
+        read -r username
+    fi
         
         if [ -z "$username" ]; then
             log_msg_to "❌ Username empty" 
             return 1
         fi
         
+    if [[ "$NOW_OS" == "macos" ]]; then
         access_key=$(osascript -e 'Tell application "System Events" to display dialog "Please enter your BrowserStack Access Key.\n\nNote: Locate it in your BrowserStack account page.\nhttps://www.browserstack.com/accounts/profile/details" default answer "" with hidden answer with title "BrowserStack Setup" buttons {"OK"} default button "OK"' \
         -e 'text returned of result')
+    else
+        echo "Please enter your BrowserStack Access Key."
+        echo "Note: Locate it in your BrowserStack account page: https://www.browserstack.com/accounts/profile/details"
+        read -rs access_key
+        echo "" # Newline after secret input
+    fi
         if [ -z "$access_key" ]; then
             log_msg_to "❌ Access Key empty" 
             return 1
@@ -41,8 +54,18 @@ get_tech_stack() {
         tech_stack="$TSTACK"
         log_msg_to "✅ Selected Tech Stack from environment: $tech_stack" 
     else
+    if [[ "$NOW_OS" == "macos" ]]; then
         tech_stack=$(osascript -e 'Tell application "System Events" to display dialog "Select installed tech stack:" buttons {"java", "python", "nodejs"} default button "java" with title "Testing Framework Technology Stack"' \
         -e 'button returned of result')
+    else
+        echo "Select installed tech stack:"
+        select opt in "java" "python" "nodejs"; do
+            case $opt in
+                "java"|"python"|"nodejs") tech_stack=$opt; break ;;
+                *) echo "Invalid option";;
+            esac
+        done
+    fi
     fi
     log_msg_to "✅ Selected Tech Stack: $tech_stack" 
     log_info "Tech Stack: $tech_stack"
@@ -56,8 +79,14 @@ get_tech_stack() {
 get_test_url() {
     local test_url=$DEFAULT_TEST_URL
     
-    test_url=$(osascript -e 'Tell application "System Events" to display dialog "Enter the URL you want to test with BrowserStack:\n(Leave blank for default: '"$DEFAULT_TEST_URL"')" default answer "" with title "Test URL Setup" buttons {"OK"} default button "OK"' \
-    -e 'text returned of result')
+    if [[ "$NOW_OS" == "macos" ]]; then
+        test_url=$(osascript -e 'Tell application "System Events" to display dialog "Enter the URL you want to test with BrowserStack:\n(Leave blank for default: '"$DEFAULT_TEST_URL"')" default answer "" with title "Test URL Setup" buttons {"OK"} default button "OK"' \
+        -e 'text returned of result')
+    else
+        echo "Enter the URL you want to test with BrowserStack:"
+        echo "(Leave blank for default: $DEFAULT_TEST_URL)"
+        read -r test_url
+    fi
     
     if [ -n "$test_url" ]; then
         log_msg_to "🌐 Using custom test URL: $test_url" 
@@ -79,8 +108,18 @@ get_test_type() {
         test_type=$TT
         log_msg_to "✅ Selected Testing Type from environment: $TEST_TYPE" 
     else
+    if [[ "$NOW_OS" == "macos" ]]; then
         test_type=$(osascript -e 'Tell application "System Events" to display dialog "Select testing type:" buttons {"web", "app"} default button "web" with title "Testing Type"' \
         -e 'button returned of result')
+    else
+        echo "Select testing type:"
+        select opt in "web" "app"; do
+            case $opt in
+                "web"|"app") test_type=$opt; break ;;
+                *) echo "Invalid option";;
+            esac
+        done
+    fi
         log_msg_to "✅ Selected Testing Type: $TEST_TYPE" 
         RUN_MODE=$test_type
         log_info "Run Mode: ${RUN_MODE:-default}"

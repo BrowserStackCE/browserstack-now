@@ -536,7 +536,13 @@ detect_setup_python_env() {
         exit 1
     }
     
-    # shellcheck source=/dev/null
-    source .venv/bin/activate
+    # Activate virtual environment (handle Windows/Unix paths)
+    if [ -f ".venv/Scripts/activate" ]; then
+        # shellcheck source=/dev/null
+        source .venv/Scripts/activate
+    else
+        # shellcheck source=/dev/null
+        source .venv/bin/activate
+    fi
     log_success "Virtual environment created and activated."
 }
