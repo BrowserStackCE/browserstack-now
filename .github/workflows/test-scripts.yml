@@ -305,12 +305,11 @@ jobs:
       
       - name: Sync BrowserStack logs to workspace (Windows)
         if: always()
-        shell: powershell
         run: |
           $dest = "${env:GITHUB_WORKSPACE}\bs-logs"
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
 
-          $logPath = "${HOME}\.browserstack\NOW\logs"
+          $logPath = "$env:USERPROFILE\.browserstack\NOW\logs"
 
           if (Test-Path $logPath) {
               Write-Host "Copying logs from $logPath"
@@ -326,7 +325,7 @@ jobs:
         with:
           name: browserstack-logs-windows
           path: |
-            C:\Users\runneradmin\.browserstack\NOW\logs\
+            ${{ github.workspace }}/bs-logs
             C:\Temp\run_test_*.log
           retention-days: 30
           if-no-files-found: ignore
