@@ -149,7 +149,7 @@ try {
   
   # Check for proxy configuration
   Log-Line "ℹ️ Checking proxy in environment" $GLOBAL_LOG
-  $proxyCheckScript = Join-Path $PSScriptRoot "proxy-check.ps1"
+  $proxyCheckScript = Join-Path $PSScriptRoot "env-prequisite-checks.ps1"
   if (Test-Path $proxyCheckScript) {
     try {
       & $proxyCheckScript -BrowserStackUsername $BROWSERSTACK_USERNAME -BrowserStackAccessKey $BROWSERSTACK_ACCESS_KEY
