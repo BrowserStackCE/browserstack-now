@@ -198,7 +198,7 @@ jobs:
       - name: Validate supporting PowerShell scripts syntax
         run: |
           Write-Host "Validating supporting PowerShell scripts..."
-          $Scripts = @("win/proxy-common-utils.ps1", "win/logging-utils.ps1", "win/env-prequisite-checks.ps1", "win/user-interaction.ps1", "win/env-setup-run.ps1")
+          $Scripts = @("win/common-utils.ps1", "win/logging-utils.ps1", "win/env-prequisite-checks.ps1", "win/user-interaction.ps1", "win/env-setup-run.ps1")
           foreach ($Script in $Scripts) {
             $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $Script), [ref]$null)
             Write-Host "✅ $Script syntax is valid"
@@ -303,15 +303,22 @@ jobs:
           
           Write-Host "✅ All integration tests completed"
       
-      - name: Sync BrowserStack logs to workspace
+      - name: Sync BrowserStack logs to workspace (Windows)
         if: always()
+        shell: powershell
         run: |
-          mkdir -p ${{ github.workspace }}/bs-logs
-          if [ -d ~/.browserstack/NOW/logs ]; then
-            cp -R ~/.browserstack/NOW/logs/* ${{ github.workspace }}/bs-logs/ || true
-          else
-            echo "No logs found in ~/.browserstack/NOW/logs"
-          fi
+          $dest = "${env:GITHUB_WORKSPACE}\bs-logs"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+
+          $logPath = "${HOME}\.browserstack\NOW\logs"
+
+          if (Test-Path $logPath) {
+              Write-Host "Copying logs from $logPath"
+              Copy-Item -Path "$logPath\*" -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue
+          }
+          else {
+              Write-Host "No logs found at $logPath"
+          }
   
       - name: Upload BrowserStack Logs as Artifacts
         if: always()
