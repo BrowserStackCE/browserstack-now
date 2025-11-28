@@ -171,148 +171,158 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-  # test-windows:
-  #   name: Test win/run.ps1 on Windows
-  #   runs-on: windows-latest
-  #   timeout-minutes: 15
-  #   environment: BrowserStack
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #     - name: Set up Python 3.12
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: '3.12'
-  #     - name: Check PowerShell version
-  #       run: |
-  #         $PSVersionTable.PSVersion
-  #         Write-Host "✅ PowerShell version check complete"
-  # 
-  #     - name: Validate PowerShell script syntax
-  #       run: |
-  #         Write-Host "Validating win/run.ps1 syntax..."
-  #         $ScriptPath = "win/run.ps1"
-  #         $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $ScriptPath), [ref]$null)
-  #         Write-Host "✅ win/run.ps1 syntax is valid"
-  # 
-  #     - name: Validate supporting PowerShell scripts syntax
-  #       run: |
-  #         Write-Host "Validating supporting PowerShell scripts..."
-  #         $Scripts = @("win/proxy-check.ps1")
-  #         foreach ($Script in $Scripts) {
-  #           $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $Script), [ref]$null)
-  #           Write-Host "✅ $Script syntax is valid"
-  #         }
-  # 
-  #     - name: Run PSScriptAnalyzer
-  #       run: |
-  #         Write-Host "Installing PSScriptAnalyzer..."
-  #         Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -ErrorAction SilentlyContinue
-  #         Write-Host "Running PSScriptAnalyzer..."
-  #         Invoke-ScriptAnalyzer -Path "win/run.ps1" -Recurse -ReportSummary || $true
-  #         Write-Host "✅ PSScriptAnalyzer analysis complete"
-  # 
-  #     - name: Check script file encoding
-  #       run: |
-  #         Write-Host "Checking PowerShell script encoding..."
-  #         $ScriptPath = "win/run.ps1"
-  #         $Encoding = (Get-Item $ScriptPath).EncodingInfo
-  #         Write-Host "File encoding: $Encoding"
-  #         Write-Host "✅ Encoding check complete"
-  # 
-  #     - name: Verify required dependencies
-  #       run: |
-  #         Write-Host "Checking required dependencies..."
-  #         if (Get-Command curl.exe -ErrorAction SilentlyContinue) { Write-Host "✅ curl found" }
-  #         if (Get-Command git.exe -ErrorAction SilentlyContinue) { Write-Host "✅ git found" }
-  #         Write-Host "✅ PowerShell dependencies verified"
-  # 
-  #     - name: Integration Test - Silent Mode Execution
-  #       if: success()
-  #       env:
-  #         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
-  #         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-  #         TURL: https://bstackdemo.com
-  #       run: |
-  #         Write-Host "Running integration tests in silent mode..."
-  #         
-  #         # Set default values if secrets are not provided
-  #         $BrowserStackUsername = if ($env:BROWSERSTACK_USERNAME) { $env:BROWSERSTACK_USERNAME } else { "test_user" }
-  #         $BrowserStackAccessKey = if ($env:BROWSERSTACK_ACCESS_KEY) { $env:BROWSERSTACK_ACCESS_KEY } else { "test_key" }
-  #         $TestUrl = $env:TURL
-  #         
-  #         # Export environment variables
-  #         $env:BROWSERSTACK_USERNAME = $BrowserStackUsername
-  #         $env:BROWSERSTACK_ACCESS_KEY = $BrowserStackAccessKey
-  #         $env:TURL = $TestUrl
-  #         
-  #         # Test configurations
-  #         $testConfigs = @(
-  #             @("web", "java"),
-  #             @("app", "java"),
-  #             @("web", "python"),
-  #             @("app", "python"),
-  #             @("web", "nodejs"),
-  #             @("app", "nodejs")
-  #         )
-  #         
-  #         foreach ($config in $testConfigs) {
-  #             $testType = $config[0]
-  #             $techStack = $config[1]
-  #             
-  #             Write-Host "================================"
-  #             Write-Host "Testing: .\win\run.ps1 --silent $testType $techStack"
-  #             Write-Host "================================"
-  #             
-  #             # Create log file path
-  #             $logPath = "C:\Temp\run_test_${testType}_${techStack}.log"
-  #             New-Item -ItemType Directory -Path "C:\Temp" -Force -ErrorAction SilentlyContinue | Out-Null
-  #             
-  #             # Run with timeout (using job for timeout capability)
-  #             $job = Start-Job -ScriptBlock {
-  #                 param($path, $testType, $techStack, $logPath)
-  #                 & $path --silent $testType $techStack 2>&1 | Tee-Object -FilePath $logPath -Append
-  #             } -ArgumentList ".\win\run.ps1", $testType, $techStack, $logPath
-  #             
-  #             # Wait for job with 600 second timeout
-  #             $timeout = New-TimeSpan -Seconds 600
-  #             $completed = Wait-Job -Job $job -Timeout 600
-  #             
-  #             if ($completed) {
-  #                 $result = Receive-Job -Job $job
-  #                 if ($job.State -eq "Completed") {
-  #                     Write-Host "✅ .\win\run.ps1 --silent $testType $techStack completed successfully"
-  #                 } else {
-  #                     Write-Host "⚠️ .\win\run.ps1 --silent $testType $techStack exited with state: $($job.State)"
-  #                     if (Test-Path $logPath) {
-  #                         Write-Host "Log output (last 20 lines):"
-  #                         Get-Content -Path $logPath -Tail 20
-  #                     }
-  #                 }
-  #             } else {
-  #                 Write-Host "⚠️ .\win\run.ps1 --silent $testType $techStack timed out after 600 seconds"
-  #                 Stop-Job -Job $job
-  #                 if (Test-Path $logPath) {
-  #                     Write-Host "Log output (last 20 lines):"
-  #                     Get-Content -Path $logPath -Tail 20
-  #                 }
-  #             }
-  #             
-  #             Remove-Job -Job $job -Force
-  #         }
-  #         
-  #         Write-Host "✅ All integration tests completed"
-  # 
-  #     - name: Upload BrowserStack Logs as Artifacts
-  #       if: always()
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: browserstack-logs-windows
-  #         path: |
-  #           C:\Users\runneradmin\.browserstack\NOW\logs\
-  #           C:\Temp\run_test_*.log
-  #         retention-days: 30
-  #         if-no-files-found: ignore
+  test-windows:
+    name: Test win/run.ps1 on Windows
+    runs-on: windows-latest
+    timeout-minutes: 15
+    environment: BrowserStack
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check PowerShell version
+        run: |
+          $PSVersionTable.PSVersion
+          Write-Host "✅ PowerShell version check complete"
+  
+      - name: Validate PowerShell script syntax
+        run: |
+          Write-Host "Validating win/run.ps1 syntax..."
+          $ScriptPath = "win/run.ps1"
+          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $ScriptPath), [ref]$null)
+          Write-Host "✅ win/run.ps1 syntax is valid"
+  
+      - name: Validate supporting PowerShell scripts syntax
+        run: |
+          Write-Host "Validating supporting PowerShell scripts..."
+          $Scripts = @("win/proxy-check.ps1")
+          foreach ($Script in $Scripts) {
+            $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $Script), [ref]$null)
+            Write-Host "✅ $Script syntax is valid"
+          }
+  
+      - name: Run PSScriptAnalyzer
+        run: |
+          Write-Host "Installing PSScriptAnalyzer..."
+          Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -ErrorAction SilentlyContinue
+          Write-Host "Running PSScriptAnalyzer..."
+          Invoke-ScriptAnalyzer -Path "win/run.ps1" -Recurse -ReportSummary || $true
+          Write-Host "✅ PSScriptAnalyzer analysis complete"
+  
+      - name: Check script file encoding
+        run: |
+          Write-Host "Checking PowerShell script encoding..."
+          $ScriptPath = "win/run.ps1"
+          $Encoding = (Get-Item $ScriptPath).EncodingInfo
+          Write-Host "File encoding: $Encoding"
+          Write-Host "✅ Encoding check complete"
+  
+      - name: Verify required dependencies
+        run: |
+          Write-Host "Checking required dependencies..."
+          if (Get-Command curl.exe -ErrorAction SilentlyContinue) { Write-Host "✅ curl found" }
+          if (Get-Command git.exe -ErrorAction SilentlyContinue) { Write-Host "✅ git found" }
+          Write-Host "✅ PowerShell dependencies verified"
+  
+      - name: Integration Test - Silent Mode Execution
+        if: success()
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          TURL: https://bstackdemo.com
+        run: |
+          Write-Host "Running integration tests in silent mode..."
+          
+          # Set default values if secrets are not provided
+          $BrowserStackUsername = if ($env:BROWSERSTACK_USERNAME) { $env:BROWSERSTACK_USERNAME } else { "test_user" }
+          $BrowserStackAccessKey = if ($env:BROWSERSTACK_ACCESS_KEY) { $env:BROWSERSTACK_ACCESS_KEY } else { "test_key" }
+          $TestUrl = $env:TURL
+          
+          # Export environment variables
+          $env:BROWSERSTACK_USERNAME = $BrowserStackUsername
+          $env:BROWSERSTACK_ACCESS_KEY = $BrowserStackAccessKey
+          $env:TURL = $TestUrl
+          
+          # Test configurations
+          $testConfigs = @(
+              @("web", "java"),
+              @("app", "java"),
+              @("web", "python"),
+              @("app", "python"),
+              @("web", "nodejs"),
+              @("app", "nodejs")
+          )
+          
+          foreach ($config in $testConfigs) {
+              $testType = $config[0]
+              $techStack = $config[1]
+              
+              Write-Host "================================"
+              Write-Host "Testing: .\win\run.ps1 --silent $testType $techStack"
+              Write-Host "================================"
+              
+              # Create log file path
+              $logPath = "C:\Temp\run_test_${testType}_${techStack}.log"
+              New-Item -ItemType Directory -Path "C:\Temp" -Force -ErrorAction SilentlyContinue | Out-Null
+              
+              # Run with timeout (using job for timeout capability)
+              $job = Start-Job -ScriptBlock {
+                  param($path, $testType, $techStack, $logPath)
+                  & $path --silent $testType $techStack 2>&1 | Tee-Object -FilePath $logPath -Append
+              } -ArgumentList ".\win\run.ps1", $testType, $techStack, $logPath
+              
+              # Wait for job with 600 second timeout
+              $timeout = New-TimeSpan -Seconds 600
+              $completed = Wait-Job -Job $job -Timeout 600
+              
+              if ($completed) {
+                  $result = Receive-Job -Job $job
+                  if ($job.State -eq "Completed") {
+                      Write-Host "✅ .\win\run.ps1 --silent $testType $techStack completed successfully"
+                  } else {
+                      Write-Host "⚠️ .\win\run.ps1 --silent $testType $techStack exited with state: $($job.State)"
+                      if (Test-Path $logPath) {
+                          Write-Host "Log output (last 20 lines):"
+                          Get-Content -Path $logPath -Tail 20
+                      }
+                  }
+              } else {
+                  Write-Host "⚠️ .\win\run.ps1 --silent $testType $techStack timed out after 600 seconds"
+                  Stop-Job -Job $job
+                  if (Test-Path $logPath) {
+                      Write-Host "Log output (last 20 lines):"
+                      Get-Content -Path $logPath -Tail 20
+                  }
+              }
+              
+              Remove-Job -Job $job -Force
+          }
+          
+          Write-Host "✅ All integration tests completed"
+      
+      - name: Sync BrowserStack logs to workspace
+        if: always()
+        run: |
+          mkdir -p ${{ github.workspace }}/bs-logs
+          if [ -d ~/.browserstack/NOW/logs ]; then
+            cp -R ~/.browserstack/NOW/logs/* ${{ github.workspace }}/bs-logs/ || true
+          else
+            echo "No logs found in ~/.browserstack/NOW/logs"
+          fi
+  
+      - name: Upload BrowserStack Logs as Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserstack-logs-windows
+          path: |
+            C:\Users\runneradmin\.browserstack\NOW\logs\
+            C:\Temp\run_test_*.log
+          retention-days: 30
+          if-no-files-found: ignore
 
   test-linux:
     name: Test mac/run.sh on Linux
