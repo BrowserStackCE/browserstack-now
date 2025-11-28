@@ -23,7 +23,7 @@ setup_environment() {
     
     # Calculate parallels
     local total_parallels
-    total_parallels=$(echo "$max_parallels" | bc | cut -d'.' -f1)
+    total_parallels=$(awk -v n="$max_parallels" 'BEGIN { printf "%d", n }')
     [ -z "$total_parallels" ] && total_parallels=1
     local parallels_per_platform=$total_parallels
     
