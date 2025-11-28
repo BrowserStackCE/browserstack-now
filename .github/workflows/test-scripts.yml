@@ -194,11 +194,11 @@ jobs:
           $ScriptPath = "win/run.ps1"
           $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $ScriptPath), [ref]$null)
           Write-Host "✅ win/run.ps1 syntax is valid"
-  
+
       - name: Validate supporting PowerShell scripts syntax
         run: |
           Write-Host "Validating supporting PowerShell scripts..."
-          $Scripts = @("win/proxy-check.ps1")
+          $Scripts = @("win/proxy-common-utils.ps1", "win/logging-utils.ps1", "win/env-prequisite-checks.ps1", "win/user-interaction.ps1", "win/env-setup-run.ps1")
           foreach ($Script in $Scripts) {
             $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $Script), [ref]$null)
             Write-Host "✅ $Script syntax is valid"
