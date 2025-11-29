@@ -33,14 +33,14 @@ $script:PY_CMD = @()
 function Ensure-Workspace {
   if (!(Test-Path $GLOBAL_DIR)) {
     New-Item -ItemType Directory -Path $GLOBAL_DIR | Out-Null
-    Log-Line "✅ Created Onboarding workspace: $GLOBAL_DIR" $GLOBAL_LOG
+    Log-Line "✅ Created Onboarding workspace: $GLOBAL_DIR" $NOW_RUN_LOG_FILE
   } else {
-    Log-Line "✅ Onboarding workspace found at: $GLOBAL_DIR" $GLOBAL_LOG
+    Log-Line "✅ Onboarding workspace found at: $GLOBAL_DIR" $NOW_RUN_LOG_FILE
   }
 }
 
 function Setup-Workspace {
-  Log-Section "⚙️ Environment & Credentials" $GLOBAL_LOG
+  Log-Section "⚙️ Environment & Credentials" $NOW_RUN_LOG_FILE
   Ensure-Workspace
 }
 
@@ -48,10 +48,10 @@ function Clear-OldLogs {
   if (!(Test-Path $LOG_DIR)) { 
     New-Item -ItemType Directory -Path $LOG_DIR | Out-Null 
   }
-  '' | Out-File -FilePath $GLOBAL_LOG -Encoding UTF8
+  '' | Out-File -FilePath $NOW_RUN_LOG_FILE -Encoding UTF8
   '' | Out-File -FilePath $WEB_LOG -Encoding UTF8
   '' | Out-File -FilePath $MOBILE_LOG -Encoding UTF8
-  Log-Line "✅ Logs cleared and fresh run initiated." $GLOBAL_LOG
+  Log-Line "✅ Logs cleared and fresh run initiated." $NOW_RUN_LOG_FILE
 }
 
 # ===== Git Clone =====
@@ -253,7 +253,7 @@ function Test-PrivateIP {
 
 function Test-DomainPrivate {
   $domain = $CX_TEST_URL -replace '^https?://', '' -replace '/.*$', ''
-  Log-Line "Website domain: $domain" $GLOBAL_LOG
+  Log-Line "Website domain: $domain" $NOW_RUN_LOG_FILE
   $env:NOW_WEB_DOMAIN = $CX_TEST_URL
 
   $IP_ADDRESS = ""
@@ -269,15 +269,15 @@ function Test-DomainPrivate {
         $IP_ADDRESS = $matches[1]
       }
     } catch {
-      Log-Line "⚠️ Failed to resolve domain: $domain (assuming public domain)" $GLOBAL_LOG
+      Log-Line "⚠️ Failed to resolve domain: $domain (assuming public domain)" $NOW_RUN_LOG_FILE
       $IP_ADDRESS = ""
     }
   }
 
   if ([string]::IsNullOrWhiteSpace($IP_ADDRESS)) {
-    Log-Line "⚠️ DNS resolution failed for: $domain (treating as public domain, BrowserStack Local will be DISABLED)" $GLOBAL_LOG
+    Log-Line "⚠️ DNS resolution failed for: $domain (treating as public domain, BrowserStack Local will be DISABLED)" $NOW_RUN_LOG_FILE
   } else {
-    Log-Line "✅ Resolved IP: $IP_ADDRESS" $GLOBAL_LOG
+    Log-Line "✅ Resolved IP: $IP_ADDRESS" $NOW_RUN_LOG_FILE
   }
 
   return (Test-PrivateIP -IP $IP_ADDRESS)
@@ -294,7 +294,7 @@ function Get-BasicAuthHeader {
 function Fetch-Plan-Details {
   param([string]$TestType)
   
-  Log-Line "ℹ️ Fetching BrowserStack plan for $TestType" $GLOBAL_LOG
+  Log-Line "ℹ️ Fetching BrowserStack plan for $TestType" $NOW_RUN_LOG_FILE
   $auth = Get-BasicAuthHeader -User $BROWSERSTACK_USERNAME -Key $BROWSERSTACK_ACCESS_KEY
   $headers = @{ Authorization = $auth }
 
@@ -303,9 +303,9 @@ function Fetch-Plan-Details {
       $resp = Invoke-RestMethod -Method Get -Uri "https://api.browserstack.com/automate/plan.json" -Headers $headers
       $script:WEB_PLAN_FETCHED = $true
       $script:TEAM_PARALLELS_MAX_ALLOWED_WEB = [int]$resp.parallel_sessions_max_allowed
-      Log-Line "✅ Web Testing Plan fetched: Team max parallel sessions = $TEAM_PARALLELS_MAX_ALLOWED_WEB" $GLOBAL_LOG
+      Log-Line "✅ Web Testing Plan fetched: Team max parallel sessions = $TEAM_PARALLELS_MAX_ALLOWED_WEB" $NOW_RUN_LOG_FILE
     } catch {
-      Log-Line "❌ Web Testing Plan fetch failed ($($_.Exception.Message))" $GLOBAL_LOG
+      Log-Line "❌ Web Testing Plan fetch failed ($($_.Exception.Message))" $NOW_RUN_LOG_FILE
     }
   }
   if ($TestType -in @("App","Both","app","both")) {
@@ -313,20 +313,20 @@ function Fetch-Plan-Details {
       $resp2 = Invoke-RestMethod -Method Get -Uri "https://api-cloud.browserstack.com/app-automate/plan.json" -Headers $headers
       $script:MOBILE_PLAN_FETCHED = $true
       $script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE = [int]$resp2.parallel_sessions_max_allowed
-      Log-Line "✅ Mobile App Testing Plan fetched: Team max parallel sessions = $TEAM_PARALLELS_MAX_ALLOWED_MOBILE" $GLOBAL_LOG
+      Log-Line "✅ Mobile App Testing Plan fetched: Team max parallel sessions = $TEAM_PARALLELS_MAX_ALLOWED_MOBILE" $NOW_RUN_LOG_FILE
     } catch {
-      Log-Line "❌ Mobile App Testing Plan fetch failed ($($_.Exception.Message))" $GLOBAL_LOG
+      Log-Line "❌ Mobile App Testing Plan fetch failed ($($_.Exception.Message))" $NOW_RUN_LOG_FILE
     }
   }
 
   if ( ($TestType -match "^Web$|^web$" -and -not $WEB_PLAN_FETCHED) -or
        ($TestType -match "^App$|^app$" -and -not $MOBILE_PLAN_FETCHED) -or
        ($TestType -match "^Both$|^both$" -and -not ($WEB_PLAN_FETCHED -or $MOBILE_PLAN_FETCHED)) ) {
-    Log-Line "❌ Unauthorized to fetch required plan(s) or failed request(s). Exiting." $GLOBAL_LOG
+    Log-Line "❌ Unauthorized to fetch required plan(s) or failed request(s). Exiting." $NOW_RUN_LOG_FILE
     throw "Plan fetch failed"
   }
   
-  Log-Line "ℹ️ Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)" $GLOBAL_LOG
+  Log-Line "ℹ️ Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)" $NOW_RUN_LOG_FILE
 }
 
 # ===== Dynamic config generators =====
