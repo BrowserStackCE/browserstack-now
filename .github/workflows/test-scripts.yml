@@ -175,7 +175,7 @@ jobs:
   test-windows:
     name: Test win/run.ps1 on Windows
     runs-on: windows-latest
-    timeout-minutes: 3
+    timeout-minutes: 15
     environment: BrowserStack
     steps:
       - name: Checkout code
@@ -311,10 +311,14 @@ jobs:
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
 
           $logPath = Join-Path $env:USERPROFILE ".browserstack\NOW\logs"
+          $logPath2 = Join-Path $env:USERPROFILE "AppData\Local\Temp"
+          $logPath3 = Join-Path "C:\Temp"
 
           if (Test-Path $logPath) {
               Write-Host "Copying logs from $logPath"
               Copy-Item -Path (Join-Path $logPath "*") -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue
+              Copy-Item -Path (Join-Path $logPath2 "*") -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue
+              Copy-Item -Path (Join-Path $logPath3 "*") -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue
           }
           else {
               Write-Host "No logs found at $logPath"
