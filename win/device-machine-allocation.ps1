@@ -61,9 +61,11 @@ $MOBILE_ALL = @(
 function Generate-Platforms {
     param(
         [string]$platformName,
-        [string]$count,
+        [int]$count,
         [string]$platformsListContentFormat
     )
+
+    Log-Line "Initial Count: $count" $NOW_RUN_LOG_FILE
 
     # Remove trailing comma
     $count = $count.TrimEnd(',')
