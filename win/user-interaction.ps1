@@ -176,6 +176,9 @@ function Ask-BrowserStack-Credentials {
     Log-Line "❌ Access Key empty" $NOW_RUN_LOG_FILE
     throw "Access Key is required"
   }
+
+  $env:BROWSERSTACK_USERNAME = $script:BROWSERSTACK_USERNAME
+  $env:BROWSERSTACK_ACCESS_KEY = $script:BROWSERSTACK_ACCESS_KEY
   Log-Line "✅ BrowserStack credentials captured (access key hidden)" $NOW_RUN_LOG_FILE
 }
 
