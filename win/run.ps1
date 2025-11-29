@@ -30,11 +30,15 @@ $script:PSScriptRootResolved = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $PSScriptRootResolved "env-prequisite-checks.ps1")
 . (Join-Path $PSScriptRootResolved "env-setup-run.ps1")
 
+$CurrentDir=""
 # ===== Main flow (baseline steps then run) =====
 try {
   # Setup Summary Header
   Log-Section "🧭 Setup Summary – BrowserStack NOW" 
   Log-Line "ℹ️ Timestamp: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))"
+
+  $CurrentDir = (Get-Location).Path
+  
 
   # Get test type and tech stack FIRST
   if ($RunMode -match "--silent|--debug") {
@@ -96,6 +100,7 @@ try {
   Log-Line "Check logs for details:" $NOW_RUN_LOG_FILE
   Log-Line "  Log File: $NOW_RUN_LOG_FILE" $NOW_RUN_LOG_FILE
   Log-Line "========================================" $NOW_RUN_LOG_FILE
+  Set-Location -Path $CurrentDir
   throw
 }
 
