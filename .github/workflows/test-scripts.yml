@@ -175,7 +175,7 @@ jobs:
   test-windows:
     name: Test win/run.ps1 on Windows
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 3
     environment: BrowserStack
     steps:
       - name: Checkout code
