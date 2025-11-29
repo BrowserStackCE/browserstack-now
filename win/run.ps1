@@ -102,5 +102,7 @@ try {
   Log-Line "========================================" $NOW_RUN_LOG_FILE
   Set-Location -Path $CurrentDir
   throw
+} finally {
+  Set-Location -Path $CurrentDir
 }
 

@@ -129,12 +129,12 @@ $platforms
 
     # Validate Environment Variables
     Log-Section "Validate Environment Variables" $NOW_RUN_LOG_FILE
-    Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $NOW_RUN_LOG_FILE
-    Log-Line "ℹ️ BrowserStack Project: $BROWSERSTACK_PROJECT_NAME" $NOW_RUN_LOG_FILE
-    Log-Line "ℹ️ BrowserStack Build: $BROWSERSTACK_BUILD_NAME" $NOW_RUN_LOG_FILE
-    Log-Line "ℹ️ Web Application Endpoint: $CX_TEST_URL" $NOW_RUN_LOG_FILE
-    Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $NOW_RUN_LOG_FILE
-    Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Username: $env:BROWSERSTACK_USERNAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Project: $env:BROWSERSTACK_PROJECT_NAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Build: $env:BROWSERSTACK_BUILD_NAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Web Application Endpoint: $env:CX_TEST_URL" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Local Flag: $env:BROWSERSTACK_LOCAL" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Parallels per platform: $env:BSTACK_PARALLELS" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ Platforms:" $NOW_RUN_LOG_FILE
     $platforms -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $NOW_RUN_LOG_FILE } }
 
