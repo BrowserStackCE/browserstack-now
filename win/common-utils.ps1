@@ -367,18 +367,19 @@ function Detect-OS {
 
     $response = ""
 
-    # Detect Windows (PowerShell 5 or PowerShell 7 on Windows)
-    if ($IsWindows) {
+    # Detect OS using .NET APIs
+    $isWindows = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)
+    $isLinux   = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Linux)
+    $isMacOS   = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::OSX)
+
+    if ($isWindows) {
         $response = "windows"
     }
-    # Detect macOS
-    elseif ($IsMacOS) {
+    elseif ($isMacOS) {
         $response = "macos"
     }
-    # Detect Linux (could be WSL or native Linux)
-    elseif ($IsLinux) {
-
-        # Detect WSL
+    elseif ($isLinux) {
+        # Check if WSL
         $procVersion = ""
         if (Test-Path "/proc/version") {
             $procVersion = Get-Content "/proc/version" -ErrorAction SilentlyContinue
@@ -386,7 +387,8 @@ function Detect-OS {
 
         if ($procVersion -match "microsoft") {
             $response = "wsl"
-        } else {
+        }
+        else {
             $response = "linux"
         }
     }
@@ -394,6 +396,6 @@ function Detect-OS {
         $response = "unknown"
     }
 
-    # Export (PowerShell equivalent)
+    # Export (PowerShell equivalent of export)
     $env:NOW_OS = $response
 }
