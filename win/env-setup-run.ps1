@@ -238,7 +238,7 @@ function Setup-Mobile-Java {
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
     $env:BROWSERSTACK_CONFIG_FILE = ".\browserstack.yml"
     
-    $platforms = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE -platformsListContentFormat "yaml"
+    $platforms = Generate-Mobile-Platforms -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE -platformsListContentFormat "yaml"
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
     # Write complete browserstack.yml (not just append)
@@ -331,7 +331,7 @@ function Setup-Mobile-Python {
 
     # Generate platform YAMLs
 
-    $platforms = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE -platformsListContentFormat "yaml"
+    $platforms = Generate-Mobile-Platforms -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE -platformsListContentFormat "yaml"
     $yamlContent =@"
 app: $APP_URL
 platforms:
@@ -396,7 +396,7 @@ function Setup-Mobile-NodeJS {
     Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
 
     # Generate capabilities JSON and set as environment variable (like Mac)
-    $capsJson = Generate-Mobile-Caps-Json-String -MaxTotalParallels $ParallelsPerPlatform
+    $capsJson = Generate-Mobile-Platforms -MaxTotalParallels $ParallelsPerPlatform
 
     $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY

@@ -312,7 +312,7 @@ jobs:
 
           $logPath = Join-Path $env:USERPROFILE ".browserstack\NOW\logs"
           $logPath2 = Join-Path $env:USERPROFILE "AppData\Local\Temp"
-          $logPath3 = Join-Path "C:\Temp"
+          $logPath3 = Join-Path "C:\Temp" "*.log"
 
           if (Test-Path $logPath) {
               Write-Host "Copying logs from $logPath"
