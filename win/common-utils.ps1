@@ -55,29 +55,30 @@ function Clear-OldLogs {
 # ===== Git Clone =====
 function Invoke-GitClone {
     param(
-        [Parameter(Mandatory)] [string]$Url,
-        [Parameter(Mandatory)] [string]$Target,
-        [string]$Branch,
-        [string]$LogFile
+        [Parameter(Mandatory)][string]$Url,
+        [Parameter(Mandatory)][string]$Target,
+        [string]$Branch
     )
 
-    $args = @("clone")
-    if ($Branch) { $args += @("-b", $Branch) }
-    $args += @($Url, $Target)
+    # Build safe git command
+    $cmd = "git clone --progress=off"
 
-    # Run git with normal PowerShell invocation
-    $result = git @args 2>&1 -ErrorAction Ignore
-
-    # Logging
-    if ($LogFile) {
-        $result | Out-File -FilePath $LogFile -Append
+    if ($Branch) { 
+        $cmd += " -b `"$Branch`"" 
     }
 
-    # Detect failure
+    $cmd += " `"$Url`" `"$Target`""
+
+    # Execute through cmd.exe to avoid PowerShell argument mangling
+    $result = cmd.exe /c $cmd 2>&1
+
+    Write-Host $result
+
     if ($LASTEXITCODE -ne 0) {
-        throw "git clone failed (exit $LASTEXITCODE): $result"
+        throw "git clone failed with exit code $LASTEXITCODE"
     }
 }
+
 
 
 function Set-ContentNoBom {
