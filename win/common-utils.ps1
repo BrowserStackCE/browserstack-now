@@ -54,42 +54,55 @@ function Clear-OldLogs {
 
 # ===== Git Clone =====
 function Invoke-GitClone {
-  param(
-    [Parameter(Mandatory)] [string]$Url,
-    [Parameter(Mandatory)] [string]$Target,
-    [string]$Branch,
-    [string]$LogFile
-  )
-  $args = @("clone")
-  if ($Branch) { $args += @("-b", $Branch) }
-  $args += @($Url, $Target)
+    param(
+        [Parameter(Mandatory)] [string]$Url,
+        [Parameter(Mandatory)] [string]$Target,
+        [string]$Branch,
+        [string]$LogFile
+    )
 
-  $psi = New-Object System.Diagnostics.ProcessStartInfo
-  $psi.FileName = "git"
-  $psi.Arguments = ($args | ForEach-Object {
-    if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ }
-  }) -join ' '
-  $psi.RedirectStandardOutput = $true
-  $psi.RedirectStandardError  = $true
-  $psi.UseShellExecute = $false
-  $psi.CreateNoWindow   = $true
-  $psi.WorkingDirectory = (Get-Location).Path
+    $args = @("clone")
+    if ($Branch) { $args += @("-b", $Branch) }
+    $args += @($Url, $Target)
 
-  $p = New-Object System.Diagnostics.Process
-  $p.StartInfo = $psi
-  [void]$p.Start()
-  $stdout = $p.StandardOutput.ReadToEnd()
-  $stderr = $p.StandardError.ReadToEnd()
-  $p.WaitForExit()
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName  = "git"
+    $psi.Arguments = ($args -join " ")
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError  = $true
+    $psi.UseShellExecute        = $false
+    $psi.CreateNoWindow         = $true
 
-  if ($LogFile) {
-    if ($stdout) { Add-Content -Path $LogFile -Value $stdout }
-    if ($stderr) { Add-Content -Path $LogFile -Value $stderr }
-  }
+    $p = New-Object System.Diagnostics.Process
+    $p.StartInfo = $psi
 
-  if ($p.ExitCode -ne 0) {
-    throw "git clone failed (exit $($p.ExitCode)): $stderr"
-  }
+    # Collect output asynchronously
+    $stdout = New-Object System.Text.StringBuilder
+    $stderr = New-Object System.Text.StringBuilder
+
+    $p.add_OutputDataReceived({
+        if ($_.Data) { $stdout.AppendLine($_.Data) | Out-Null }
+    })
+
+    $p.add_ErrorDataReceived({
+        if ($_.Data) { $stderr.AppendLine($_.Data) | Out-Null }
+    })
+
+    $p.Start() | Out-Null
+    $p.BeginOutputReadLine()
+    $p.BeginErrorReadLine()
+
+    $p.WaitForExit()
+
+    # Write logs
+    if ($LogFile) {
+        if ($stdout.Length -gt 0) { Add-Content $LogFile $stdout.ToString() }
+        if ($stderr.Length -gt 0) { Add-Content $LogFile $stderr.ToString() }
+    }
+
+    if ($p.ExitCode -ne 0) {
+        throw "git clone failed (exit $($p.ExitCode)): $($stderr.ToString())"
+    }
 }
 
 function Set-ContentNoBom {
@@ -322,8 +335,21 @@ function Fetch-Plan-Details {
     Log-Line "❌ Unauthorized to fetch required plan(s) or failed request(s). Exiting." $NOW_RUN_LOG_FILE
     throw "Plan fetch failed"
   }
-  
+
   Log-Line "ℹ️ Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)" $NOW_RUN_LOG_FILE
+
+  if ($RUN_MODE -like "*--silent*") {
+    if ($TestType -eq "web") {
+        $env:TEAM_PARALLELS_MAX_ALLOWED_WEB = "5"
+    }
+    else {
+        $env:TEAM_PARALLELS_MAX_ALLOWED_MOBILE = "5"
+    }
+    Log-Line "ℹ️ Resetting Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)" $NOW_RUN_LOG_FILE
+  }
+
+  
+
 }
 
 # ===== Dynamic config generators =====
@@ -363,6 +389,6 @@ function Generate-Mobile-Platforms {
 }
 
 function Detect-OS {
-  
+
     $env:NOW_OS = "windows"
 }

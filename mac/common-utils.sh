@@ -268,6 +268,17 @@ fetch_plan_details() {
         log_msg_to "❌ Unauthorized to fetch required plan(s). Exiting."
         exit 1
     fi
+
+    if [[ "$RUN_MODE" == *"--silent"* ]]; then
+        if [[ "$test_type" == "web" ]]; then
+            TEAM_PARALLELS_MAX_ALLOWED_WEB=5
+            export TEAM_PARALLELS_MAX_ALLOWED_WEB=5
+        else
+            TEAM_PARALLELS_MAX_ALLOWED_MOBILE=5
+            export TEAM_PARALLELS_MAX_ALLOWED_MOBILE=5
+        fi
+        log_info "Resetting Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)"
+    fi
 }
 
 # Function to check if IP is private
