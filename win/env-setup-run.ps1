@@ -114,10 +114,12 @@ function Setup-Web-Python {
     $platforms = Generate-Web-Platforms -max_total_parallels $TEAM_PARALLELS_MAX_ALLOWED_WEB -platformsListContentFormat "yaml"
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
-@"
+    $yamlContent = @"
 platforms:
 $platforms
-"@ | Set-Content "browserstack.yml"
+"@
+
+    Set-Content "browserstack.yml" -Value $yamlContent
 
     $env:BSTACK_PARALLELS = $ParallelsPerPlatform
     $env:BSTACK_PLATFORMS=$platforms
@@ -329,13 +331,13 @@ function Setup-Mobile-Python {
     # Generate platform YAMLs
 
     $platforms = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE -platformsListContentFormat "yaml"
-@"
+    $yamlContent =@"
 app: $APP_URL
 platforms:
 $platforms
-"@ | Set-Content $BROWSERSTACK_CONFIG_FILE
+"@
 
-
+    Set-Content "$BROWSERSTACK_CONFIG_FILE" -Value $yamlContent
     $script:APP_PLATFORM = $originalPlatform
     Log-Line "✅ Wrote platform YAMLs" $NOW_RUN_LOG_FILE
 
