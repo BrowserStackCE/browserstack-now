@@ -66,7 +66,7 @@ function Invoke-GitClone {
     $args += @($Url, $Target)
 
     # Run git with normal PowerShell invocation
-    $result = git @args *>&1
+    $result = git @args 2>&1 -ErrorAction Ignore
 
     # Logging
     if ($LogFile) {
