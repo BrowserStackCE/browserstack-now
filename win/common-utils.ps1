@@ -362,3 +362,38 @@ function Generate-Mobile-Platforms {
 
     return $platformsList
 }
+
+function Detect-OS {
+
+    $response = ""
+
+    # Detect Windows (PowerShell 5 or PowerShell 7 on Windows)
+    if ($IsWindows) {
+        $response = "windows"
+    }
+    # Detect macOS
+    elseif ($IsMacOS) {
+        $response = "macos"
+    }
+    # Detect Linux (could be WSL or native Linux)
+    elseif ($IsLinux) {
+
+        # Detect WSL
+        $procVersion = ""
+        if (Test-Path "/proc/version") {
+            $procVersion = Get-Content "/proc/version" -ErrorAction SilentlyContinue
+        }
+
+        if ($procVersion -match "microsoft") {
+            $response = "wsl"
+        } else {
+            $response = "linux"
+        }
+    }
+    else {
+        $response = "unknown"
+    }
+
+    # Export (PowerShell equivalent)
+    $env:NOW_OS = $response
+}

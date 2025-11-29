@@ -77,7 +77,8 @@ try {
 
   # Getting Ready section
   Log-Section "🧹 Getting Ready" $NOW_RUN_LOG_FILE
-  Log-Line "ℹ️ Detected Operating system: Windows" $NOW_RUN_LOG_FILE
+  Detect-OS
+  Log-Line "ℹ️ Detected Operating system: $NOW_OS" $NOW_RUN_LOG_FILE
   Log-Line "ℹ️ Clearing old logs from NOW Home Directory inside .browserstack" $NOW_RUN_LOG_FILE
   Clear-OldLogs
 
