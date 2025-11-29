@@ -93,9 +93,7 @@ try {
   Log-Line "========================================" $NOW_RUN_LOG_FILE
   Log-Line "Error: $($_.Exception.Message)" $NOW_RUN_LOG_FILE
   Log-Line "Check logs for details:" $NOW_RUN_LOG_FILE
-  Log-Line "  Global: $NOW_RUN_LOG_FILE" $NOW_RUN_LOG_FILE
-  Log-Line "  Web: $WEB_LOG" $NOW_RUN_LOG_FILE
-  Log-Line "  Mobile: $MOBILE_LOG" $NOW_RUN_LOG_FILE
+  Log-Line "  Log File: $NOW_RUN_LOG_FILE" $NOW_RUN_LOG_FILE
   Log-Line "========================================" $NOW_RUN_LOG_FILE
   throw
 }

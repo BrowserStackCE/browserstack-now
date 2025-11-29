@@ -162,21 +162,21 @@ function Ask-BrowserStack-Credentials {
     if ([string]::IsNullOrWhiteSpace($script:BROWSERSTACK_USERNAME) -or [string]::IsNullOrWhiteSpace($script:BROWSERSTACK_ACCESS_KEY)) {
       throw "BROWSERSTACK_USERNAME / BROWSERSTACK_ACCESS_KEY must be provided in silent/debug mode."
     }
-    Log-Line "✅ BrowserStack credentials loaded from environment for user: $script:BROWSERSTACK_USERNAME" $GLOBAL_LOG
+    Log-Line "✅ BrowserStack credentials loaded from environment for user: $script:BROWSERSTACK_USERNAME" $NOW_RUN_LOG_FILE
     return
   }
 
   $script:BROWSERSTACK_USERNAME = Show-InputBox -Title "BrowserStack Setup" -Prompt "Enter your BrowserStack Username:`n`nLocate it on https://www.browserstack.com/accounts/profile/details" -DefaultText ""
   if ([string]::IsNullOrWhiteSpace($script:BROWSERSTACK_USERNAME)) {
-    Log-Line "❌ Username empty" $GLOBAL_LOG
+    Log-Line "❌ Username empty" $NOW_RUN_LOG_FILE
     throw "Username is required"
   }
   $script:BROWSERSTACK_ACCESS_KEY = Show-PasswordBox -Title "BrowserStack Setup" -Prompt "Enter your BrowserStack Access Key:`n`nLocate it on https://www.browserstack.com/accounts/profile/details"
   if ([string]::IsNullOrWhiteSpace($script:BROWSERSTACK_ACCESS_KEY)) {
-    Log-Line "❌ Access Key empty" $GLOBAL_LOG
+    Log-Line "❌ Access Key empty" $NOW_RUN_LOG_FILE
     throw "Access Key is required"
   }
-  Log-Line "✅ BrowserStack credentials captured (access key hidden)" $GLOBAL_LOG
+  Log-Line "✅ BrowserStack credentials captured (access key hidden)" $NOW_RUN_LOG_FILE
 }
 
 function Resolve-Test-Type {
@@ -197,7 +197,7 @@ function Resolve-Test-Type {
                              -DefaultChoice "Web"
   if ([string]::IsNullOrWhiteSpace($choice)) { throw "No testing type selected" }
   $script:TEST_TYPE = $choice
-  Log-Line "✅ Selected Testing Type: $script:TEST_TYPE" $GLOBAL_LOG
+  Log-Line "✅ Selected Testing Type: $script:TEST_TYPE" $NOW_RUN_LOG_FILE
 }
 
 function Resolve-Tech-Stack {
@@ -219,7 +219,7 @@ function Resolve-Tech-Stack {
                              -DefaultChoice "Java"
   if ([string]::IsNullOrWhiteSpace($choice)) { throw "No tech stack selected" }
   $script:TECH_STACK = $choice
-  Log-Line "✅ Selected Tech Stack: $script:TECH_STACK" $GLOBAL_LOG
+  Log-Line "✅ Selected Tech Stack: $script:TECH_STACK" $NOW_RUN_LOG_FILE
 }
 
 function Ask-User-TestUrl {
@@ -232,9 +232,9 @@ function Ask-User-TestUrl {
   $testUrl = Show-InputBox -Title "Test URL Setup" -Prompt "Enter the URL you want to test with BrowserStack:`n(Leave blank for default: $DEFAULT_TEST_URL)" -DefaultText ""
   if ([string]::IsNullOrWhiteSpace($testUrl)) {
     $testUrl = $DEFAULT_TEST_URL
-    Log-Line "⚠️ No URL entered. Falling back to default: $testUrl" $GLOBAL_LOG
+    Log-Line "⚠️ No URL entered. Falling back to default: $testUrl" $NOW_RUN_LOG_FILE
   } else {
-    Log-Line "🌐 Using custom test URL: $testUrl" $GLOBAL_LOG
+    Log-Line "🌐 Using custom test URL: $testUrl" $NOW_RUN_LOG_FILE
   }
   $script:CX_TEST_URL = $testUrl
 }
@@ -321,7 +321,7 @@ function Ask-And-Upload-App {
       return
     }
     $result = Invoke-SampleAppUpload
-    Log-Line "⚠️ Using auto-uploaded sample app: $($result.Url)" $GLOBAL_LOG
+    Log-Line "⚠️ Using auto-uploaded sample app: $($result.Url)" $NOW_RUN_LOG_FILE
     $script:APP_URL = $result.Url
     $script:APP_PLATFORM = $result.Platform
     return
@@ -330,7 +330,7 @@ function Ask-And-Upload-App {
   $choice = Show-OpenOrSampleAppDialog
   if ([string]::IsNullOrWhiteSpace($choice) -or $choice -eq "Sample App") {
     $result = Invoke-SampleAppUpload
-    Log-Line "⚠️ Using sample app: $($result.Url)" $GLOBAL_LOG
+    Log-Line "⚠️ Using sample app: $($result.Url)" $NOW_RUN_LOG_FILE
     $script:APP_URL = $result.Url
     $script:APP_PLATFORM = $result.Platform
     return
@@ -339,7 +339,7 @@ function Ask-And-Upload-App {
   $path = Show-OpenFileDialog -Title "📱 Select your .apk or .ipa file" -Filter "App Files (*.apk;*.ipa)|*.apk;*.ipa|All files (*.*)|*.*"
   if ([string]::IsNullOrWhiteSpace($path)) {
     $result = Invoke-SampleAppUpload
-    Log-Line "⚠️ No app selected. Using sample app: $($result.Url)" $GLOBAL_LOG
+    Log-Line "⚠️ No app selected. Using sample app: $($result.Url)" $NOW_RUN_LOG_FILE
     $script:APP_URL = $result.Url
     $script:APP_PLATFORM = $result.Platform
     return
@@ -348,7 +348,7 @@ function Ask-And-Upload-App {
   $result = Invoke-CustomAppUpload -FilePath $path
   $script:APP_URL = $result.Url
   $script:APP_PLATFORM = $result.Platform
-  Log-Line "✅ App uploaded successfully: $($result.Url)" $GLOBAL_LOG
+  Log-Line "✅ App uploaded successfully: $($result.Url)" $NOW_RUN_LOG_FILE
 }
 
 # ===== Perform next steps based on test type (like Mac's perform_next_steps_based_on_test_type) =====
