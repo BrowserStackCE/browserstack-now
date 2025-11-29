@@ -352,7 +352,7 @@ function Generate-Mobile-Platforms {
         [string]$PlatformsListContentFormat
     )
 
-    Log-Line "Max Total Parallels inside Generate-Mobile-Platforms: $max_total_parallels" $NOW_RUN_LOG_FILE
+    Log-Line "Max Total Parallels inside Generate-Mobile-Platforms: $MaxTotalParallels" $NOW_RUN_LOG_FILE
     $app_platform = $env:APP_PLATFORM
 
     $platformsList = Generate-Platforms `
