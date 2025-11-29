@@ -338,7 +338,7 @@ function Generate-Web-Platforms {
     $platform = "web"
     $env:NOW_PLATFORM = $platform
 
-    $platformsList = pick_terminal_devices `
+    $platformsList = Generate-Platforms `
         -platformName $platform `
         -count $max_total_parallels `
         -platformsListContentFormat $platformsListContentFormat
@@ -355,7 +355,7 @@ function Generate-Mobile-Platforms {
 
     $app_platform = $env:APP_PLATFORM
 
-    $platformsList = pick_terminal_devices `
+    $platformsList = Generate-Platforms `
         -platformName $app_platform `
         -count $max_total_parallels `
         -platformsListContentFormat $platformsListContentFormat
