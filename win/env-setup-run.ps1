@@ -508,7 +508,7 @@ function Setup-Environment {
   $logFile = $NOW_RUN_LOG_FILE
 
   switch ($TechStack) {
-    "Java" {
+    "java" {
       if ($SetupType -match "web") {
         Setup-Web-Java -UseLocal:$localFlag -ParallelsPerPlatform $totalParallels -LogFile $logFile
         $success = Identify-RunStatus-Java -LogFile $logFile
@@ -517,7 +517,7 @@ function Setup-Environment {
         $success = Identify-RunStatus-Java -LogFile $logFile
       }
     }
-    "Python" {
+    "python" {
       if ($SetupType -match "web") {
         Setup-Web-Python -UseLocal:$localFlag -ParallelsPerPlatform $totalParallels -LogFile $logFile
         $success = Identify-RunStatus-Python -LogFile $logFile
@@ -526,7 +526,7 @@ function Setup-Environment {
         $success = Identify-RunStatus-Python -LogFile $logFile
       }
     }
-    "NodeJS" {
+    "nodejs" {
       if ($SetupType -match "web") {
         Setup-Web-NodeJS -UseLocal:$localFlag -ParallelsPerPlatform $totalParallels -LogFile $logFile
         $success = Identify-RunStatus-NodeJS -LogFile $logFile

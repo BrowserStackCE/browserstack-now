@@ -42,8 +42,8 @@ try {
 
   # Get test type and tech stack FIRST
   if ($RunMode -match "--silent|--debug") {
-    $script:TEST_TYPE = if ($TT) { (Get-Culture).TextInfo.ToTitleCase($TT.ToLowerInvariant()) } else { $env:TEST_TYPE }
-    $script:TECH_STACK = if ($TSTACK) { (Get-Culture).TextInfo.ToTitleCase($TSTACK.ToLowerInvariant()) } else { $env:TECH_STACK }
+    $script:TEST_TYPE = $TT
+    $script:TECH_STACK = $TSTACK
     Log-Line "ℹ️ Run Mode: $RunMode"
   } else {
     Resolve-Test-Type -RunMode $RunMode -CliValue $TT

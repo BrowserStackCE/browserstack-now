@@ -88,7 +88,7 @@ function Set-ProxyInEnv {
 function Validate-Tech-Stack {
   Log-Line "ℹ️ Checking prerequisites for $script:TECH_STACK" $NOW_RUN_LOG_FILE
   switch ($script:TECH_STACK) {
-    "Java" {
+    "java" {
       if (-not (Get-Command java -ErrorAction SilentlyContinue)) {
         Log-Line "❌ Java command not found in PATH." $NOW_RUN_LOG_FILE
         throw "Java not found"
@@ -101,7 +101,7 @@ function Validate-Tech-Stack {
       Log-Line "✅ Java is installed. Version details:" $NOW_RUN_LOG_FILE
       ($verInfo -split "`r?`n") | ForEach-Object { if ($_ -ne "") { Log-Line "  $_" $NOW_RUN_LOG_FILE } }
     }
-    "Python" {
+    "python" {
       try {
         Set-PythonCmd
         $code = Invoke-Py -Arguments @("--version") -LogFile $null -WorkingDirectory (Get-Location).Path
@@ -115,7 +115,7 @@ function Validate-Tech-Stack {
         throw
       }
     }
-    "NodeJS" {
+    "nodejs" {
       if (-not (Get-Command node -ErrorAction SilentlyContinue)) { 
         Log-Line "❌ Node.js command not found in PATH." $NOW_RUN_LOG_FILE
         throw "Node not found" 
