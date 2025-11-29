@@ -327,6 +327,7 @@ function Ask-And-Upload-App {
     Log-Line "⚠️ Using auto-uploaded sample app: $($result.Url)" $NOW_RUN_LOG_FILE
     $script:APP_URL = $result.Url
     $script:APP_PLATFORM = $result.Platform
+    $env:APP_PLATFORM = $script:APP_PLATFORM 
     return
   }
 
@@ -336,6 +337,7 @@ function Ask-And-Upload-App {
     Log-Line "⚠️ Using sample app: $($result.Url)" $NOW_RUN_LOG_FILE
     $script:APP_URL = $result.Url
     $script:APP_PLATFORM = $result.Platform
+    $env:APP_PLATFORM = $script:APP_PLATFORM 
     return
   }
 
@@ -351,6 +353,7 @@ function Ask-And-Upload-App {
   $result = Invoke-CustomAppUpload -FilePath $path
   $script:APP_URL = $result.Url
   $script:APP_PLATFORM = $result.Platform
+  $env:APP_PLATFORM = $script:APP_PLATFORM 
   Log-Line "✅ App uploaded successfully: $($result.Url)" $NOW_RUN_LOG_FILE
 }
 
