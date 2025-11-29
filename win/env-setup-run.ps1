@@ -88,6 +88,7 @@ function Setup-Web-Python {
   Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $NOW_RUN_LOG_FILE
 
   Push-Location $TARGET
+  Log-Line "Repository cloned to $TARGET" $NOW_RUN_LOG_FILE
   try {
     if (-not $PY_CMD -or $PY_CMD.Count -eq 0) { Set-PythonCmd }
     $venv = Join-Path $TARGET "venv"

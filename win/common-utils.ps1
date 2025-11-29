@@ -149,55 +149,70 @@ function Invoke-External {
         [string]$WorkingDirectory
     )
 
-    # Build argument string
+    # Prepare argument string
     $argLine = ($Arguments | ForEach-Object {
         if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ }
     }) -join ' '
 
-    # Prepare ProcessStartInfo
+    # Setup PSI
     $psi = New-Object System.Diagnostics.ProcessStartInfo
-
     $ext = [System.IO.Path]::GetExtension($Exe)
+
     if ($ext -and ($ext.ToLower() -in @(".cmd",".bat"))) {
-        # Run through cmd.exe for batch files
         $psi.FileName = "cmd.exe"
         $psi.Arguments = "/c `"$Exe`" $argLine"
-    }
-    else {
+    } else {
         $psi.FileName = $Exe
         $psi.Arguments = $argLine
     }
 
+    $psi.UseShellExecute        = $false
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError  = $true
-    $psi.UseShellExecute        = $false
     $psi.CreateNoWindow         = $true
     $psi.WorkingDirectory       = $(if ($WorkingDirectory) { $WorkingDirectory } else { (Get-Location).Path })
 
     # Start process
     $p = New-Object System.Diagnostics.Process
     $p.StartInfo = $psi
+
+    # Buffers to store output
+    $stdout = New-Object System.Text.StringBuilder
+    $stderr = New-Object System.Text.StringBuilder
+
+    # Event handlers (very stable compared to ObjectEvent)
+    $p.add_OutputDataReceived({
+        if ($_.Data) { [void]$stdout.AppendLine($_.Data) }
+    })
+    $p.add_ErrorDataReceived({
+        if ($_.Data) { [void]$stderr.AppendLine($_.Data) }
+    })
+
     [void]$p.Start()
 
-    # Read output synchronously (this avoids all hangs!)
-    $stdout = $p.StandardOutput.ReadToEnd()
-    $stderr = $p.StandardError.ReadToEnd()
+    # Begin async reads (no deadlock)
+    $p.BeginOutputReadLine()
+    $p.BeginErrorReadLine()
 
-    $p.WaitForExit()
+    # Wait without blocking streams (safe!)
+    while (-not $p.HasExited) {
+        Start-Sleep -Milliseconds 100
+    }
 
-    # Logging (if required)
+    # Logging
     if ($LogFile) {
         $logDir = Split-Path $LogFile -Parent
         if ($logDir -and !(Test-Path $logDir)) {
             New-Item -ItemType Directory -Path $logDir -Force | Out-Null
         }
 
-        if ($stdout) { Add-Content -Path $LogFile -Value $stdout }
-        if ($stderr) { Add-Content -Path $LogFile -Value $stderr }
+        if ($stdout.Length -gt 0) { Add-Content $LogFile $stdout.ToString() }
+        if ($stderr.Length -gt 0) { Add-Content $LogFile $stderr.ToString() }
     }
 
     return $p.ExitCode
 }
+
 
 
 function Get-MavenCommand {
