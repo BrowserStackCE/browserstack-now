@@ -175,7 +175,7 @@ jobs:
   test-windows:
     name: Test win/run.ps1 on Windows
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     environment: BrowserStack
     steps:
       - name: Checkout code
@@ -249,6 +249,8 @@ jobs:
           
           # Test configurations
           $testConfigs = @(
+              @("web", "java"),
+              @("app", "java"),
               @("web", "python"),
               @("app", "python"),
               @("web", "nodejs"),
