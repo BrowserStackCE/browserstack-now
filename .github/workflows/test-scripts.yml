@@ -249,6 +249,7 @@ jobs:
           
           # Test configurations
           $testConfigs = @(
+              @("web", "python"),
               @("app", "python"),
               @("web", "nodejs"),
               @("app", "nodejs")
@@ -326,8 +327,6 @@ jobs:
           name: browserstack-logs-windows
           path: |
             ${{ github.workspace }}/bs-logs
-            C:\Temp\run_test_*.log
-            C:\Users\runneradmin\*.log
           retention-days: 30
           if-no-files-found: ignore
 

@@ -175,7 +175,8 @@ function Setup-Web-NodeJS {
   try {
     Log-Line "⚙️ Running 'npm install'" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
-    [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","install") -LogFile $LogFile -WorkingDirectory $TARGET)
+    #[void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","install") -LogFile $LogFile -WorkingDirectory $TARGET)
+    & npm install
     Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
 
     $caps = Generate-Web-Platforms -max_total_parallels $TEAM_PARALLELS_MAX_ALLOWED_WEB -platformsListContentFormat "json"
@@ -207,7 +208,8 @@ function Setup-Web-NodeJS {
     Log-Line "  $caps" $NOW_RUN_LOG_FILE
 
     Print-TestsRunningSection -Command "npm run test"
-    [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $TARGET)
+    & npm run test
+    #[void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $TARGET)
     Log-Line "ℹ️ Run Test command completed." $NOW_RUN_LOG_FILE
 
   } finally {
@@ -399,7 +401,8 @@ function Setup-Mobile-NodeJS {
   try {
     Log-Line "⚙️ Running 'npm install'" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
-    [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","install") -LogFile $LogFile -WorkingDirectory $testDir)
+    & npm install
+    #[void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","install") -LogFile $LogFile -WorkingDirectory $testDir)
     Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
 
     # Generate capabilities JSON and set as environment variable (like Mac)
@@ -426,7 +429,8 @@ function Setup-Mobile-NodeJS {
     Log-Line "ℹ️ Platforms: $capsJson" $NOW_RUN_LOG_FILE
 
     Print-TestsRunningSection -Command "npm run test"
-    [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $testDir)
+    & npm run test
+    # [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $testDir)
     Log-Line "ℹ️ Run Test command completed." $NOW_RUN_LOG_FILE
 
   } finally {
