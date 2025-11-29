@@ -126,10 +126,6 @@ function Generate-Platforms {
             $bVersion = "latest"
         }
 
-        Log-Line "Platform: $prefixEntry" $NOW_RUN_LOG_FILE
-        Log-Line "Device: $suffixEntry" $NOW_RUN_LOG_FILE
-        Log-Line "Browser version: $bVersion" $NOW_RUN_LOG_FILE
-
         # -------- YAML MODE --------
         if ($platformsListContentFormat -eq "yaml") {
 
