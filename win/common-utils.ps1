@@ -318,7 +318,7 @@ function Fetch-Plan-Details {
   }
 
   if ( ($TestType -match "^Web$|^web$" -and -not $WEB_PLAN_FETCHED) -or
-       ($TestType -match "^App$|^app$" -and -not $MOBILE_PLAN_FETCHED) {
+       ($TestType -match "^App$|^app$" -and -not $MOBILE_PLAN_FETCHED)) {
     Log-Line "❌ Unauthorized to fetch required plan(s) or failed request(s). Exiting." $NOW_RUN_LOG_FILE
     throw "Plan fetch failed"
   }
