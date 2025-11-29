@@ -237,6 +237,8 @@ function Setup-Mobile-Java {
     $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
     $env:BROWSERSTACK_CONFIG_FILE = ".\browserstack.yml"
+    $env:BROWSERSTACK_BUILD_NAME = "now-$env:NOW_OS-$TEST_TYPE-$TechStack-testng"
+    $env:BROWSERSTACK_PROJECT_NAME = "now-$env:NOW_OS-$TEST_TYPE"
     
     $platforms = Generate-Mobile-Platforms -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE -platformsListContentFormat "yaml"
     $localFlag = if ($UseLocal) { "true" } else { "false" }

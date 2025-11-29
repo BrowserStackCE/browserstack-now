@@ -89,6 +89,10 @@ function Generate-Platforms {
     # ------------------------------------
     $matching_devices = @()
 
+    Log-Line "Platform name: $platformName" $NOW_RUN_LOG_FILE
+    Log-Line "Count: $count" $NOW_RUN_LOG_FILE
+    Log-Line "Platform list format: $platformsListContentFormat" $NOW_RUN_LOG_FILE
+
     if ($platformName -eq "android" -or $platformName -eq "ios") {
         foreach ($entry in $MOBILE_ALL) {
             $prefix = $entry.Split('|')[0]
@@ -125,6 +129,10 @@ function Generate-Platforms {
         } else {
             $bVersion = "latest"
         }
+
+        Log-Line "Platform: $prefixEntry" $NOW_RUN_LOG_FILE
+        Log-Line "Device: $suffixEntry" $NOW_RUN_LOG_FILE
+        Log-Line "Browser version: $bVersion" $NOW_RUN_LOG_FILE
 
         # -------- YAML MODE --------
         if ($platformsListContentFormat -eq "yaml") {
