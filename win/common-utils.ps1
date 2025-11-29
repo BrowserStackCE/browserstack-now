@@ -55,29 +55,56 @@ function Clear-OldLogs {
 # ===== Git Clone =====
 function Invoke-GitClone {
     param(
-        [Parameter(Mandatory)][string]$Url,
-        [Parameter(Mandatory)][string]$Target,
-        [string]$Branch
+        [Parameter(Mandatory)] [string]$Url,
+        [Parameter(Mandatory)] [string]$Target,
+        [string]$Branch,
+        [string]$LogFile
     )
 
-    # Build safe git command
-    $cmd = "git clone --progress=off"
+    $args = @("clone")
+    if ($Branch) { $args += @("-b", $Branch) }
+    $args += @($Url, $Target)
 
-    if ($Branch) { 
-        $cmd += " -b `"$Branch`"" 
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName  = "git"
+    $psi.Arguments = ($args -join " ")
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError  = $true
+    $psi.UseShellExecute        = $false
+    $psi.CreateNoWindow         = $true
+
+    $p = New-Object System.Diagnostics.Process
+    $p.StartInfo = $psi
+
+    # Collect output asynchronously
+    $stdout = New-Object System.Text.StringBuilder
+    $stderr = New-Object System.Text.StringBuilder
+
+    $p.add_OutputDataReceived({
+        if ($_.Data) { $stdout.AppendLine($_.Data) | Out-Null }
+    })
+
+    $p.add_ErrorDataReceived({
+        if ($_.Data) { $stderr.AppendLine($_.Data) | Out-Null }
+    })
+
+    $p.Start() | Out-Null
+    $p.BeginOutputReadLine()
+    $p.BeginErrorReadLine()
+
+    $p.WaitForExit()
+
+    # Write logs
+    if ($LogFile) {
+        if ($stdout.Length -gt 0) { Add-Content $LogFile $stdout.ToString() }
+        if ($stderr.Length -gt 0) { Add-Content $LogFile $stderr.ToString() }
     }
 
-    $cmd += " `"$Url`" `"$Target`""
-
-    # Execute through cmd.exe to avoid PowerShell argument mangling
-    $result = cmd.exe /c $cmd 2>&1
-
-    Write-Host $result
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "git clone failed with exit code $LASTEXITCODE"
+    if ($p.ExitCode -ne 0) {
+        throw "git clone failed (exit $($p.ExitCode)): $($stderr.ToString())"
     }
 }
+
 
 
 
