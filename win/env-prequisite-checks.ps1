@@ -34,7 +34,7 @@ function Set-ProxyInEnv {
   )
 
   Log-Section "🌐 Network & Proxy Validation" $NOW_RUN_LOG_FILE
-
+  Log-Line "Checking proxy in environment" $NOW_RUN_LOG_FILE
   $proxy = $env:http_proxy
   if ([string]::IsNullOrWhiteSpace($proxy)) { $proxy = $env:HTTP_PROXY }
   if ([string]::IsNullOrWhiteSpace($proxy)) { $proxy = $env:https_proxy }

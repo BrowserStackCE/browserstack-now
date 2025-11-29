@@ -121,7 +121,7 @@ $platforms
 
     Add-Content "browserstack.yml" -Value $yamlContent
 
-    $env:BSTACK_PARALLELS = $ParallelsPerPlatform
+    $env:BSTACK_PARALLELS = 1
     $env:BSTACK_PLATFORMS=$platforms
     $env:BROWSERSTACK_LOCAL=$localFlag
     $env:BROWSERSTACK_BUILD_NAME="now-$env:NOW_OS-$TEST_TYPE-$TechStack-pytest"
@@ -239,8 +239,8 @@ function Setup-Mobile-Java {
     $env:BROWSERSTACK_CONFIG_FILE = ".\browserstack.yml"
     $env:BROWSERSTACK_BUILD_NAME = "now-$env:NOW_OS-$TEST_TYPE-$TechStack-testng"
     $env:BROWSERSTACK_PROJECT_NAME = "now-$env:NOW_OS-$TEST_TYPE"
+    $env:BSTACK_PARALLELS = $ParallelsPerPlatform
     
-    Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $NOW_RUN_LOG_FILE
     $platforms = Generate-Mobile-Platforms -MaxTotalParallels $ParallelsPerPlatform -PlatformsListContentFormat "yaml"
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
@@ -318,6 +318,7 @@ function Setup-Mobile-Python {
     $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
     $env:BROWSERSTACK_APP = $APP_URL
+    $env:BSTACK_PARALLELS = 1
 
     $originalPlatform = $APP_PLATFORM
     $localFlag = if ($UseLocal) { "true" } else { "false" }
@@ -498,7 +499,6 @@ function Setup-Environment {
   Log-Section "📦 Project Setup" $NOW_RUN_LOG_FILE
 
   $maxParallels = if ($SetupType -match "web") { $TEAM_PARALLELS_MAX_ALLOWED_WEB } else { $TEAM_PARALLELS_MAX_ALLOWED_MOBILE }
-  Log-Line "Team max parallels: $maxParallels" $NOW_RUN_LOG_FILE
 
   $localFlag = $false
   $totalParallels = $maxParallels

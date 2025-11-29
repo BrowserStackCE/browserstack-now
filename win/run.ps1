@@ -76,7 +76,6 @@ try {
   Fetch-Plan-Details -TestType $TEST_TYPE
 
   Log-Line "Plan summary: WEB_PLAN_FETCHED=$WEB_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_WEB), MOBILE_PLAN_FETCHED=$MOBILE_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" $NOW_RUN_LOG_FILE
-  Log-Line "Checking proxy in environment" $NOW_RUN_LOG_FILE
   Set-ProxyInEnv -Username $BROWSERSTACK_USERNAME -AccessKey $BROWSERSTACK_ACCESS_KEY
 
   # Getting Ready section

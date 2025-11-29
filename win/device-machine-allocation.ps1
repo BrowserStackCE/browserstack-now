@@ -65,8 +65,6 @@ function Generate-Platforms {
         [string]$platformsListContentFormat
     )
 
-    Log-Line "Initial Count: $count" $NOW_RUN_LOG_FILE
-
     # Remove trailing comma
     $count = $count.TrimEnd(',')
 
@@ -90,10 +88,6 @@ function Generate-Platforms {
     # Build matching device list
     # ------------------------------------
     $matching_devices = @()
-
-    Log-Line "Platform name: $platformName" $NOW_RUN_LOG_FILE
-    Log-Line "Count: $count" $NOW_RUN_LOG_FILE
-    Log-Line "Platform list format: $platformsListContentFormat" $NOW_RUN_LOG_FILE
 
     if ($platformName -eq "android" -or $platformName -eq "ios") {
         foreach ($entry in $MOBILE_ALL) {
