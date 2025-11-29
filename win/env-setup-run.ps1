@@ -466,8 +466,11 @@ function Identify-RunStatus-Java {
   if ($passed -gt 0) {
     Log-Line "✅ Success: $passed test(s) passed." $NOW_RUN_LOG_FILE
     return $true
+  } else {
+    Log-Line "❌ Failed: $passed test(s) passed." $NOW_RUN_LOG_FILE
+    return $false
   }
-  return $false
+  
 }
 
 function Identify-RunStatus-Python {
@@ -480,8 +483,11 @@ function Identify-RunStatus-Python {
   if ($passedSum -gt 0) {
     Log-Line "✅ Success: $passedSum test(s) passed." $NOW_RUN_LOG_FILE
     return $true
+  } else {
+    Log-Line "❌ Failed: $passedSum test(s) passed." $NOW_RUN_LOG_FILE
+    return $false
   }
-  return $false
+  
 }
 
 function Identify-RunStatus-NodeJS {
@@ -492,8 +498,11 @@ function Identify-RunStatus-NodeJS {
   if ($match.Success -and [int]$match.Groups[1].Value -gt 0) {
     Log-Line "✅ Success: $($match.Groups[1].Value) test(s) passed." $NOW_RUN_LOG_FILE
     return $true
+  } else {
+    Log-Line "❌ Failed: 0 test(s) passed." $NOW_RUN_LOG_FILE
+    return $false
   }
-  return $false
+  
 }
 
 # ===== Setup Environment Wrapper =====
