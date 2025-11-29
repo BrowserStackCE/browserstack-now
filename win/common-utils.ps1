@@ -330,7 +330,7 @@ function Fetch-Plan-Details {
 
 function Generate-Web-Platforms {
     param(
-        [int]$max_total_parallels,
+        [string]$max_total_parallels,
         [string]$platformsListContentFormat
     )
 
@@ -348,7 +348,7 @@ function Generate-Web-Platforms {
 
 function Generate-Mobile-Platforms {
     param(
-        [int]$max_total_parallels,
+        [string]$max_total_parallels,
         [string]$platformsListContentFormat
     )
 

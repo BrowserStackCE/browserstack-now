@@ -61,7 +61,7 @@ $MOBILE_ALL = @(
 function Generate-Platforms {
     param(
         [string]$platformName,
-        [int]$count,
+        [string]$count,
         [string]$platformsListContentFormat
     )
 

@@ -240,6 +240,7 @@ function Setup-Mobile-Java {
     $env:BROWSERSTACK_BUILD_NAME = "now-$env:NOW_OS-$TEST_TYPE-$TechStack-testng"
     $env:BROWSERSTACK_PROJECT_NAME = "now-$env:NOW_OS-$TEST_TYPE"
     
+    Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $NOW_RUN_LOG_FILE
     $platforms = Generate-Mobile-Platforms -MaxTotalParallels $ParallelsPerPlatform -platformsListContentFormat "yaml"
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
