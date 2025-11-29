@@ -49,8 +49,6 @@ function Clear-OldLogs {
     New-Item -ItemType Directory -Path $LOG_DIR | Out-Null 
   }
   '' | Out-File -FilePath $NOW_RUN_LOG_FILE -Encoding UTF8
-  '' | Out-File -FilePath $WEB_LOG -Encoding UTF8
-  '' | Out-File -FilePath $MOBILE_LOG -Encoding UTF8
   Log-Line "✅ Logs cleared and fresh run initiated." $NOW_RUN_LOG_FILE
 }
 
