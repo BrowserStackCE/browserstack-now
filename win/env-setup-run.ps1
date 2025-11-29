@@ -101,7 +101,7 @@ function Setup-Web-Python {
     # Log-Line " venv Python path: $venvPy" $NOW_RUN_LOG_FILE
 
     Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
-    [void](Invoke-External -Exe "python3" -Arguments @("-m","pip","install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
+    [void](Invoke-External -Exe "pip3" -Arguments @("install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
     Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
     
     $env:PATH = (Join-Path $venv 'Scripts') + ";" + $env:PATH
@@ -144,9 +144,8 @@ $platforms
     Log-Line "ℹ️ Platforms:" $NOW_RUN_LOG_FILE
     $platforms -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $NOW_RUN_LOG_FILE } }
 
-    $sdk = Join-Path $venv "Scripts\browserstack-sdk.exe"
     Print-TestsRunningSection -Command "browserstack-sdk pytest -s tests/bstack-sample-test.py"
-    [void](Invoke-External -Exe $sdk -Arguments @('pytest','-s','tests/bstack-sample-test.py') -LogFile $LogFile -WorkingDirectory $TARGET)
+    [void](Invoke-External -Exe "browserstack-sdk" -Arguments @('pytest','-s','tests/bstack-sample-test.py') -LogFile $LogFile -WorkingDirectory $TARGET)
     Log-Line "ℹ️ Run Test command completed." $NOW_RUN_LOG_FILE
 
   } finally {
@@ -315,7 +314,7 @@ function Setup-Mobile-Python {
     # $venvPy = Get-VenvPython -VenvDir $venv
     
     Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
-    [void](Invoke-External -Exe "python3" -Arguments @("-m","pip","install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
+    [void](Invoke-External -Exe "pip3" -Arguments @("install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
     Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
     
     $env:PATH = (Join-Path $venv 'Scripts') + ";" + $env:PATH
@@ -363,12 +362,11 @@ $platforms
     Log-Line "ℹ️ Platforms:" $NOW_RUN_LOG_FILE
     $platformYaml -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $NOW_RUN_LOG_FILE } }
 
-    $sdk = Join-Path $venv "Scripts\browserstack-sdk.exe"
     Print-TestsRunningSection -Command "cd $runDirName && browserstack-sdk pytest -s bstack_sample.py"
     
     Push-Location $runDir
     try {
-      [void](Invoke-External -Exe $sdk -Arguments @('pytest','-s','bstack_sample.py') -LogFile $LogFile -WorkingDirectory (Get-Location).Path)
+      [void](Invoke-External -Exe "browserstack-sdk" -Arguments @('pytest','-s','bstack_sample.py') -LogFile $LogFile -WorkingDirectory (Get-Location).Path)
     } finally {
       Pop-Location
     }
