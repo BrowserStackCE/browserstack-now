@@ -216,6 +216,7 @@ function Set-PythonCmd {
       $exe = $cand[0]
       $args = @()
       if ($cand.Length -gt 1) { $args = $cand[1..($cand.Length-1)] }
+      Log-Line " About to test Python command: $($cand -join ' ')" $NOW_RUN_LOG_FILE
       $code = Invoke-External -Exe $exe -Arguments ($args + @("--version")) -LogFile $null
       if ($code -eq 0) {
         $script:PY_CMD = $cand
@@ -236,6 +237,8 @@ function Invoke-Py {
   $exe = $PY_CMD[0]
   $baseArgs = @()
   if ($PY_CMD.Count -gt 1) { $baseArgs = $PY_CMD[1..($PY_CMD.Count-1)] }
+
+  Log-Line " Invoking Python ....." $NOW_RUN_LOG_FILE
   return (Invoke-External -Exe $exe -Arguments ($baseArgs + $Arguments) -LogFile $LogFile -WorkingDirectory $WorkingDirectory)
 }
 

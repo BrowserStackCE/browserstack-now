@@ -90,12 +90,15 @@ function Setup-Web-Python {
   Push-Location $TARGET
   Log-Line "Repository cloned to $TARGET" $NOW_RUN_LOG_FILE
   try {
+    Log-Line "Setting up Python command if not already set." $NOW_RUN_LOG_FILE
     if (-not $PY_CMD -or $PY_CMD.Count -eq 0) { Set-PythonCmd }
     $venv = Join-Path $TARGET "venv"
     if (!(Test-Path $venv)) {
+      Log-Line "Setting up Python virtual env" $NOW_RUN_LOG_FILE
       [void](Invoke-Py -Arguments @("-m","venv",$venv) -LogFile $LogFile -WorkingDirectory $TARGET)
     }
     $venvPy = Get-VenvPython -VenvDir $venv
+    Log-Line " venv Python path: $venvPy" $NOW_RUN_LOG_FILE
     
     Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
     [void](Invoke-External -Exe $venvPy -Arguments @("-m","pip","install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
