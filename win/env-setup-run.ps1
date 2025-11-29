@@ -105,7 +105,7 @@ function Setup-Web-Python {
     pip3 install -r requirements.txt
     Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
     
-    $env:PATH = (Join-Path $venv 'Scripts') + ";" + $env:PATH
+    #$env:PATH = (Join-Path $venv 'Scripts') + ";" + $env:PATH
     $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
 

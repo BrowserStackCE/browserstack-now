@@ -207,12 +207,12 @@ function Get-MavenCommand {
   throw "Maven not found in PATH and 'mvnw.cmd' not present under $RepoDir. Install Maven or ensure the wrapper exists."
 }
 
-function Get-VenvPython {
-  param([Parameter(Mandatory)][string]$VenvDir)
-  $py = Join-Path $VenvDir "Scripts\python.exe"
-  if (Test-Path $py) { return $py }
-  throw "Python interpreter not found in venv: $VenvDir"
-}
+# function Get-VenvPython {
+#   param([Parameter(Mandatory)][string]$VenvDir)
+#   $py = Join-Path $VenvDir "Scripts\python.exe"
+#   if (Test-Path $py) { return $py }
+#   throw "Python interpreter not found in venv: $VenvDir"
+# }
 
 function Set-PythonCmd {
   $candidates = @(
