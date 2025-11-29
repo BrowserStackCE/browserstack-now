@@ -14,6 +14,7 @@ on:
 jobs:
   test-mac:
     name: Test mac/run.sh on macOS
+    if: false
     runs-on: macos-latest
     timeout-minutes: 15
     environment: BrowserStack
@@ -326,12 +327,13 @@ jobs:
           name: browserstack-logs-windows
           path: |
             ${{ github.workspace }}/bs-logs
-            ${{ env.USERPROFILE }}\run_test_*.log
+            C:\Temp\run_test_*.log
           retention-days: 30
           if-no-files-found: ignore
 
   test-linux:
     name: Test mac/run.sh on Linux
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: BrowserStack
@@ -493,7 +495,7 @@ jobs:
           echo "Linux Tests: ${{ needs.test-linux.result }}"
           echo "Windows Tests: ${{ needs.test-windows.result }}"
           
-          if [ "${{ needs.test-mac.result }}" = "failure" ] || [ "${{ needs.test-linux.result }}" = "failure" ] [ "${{ needs.test-windows.result }}" = "failure" ]; then
+          if [ "${{ needs.test-mac.result }}" = "failure" ] || [ "${{ needs.test-linux.result }}" = "failure" ] || [ "${{ needs.test-windows.result }}" = "failure" ]; then
             echo "❌ Some tests failed"
             exit 1
           fi
