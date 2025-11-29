@@ -363,18 +363,6 @@ function Generate-Mobile-Platforms {
 }
 
 function Detect-OS {
-
-    $response = ""
-
-    # Detect OS using .NET APIs
-    $isWindows = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)
-
-    if ($isWindows) {
-        $response = "windows"
-    }
-    else {
-        $response = "unknown"
-    }
-
-    $env:NOW_OS = $response
+  
+    $env:NOW_OS = "windows"
 }

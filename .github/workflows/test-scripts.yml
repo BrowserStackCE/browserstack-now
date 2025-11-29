@@ -306,14 +306,14 @@ jobs:
       - name: Sync BrowserStack logs to workspace (Windows)
         if: always()
         run: |
-          $dest = "${env:GITHUB_WORKSPACE}\bs-logs"
+          $dest = Join-Path $env:GITHUB_WORKSPACE "bs-logs"
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
 
-          $logPath = "$env:USERPROFILE\.browserstack\NOW\logs"
+          $logPath = Join-Path $env:USERPROFILE ".browserstack\NOW\logs"
 
           if (Test-Path $logPath) {
               Write-Host "Copying logs from $logPath"
-              Copy-Item -Path "$logPath\*" -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue
+              Copy-Item -Path (Join-Path $logPath "*") -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue
           }
           else {
               Write-Host "No logs found at $logPath"
@@ -326,7 +326,7 @@ jobs:
           name: browserstack-logs-windows
           path: |
             ${{ github.workspace }}/bs-logs
-            C:\Temp\run_test_*.log
+            ${{ env.USERPROFILE }}\run_test_*.log
           retention-days: 30
           if-no-files-found: ignore
 
@@ -483,7 +483,7 @@ jobs:
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [test-mac, test-linux]
+    needs: [test-mac, test-linux, test-windows]
     if: always()
     steps:
       - name: Check test results
@@ -491,8 +491,9 @@ jobs:
           echo "=== Test Results Summary ==="
           echo "macOS Tests: ${{ needs.test-mac.result }}"
           echo "Linux Tests: ${{ needs.test-linux.result }}"
+          echo "Windows Tests: ${{ needs.test-windows.result }}"
           
-          if [ "${{ needs.test-mac.result }}" = "failure" ] || [ "${{ needs.test-linux.result }}" = "failure" ]; then
+          if [ "${{ needs.test-mac.result }}" = "failure" ] || [ "${{ needs.test-linux.result }}" = "failure" ] [ "${{ needs.test-windows.result }}" = "failure" ]; then
             echo "❌ Some tests failed"
             exit 1
           fi
@@ -503,4 +504,4 @@ jobs:
         run: |
           echo "✅ All script validations passed successfully!"
           echo "- mac/run.sh and supporting scripts validated on macOS and Linux"
-          echo "- win/run.ps1 and supporting scripts validated on Windows (temporarily disabled)"
+          echo "- win/run.ps1 and supporting scripts validated on Windows"
