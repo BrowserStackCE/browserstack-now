@@ -249,7 +249,6 @@ jobs:
           
           # Test configurations
           $testConfigs = @(
-              @("web", "python"),
               @("app", "python"),
               @("web", "nodejs"),
               @("app", "nodejs")

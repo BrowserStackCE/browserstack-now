@@ -334,8 +334,7 @@ function Setup-Mobile-Python {
         $run_dir = "ios"
     }
 
-    # Set environment variable (PowerShell equivalent of export)
-    $env:BROWSERSTACK_CONFIG_FILE = "./$run_dir/browserstack.yml"
+    $script:BROWSERSTACK_CONFIG_FILE = "./$run_dir/browserstack.yml"
 
     # Generate platform YAMLs
 
