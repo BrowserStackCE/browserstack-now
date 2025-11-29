@@ -364,7 +364,7 @@ $platforms
 
     Print-TestsRunningSection -Command "cd $runDirName && browserstack-sdk pytest -s bstack_sample.py"
     
-    Push-Location $runDir
+    Push-Location $runDirName
     try {
       & browserstack-sdk pytest -s bstack_sample.py
       #[void](Invoke-External -Exe "browserstack-sdk" -Arguments @('pytest','-s','bstack_sample.py') -LogFile $LogFile -WorkingDirectory (Get-Location).Path)
