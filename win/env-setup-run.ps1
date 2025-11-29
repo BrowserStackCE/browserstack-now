@@ -41,7 +41,7 @@ $platforms
     $env:BROWSERSTACK_BUILD_NAME="now-$env:NOW_OS-$TEST_TYPE-$TechStack-testng"
     $env:BROWSERSTACK_PROJECT_NAME="now-$env:NOW_OS-$TEST_TYPE"
 
-    Set-Content "browserstack.yml" -Value $yamlContent
+    Add-Content "browserstack.yml" -Value $yamlContent
     Log-Line "✅ Created browserstack.yml in root directory" $NOW_RUN_LOG_FILE
 
     # Validate Environment Variables
@@ -119,7 +119,7 @@ platforms:
 $platforms
 "@
 
-    Set-Content "browserstack.yml" -Value $yamlContent
+    Add-Content "browserstack.yml" -Value $yamlContent
 
     $env:BSTACK_PARALLELS = $ParallelsPerPlatform
     $env:BSTACK_PLATFORMS=$platforms
@@ -246,8 +246,9 @@ function Setup-Mobile-Java {
 app: $APP_URL
 platforms:
 $platforms
-"@
-    $yamlContent | Set-Content -Path $env:BROWSERSTACK_CONFIG_FILE -Encoding UTF8
+"@ 
+    
+    Add-Content -Path $env:BROWSERSTACK_CONFIG_FILE -Encoding UTF8
 
     Report-BStackLocalStatus -LocalFlag $UseLocal
 
@@ -337,7 +338,7 @@ platforms:
 $platforms
 "@
 
-    Set-Content "$BROWSERSTACK_CONFIG_FILE" -Value $yamlContent
+    Add-Content "$BROWSERSTACK_CONFIG_FILE" -Value $yamlContent
     $script:APP_PLATFORM = $originalPlatform
     Log-Line "✅ Wrote platform YAMLs" $NOW_RUN_LOG_FILE
 
