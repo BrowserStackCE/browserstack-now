@@ -149,16 +149,22 @@ function Invoke-External {
         [string]$WorkingDirectory
     )
 
+    Log-Line " Invoking external exe + args: $Exe $($Arguments -join ' ')" $NOW_RUN_LOG_FILE
+    Log-Line " Invoking external working dir: $WorkingDirectory" $NOW_RUN_LOG_FILE
     # Build argument string
     $argLine = ($Arguments | ForEach-Object {
         if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ }
     }) -join ' '
 
+    Log-Line " Full argument line: $argLine" $NOW_RUN_LOG_FILE
     # Prepare temp output files (prevents ALL hangs)
     $outFile = [IO.Path]::GetTempFileName()
     $errFile = [IO.Path]::GetTempFileName()
 
-    # Start the external process
+    Log-Line " Stdout redirected to: $outFile" $NOW_RUN_LOG_FILE
+    Log-Line " Stderr redirected to: $errFile" $NOW_RUN_LOG_FILE
+
+    Log-Line "Start the external process...." $NOW_RUN_LOG_FILE
     $process = Start-Process `
         -FilePath $Exe `
         -ArgumentList $argLine `
@@ -169,12 +175,16 @@ function Invoke-External {
         -Wait `
         -WorkingDirectory $(if ($WorkingDirectory) { $WorkingDirectory } else { (Get-Location).Path })
 
+
+    Log-Line "External process exited with code: $($process.ExitCode)" $NOW_RUN_LOG_FILE
+
     # Read output AFTER process exits (safe)
     $stdout = Get-Content $outFile -Raw -ErrorAction SilentlyContinue
     $stderr = Get-Content $errFile -Raw -ErrorAction SilentlyContinue
 
     # Write logs if needed
     if ($LogFile) {
+      Log-Line " Writing external process output to log file: $LogFile" $NOW_RUN_LOG_FILE
         $logDir = Split-Path $LogFile -Parent
         if ($logDir -and !(Test-Path $logDir)) {
             New-Item -ItemType Directory -Path $logDir -Force | Out-Null
@@ -183,7 +193,7 @@ function Invoke-External {
         if ($stdout) { Add-Content $LogFile $stdout }
         if ($stderr) { Add-Content $LogFile $stderr }
     }
-
+    Log-Line "Ending external process invocation." $NOW_RUN_LOG_FILE
     return $process.ExitCode
 }
 
