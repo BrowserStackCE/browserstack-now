@@ -328,13 +328,13 @@ function Setup-Mobile-Python {
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
     # Decide which directory to run based on APP_PLATFORM (default = android)
-    $run_dir = "android"
+    $runDirName = "android"
 
     if ($env:APP_PLATFORM -eq "ios") {
-        $run_dir = "ios"
+        $runDirName = "ios"
     }
 
-    $script:BROWSERSTACK_CONFIG_FILE = "./$run_dir/browserstack.yml"
+    $script:BROWSERSTACK_CONFIG_FILE = "./$runDirName/browserstack.yml"
 
     # Generate platform YAMLs
 
