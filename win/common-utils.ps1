@@ -6,16 +6,12 @@ $script:PROJECT_FOLDER = "NOW"
 
 $script:GLOBAL_DIR = Join-Path $WORKSPACE_DIR $PROJECT_FOLDER
 $script:LOG_DIR     = Join-Path $GLOBAL_DIR "logs"
-$script:GLOBAL_LOG  = Join-Path $LOG_DIR "global.log"
-$script:WEB_LOG     = Join-Path $LOG_DIR "web_run_result.log"
-$script:MOBILE_LOG  = Join-Path $LOG_DIR "mobile_run_result.log"
 
 # Script state
 $script:BROWSERSTACK_USERNAME = ""
 $script:BROWSERSTACK_ACCESS_KEY = ""
 $script:TEST_TYPE = ""     # Web / App / Both
 $script:TECH_STACK = ""    # Java / Python / JS
-[double]$script:PARALLEL_PERCENTAGE = 1.00
 
 $script:WEB_PLAN_FETCHED = $false
 $script:MOBILE_PLAN_FETCHED = $false
@@ -32,12 +28,6 @@ $script:APP_PLATFORM = ""  # ios | android | all
 
 # Chosen Python command tokens (set during validation when Python is selected)
 $script:PY_CMD = @()
-
-# ===== Error patterns =====
-$script:WEB_SETUP_ERRORS   = @("")
-$script:WEB_LOCAL_ERRORS   = @("")
-$script:MOBILE_SETUP_ERRORS= @("")
-$script:MOBILE_LOCAL_ERRORS= @("")
 
 # ===== Workspace Management =====
 function Ensure-Workspace {
@@ -339,4 +329,38 @@ function Fetch-Plan-Details {
   Log-Line "ℹ️ Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)" $GLOBAL_LOG
 }
 
+# ===== Dynamic config generators =====
 
+function Generate-Web-Platforms {
+    param(
+        [int]$max_total_parallels,
+        [string]$platformsListContentFormat
+    )
+
+    $platform = "web"
+    $env:NOW_PLATFORM = $platform
+
+    $platformsList = pick_terminal_devices `
+        -platformName $platform `
+        -count $max_total_parallels `
+        -platformsListContentFormat $platformsListContentFormat
+
+    return $platformsList
+}
+
+
+function Generate-Mobile-Platforms {
+    param(
+        [int]$max_total_parallels,
+        [string]$platformsListContentFormat
+    )
+
+    $app_platform = $env:APP_PLATFORM
+
+    $platformsList = pick_terminal_devices `
+        -platformName $app_platform `
+        -count $max_total_parallels `
+        -platformsListContentFormat $platformsListContentFormat
+
+    return $platformsList
+}

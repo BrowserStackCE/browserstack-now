@@ -13,12 +13,12 @@ function Setup-Web-Java {
     Remove-Item -Path $TARGET -Recurse -Force
   }
 
-  Log-Line "ℹ️ Cloning repository: $REPO" $GLOBAL_LOG
+  Log-Line "ℹ️ Cloning repository: $REPO" $NOW_RUN_LOG_FILE
   Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $WEB_LOG
 
   Push-Location $TARGET
   try {
-    Log-Line "ℹ️ Target website: $CX_TEST_URL" $GLOBAL_LOG
+    Log-Line "ℹ️ Target website: $CX_TEST_URL" $NOW_RUN_LOG_FILE
     
     if (Test-DomainPrivate) {
       $UseLocal = $true
@@ -26,46 +26,45 @@ function Setup-Web-Java {
 
     Report-BStackLocalStatus -LocalFlag $UseLocal
 
-    Log-Line "🧩 Generating YAML config (browserstack.yml)" $GLOBAL_LOG
-    $platforms = Generate-Web-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_WEB
+    Log-Line "🧩 Generating YAML config (browserstack.yml)" $NOW_RUN_LOG_FILE
+    $platforms = Generate-Web-Platforms -max_total_parallels $TEAM_PARALLELS_MAX_ALLOWED_WEB -platformsListContentFormat "yaml"
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
     $yamlContent = @"
-userName: $BROWSERSTACK_USERNAME
-accessKey: $BROWSERSTACK_ACCESS_KEY
-framework: testng
-browserstackLocal: $localFlag
-buildName: now-windows-web-java-testng
-projectName: NOW-Web-Test
-percy: true
-accessibility: true
 platforms:
 $platforms
-parallelsPerPlatform: $ParallelsPerPlatform
 "@
 
+    $env:BSTACK_PARALLELS = $ParallelsPerPlatform
+    $env:BSTACK_PLATFORMS=$platforms
+    $env:BROWSERSTACK_LOCAL=$localFlag
+    $env:BROWSERSTACK_BUILD_NAME="now-$NOW_OS-$TEST_TYPE-$TechStack-testng"
+    $env:BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-$TEST_TYPE"
+
     Set-Content "browserstack.yml" -Value $yamlContent
-    Log-Line "✅ Created browserstack.yml in root directory" $GLOBAL_LOG
+    Log-Line "✅ Created browserstack.yml in root directory" $NOW_RUN_LOG_FILE
 
     # Validate Environment Variables
-    Log-Section "Validate Environment Variables" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Build: now-windows-web-java-testng" $GLOBAL_LOG
-    Log-Line "ℹ️ Web Application Endpoint: $CX_TEST_URL" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $GLOBAL_LOG
-    Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $GLOBAL_LOG
-    Log-Line "ℹ️ Platforms:" $GLOBAL_LOG
-    $platforms -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $GLOBAL_LOG } }
+    Log-Section "Validate Environment Variables" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Project: $BROWSERSTACK_PROJECT_NAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Build: $BROWSERSTACK_BUILD_NAME" $NOW_RUN_LOG_FILE
+
+    Log-Line "ℹ️ Web Application Endpoint: $CX_TEST_URL" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Platforms:" $NOW_RUN_LOG_FILE
+    $platforms -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $NOW_RUN_LOG_FILE } }
 
     $mvn = Get-MavenCommand -RepoDir $TARGET
-    Log-Line "⚙️ Running '$mvn install -DskipTests'" $GLOBAL_LOG
-    Log-Line "ℹ️ Installing dependencies" $GLOBAL_LOG
+    Log-Line "⚙️ Running '$mvn install -DskipTests'" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
     [void](Invoke-External -Exe $mvn -Arguments @("install","-DskipTests") -LogFile $LogFile -WorkingDirectory $TARGET)
-    Log-Line "✅ Dependencies installed" $GLOBAL_LOG
+    Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
 
     Print-TestsRunningSection -Command "mvn test -P sample-test"
     [void](Invoke-External -Exe $mvn -Arguments @("test","-P","sample-test") -LogFile $LogFile -WorkingDirectory $TARGET)
-    Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
+    Log-Line "ℹ️ Run Test command completed." $NOW_RUN_LOG_FILE
 
   } finally {
     Pop-Location
@@ -85,7 +84,7 @@ function Setup-Web-Python {
     Remove-Item -Path $TARGET -Recurse -Force
   }
 
-  Log-Line "ℹ️ Cloning repository: $REPO" $GLOBAL_LOG
+  Log-Line "ℹ️ Cloning repository: $REPO" $NOW_RUN_LOG_FILE
   Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $WEB_LOG
 
   Push-Location $TARGET
@@ -97,9 +96,9 @@ function Setup-Web-Python {
     }
     $venvPy = Get-VenvPython -VenvDir $venv
     
-    Log-Line "ℹ️ Installing dependencies" $GLOBAL_LOG
+    Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
     [void](Invoke-External -Exe $venvPy -Arguments @("-m","pip","install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
-    Log-Line "✅ Dependencies installed" $GLOBAL_LOG
+    Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
     
     $env:PATH = (Join-Path $venv 'Scripts') + ";" + $env:PATH
     $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
@@ -112,39 +111,37 @@ function Setup-Web-Python {
     Report-BStackLocalStatus -LocalFlag $UseLocal
 
     $env:BROWSERSTACK_CONFIG_FILE = "browserstack.yml"
-    $platforms = Generate-Web-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_WEB
+    $platforms = Generate-Web-Platforms -max_total_parallels $TEAM_PARALLELS_MAX_ALLOWED_WEB -platformsListContentFormat "yaml"
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
 @"
-userName: $BROWSERSTACK_USERNAME
-accessKey: $BROWSERSTACK_ACCESS_KEY
-framework: pytest
-browserstackLocal: $localFlag
-buildName: now-windows-web-python-pytest
-projectName: NOW-Web-Test
-percy: true
-accessibility: true
 platforms:
 $platforms
-parallelsPerPlatform: $ParallelsPerPlatform
 "@ | Set-Content "browserstack.yml"
 
-    Log-Line "✅ Updated browserstack.yml with platforms and credentials" $GLOBAL_LOG
+    $env:BSTACK_PARALLELS = $ParallelsPerPlatform
+    $env:BSTACK_PLATFORMS=$platforms
+    $env:BROWSERSTACK_LOCAL=$localFlag
+    $env:BROWSERSTACK_BUILD_NAME="now-$NOW_OS-$TEST_TYPE-$TechStack-pytest"
+    $env:BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-$TEST_TYPE"
+
+    Log-Line "✅ Updated browserstack.yml with platforms and credentials" $NOW_RUN_LOG_FILE
 
     # Validate Environment Variables
-    Log-Section "Validate Environment Variables" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Build: now-windows-web-python-pytest" $GLOBAL_LOG
-    Log-Line "ℹ️ Web Application Endpoint: $CX_TEST_URL" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $GLOBAL_LOG
-    Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $GLOBAL_LOG
-    Log-Line "ℹ️ Platforms:" $GLOBAL_LOG
-    $platforms -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $GLOBAL_LOG } }
+    Log-Section "Validate Environment Variables" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Project: $BROWSERSTACK_PROJECT_NAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Build: $BROWSERSTACK_BUILD_NAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Web Application Endpoint: $CX_TEST_URL" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Platforms:" $NOW_RUN_LOG_FILE
+    $platforms -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $NOW_RUN_LOG_FILE } }
 
     $sdk = Join-Path $venv "Scripts\browserstack-sdk.exe"
     Print-TestsRunningSection -Command "browserstack-sdk pytest -s tests/bstack-sample-test.py"
     [void](Invoke-External -Exe $sdk -Arguments @('pytest','-s','tests/bstack-sample-test.py') -LogFile $LogFile -WorkingDirectory $TARGET)
-    Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
+    Log-Line "ℹ️ Run Test command completed." $NOW_RUN_LOG_FILE
 
   } finally {
     Pop-Location
@@ -164,17 +161,17 @@ function Setup-Web-NodeJS {
   }
   New-Item -ItemType Directory -Path $GLOBAL_DIR -Force | Out-Null
 
-  Log-Line "ℹ️ Cloning repository: $REPO" $GLOBAL_LOG
+  Log-Line "ℹ️ Cloning repository: $REPO" $NOW_RUN_LOG_FILE
   Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $WEB_LOG
 
   Push-Location $TARGET
   try {
-    Log-Line "⚙️ Running 'npm install'" $GLOBAL_LOG
-    Log-Line "ℹ️ Installing dependencies" $GLOBAL_LOG
+    Log-Line "⚙️ Running 'npm install'" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
     [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","install") -LogFile $LogFile -WorkingDirectory $TARGET)
-    Log-Line "✅ Dependencies installed" $GLOBAL_LOG
+    Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
 
-    $caps = Generate-Web-Caps-Json -MaxTotalParallels $ParallelsPerPlatform
+    $caps = Generate-Web-Platforms -max_total_parallels $TEAM_PARALLELS_MAX_ALLOWED_WEB -platformsListContentFormat "json"
     $env:BSTACK_PARALLELS = $ParallelsPerPlatform
     $env:BSTACK_CAPS_JSON = $caps
 
@@ -188,23 +185,23 @@ function Setup-Web-NodeJS {
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
     $localFlagStr = if ($UseLocal) { "true" } else { "false" }
     $env:BROWSERSTACK_LOCAL = $localFlagStr
-    $env:BROWSERSTACK_BUILD_NAME = "now-windows-web-nodejs-wdio"
-    $env:BROWSERSTACK_PROJECT_NAME = "NOW-Web-Test"
+    $env:BROWSERSTACK_BUILD_NAME = "now-$NOW_OS-$TEST_TYPE-$TechStack-wdio"
+    $env:BROWSERSTACK_PROJECT_NAME = "now-$NOW_OS-$TEST_TYPE"
 
     # Validate Environment Variables
-    Log-Section "Validate Environment Variables" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Build: $($env:BROWSERSTACK_BUILD_NAME)" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Project: $($env:BROWSERSTACK_PROJECT_NAME)" $GLOBAL_LOG
-    Log-Line "ℹ️ Web Application Endpoint: $CX_TEST_URL" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Local Flag: $localFlagStr" $GLOBAL_LOG
-    Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $GLOBAL_LOG
-    Log-Line "ℹ️ Platforms:" $GLOBAL_LOG
-    Log-Line "  $caps" $GLOBAL_LOG
+    Log-Section "Validate Environment Variables" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Build: $($env:BROWSERSTACK_BUILD_NAME)" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Project: $($env:BROWSERSTACK_PROJECT_NAME)" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Web Application Endpoint: $CX_TEST_URL" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Local Flag: $localFlagStr" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Platforms:" $NOW_RUN_LOG_FILE
+    Log-Line "  $caps" $NOW_RUN_LOG_FILE
 
     Print-TestsRunningSection -Command "npm run test"
     [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $TARGET)
-    Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
+    Log-Line "ℹ️ Run Test command completed." $NOW_RUN_LOG_FILE
 
   } finally {
     Pop-Location
@@ -224,7 +221,7 @@ function Setup-Mobile-Java {
     Remove-Item -Path $TARGET -Recurse -Force
   }
 
-  Log-Line "ℹ️ Cloning repository: $REPO" $GLOBAL_LOG
+  Log-Line "ℹ️ Cloning repository: $REPO" $NOW_RUN_LOG_FILE
   Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $MOBILE_LOG
 
   Push-Location $TARGET
@@ -239,18 +236,11 @@ function Setup-Mobile-Java {
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
     $env:BROWSERSTACK_CONFIG_FILE = ".\browserstack.yml"
     
-    $platforms = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE
+    $platforms = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE -platformsListContentFormat "yaml"
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
     # Write complete browserstack.yml (not just append)
     $yamlContent = @"
-userName: $BROWSERSTACK_USERNAME
-accessKey: $BROWSERSTACK_ACCESS_KEY
-framework: testng
-browserstackLocal: $localFlag
-buildName: now-windows-app-java-testng
-projectName: NOW-Mobile-Test
-parallelsPerPlatform: $ParallelsPerPlatform
 app: $APP_URL
 platforms:
 $platforms
@@ -260,28 +250,29 @@ $platforms
     Report-BStackLocalStatus -LocalFlag $UseLocal
 
     # Validate Environment Variables
-    Log-Section "Validate Environment Variables" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Build: now-windows-app-java-testng" $GLOBAL_LOG
-    Log-Line "ℹ️ Native App Endpoint: $APP_URL" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $GLOBAL_LOG
-    Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $GLOBAL_LOG
-    Log-Line "ℹ️ Platforms:" $GLOBAL_LOG
-    $platforms -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $GLOBAL_LOG } }
+    Log-Section "Validate Environment Variables" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Project: $BROWSERSTACK_PROJECT_NAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Build: $BROWSERSTACK_BUILD_NAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Native App Endpoint: $APP_URL" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Platforms:" $NOW_RUN_LOG_FILE
+    $platforms -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $NOW_RUN_LOG_FILE } }
 
     $mvn = Get-MavenCommand -RepoDir (Get-Location).Path
-    Log-Line "⚙️ Running '$mvn clean'" $GLOBAL_LOG
-    Log-Line "ℹ️ Installing dependencies" $GLOBAL_LOG
+    Log-Line "⚙️ Running '$mvn clean'" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
     $cleanExit = Invoke-External -Exe $mvn -Arguments @("clean") -LogFile $LogFile -WorkingDirectory (Get-Location).Path
     if ($cleanExit -ne 0) {
-      Log-Line "❌ 'mvn clean' FAILED. See $LogFile for details." $GLOBAL_LOG
+      Log-Line "❌ 'mvn clean' FAILED. See $LogFile for details." $NOW_RUN_LOG_FILE
       throw "Maven clean failed"
     }
-    Log-Line "✅ Dependencies installed" $GLOBAL_LOG
+    Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
 
     Print-TestsRunningSection -Command "mvn test -P sample-test"
     [void](Invoke-External -Exe $mvn -Arguments @("test","-P","sample-test") -LogFile $LogFile -WorkingDirectory (Get-Location).Path)
-    Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
+    Log-Line "ℹ️ Run Test command completed." $NOW_RUN_LOG_FILE
 
   } finally {
     Pop-Location
@@ -301,7 +292,7 @@ function Setup-Mobile-Python {
     Remove-Item -Path $TARGET -Recurse -Force
   }
 
-  Log-Line "ℹ️ Cloning repository: $REPO" $GLOBAL_LOG
+  Log-Line "ℹ️ Cloning repository: $REPO" $NOW_RUN_LOG_FILE
   Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $MOBILE_LOG
 
   Push-Location $TARGET
@@ -313,9 +304,9 @@ function Setup-Mobile-Python {
     }
     $venvPy = Get-VenvPython -VenvDir $venv
     
-    Log-Line "ℹ️ Installing dependencies" $GLOBAL_LOG
+    Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
     [void](Invoke-External -Exe $venvPy -Arguments @("-m","pip","install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
-    Log-Line "✅ Dependencies installed" $GLOBAL_LOG
+    Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
     
     $env:PATH = (Join-Path $venv 'Scripts') + ";" + $env:PATH
     $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
@@ -325,26 +316,19 @@ function Setup-Mobile-Python {
     $originalPlatform = $APP_PLATFORM
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
-    # Generate platform YAMLs
-    $script:APP_PLATFORM = "android"
-    $platformYamlAndroid = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE
-    $androidYmlPath = Join-Path $TARGET "android\browserstack.yml"
-@"
-userName: $BROWSERSTACK_USERNAME
-accessKey: $BROWSERSTACK_ACCESS_KEY
-framework: pytest
-browserstackLocal: $localFlag
-buildName: now-windows-app-python-pytest
-projectName: NOW-Mobile-Test
-parallelsPerPlatform: $ParallelsPerPlatform
-app: $APP_URL
-platforms:
-$platformYamlAndroid
-"@ | Set-Content $androidYmlPath
+    # Decide which directory to run based on APP_PLATFORM (default = android)
+    $run_dir = "android"
 
-    $script:APP_PLATFORM = "ios"
-    $platformYamlIos = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE
-    $iosYmlPath = Join-Path $TARGET "ios\browserstack.yml"
+    if ($env:APP_PLATFORM -eq "ios") {
+        $run_dir = "ios"
+    }
+
+    # Set environment variable (PowerShell equivalent of export)
+    $env:BROWSERSTACK_CONFIG_FILE = "./$run_dir/browserstack.yml"
+
+    # Generate platform YAMLs
+
+    $platforms = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE -platformsListContentFormat "yaml"
 @"
 userName: $BROWSERSTACK_USERNAME
 accessKey: $BROWSERSTACK_ACCESS_KEY
@@ -355,27 +339,24 @@ projectName: NOW-Mobile-Test
 parallelsPerPlatform: $ParallelsPerPlatform
 app: $APP_URL
 platforms:
-$platformYamlIos
-"@ | Set-Content $iosYmlPath
+$platforms
+"@ | Set-Content $BROWSERSTACK_CONFIG_FILE
+
 
     $script:APP_PLATFORM = $originalPlatform
-    Log-Line "✅ Wrote platform YAMLs" $GLOBAL_LOG
-
-    $runDirName = if ($APP_PLATFORM -eq "ios") { "ios" } else { "android" }
-    $runDir = Join-Path $TARGET $runDirName
-    $platformYaml = if ($runDirName -eq "ios") { $platformYamlIos } else { $platformYamlAndroid }
+    Log-Line "✅ Wrote platform YAMLs" $NOW_RUN_LOG_FILE
 
     Report-BStackLocalStatus -LocalFlag $UseLocal
 
     # Validate Environment Variables
-    Log-Section "Validate Environment Variables" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Build: now-windows-app-python-pytest" $GLOBAL_LOG
-    Log-Line "ℹ️ Native App Endpoint: $APP_URL" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $GLOBAL_LOG
-    Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $GLOBAL_LOG
-    Log-Line "ℹ️ Platforms:" $GLOBAL_LOG
-    $platformYaml -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $GLOBAL_LOG } }
+    Log-Section "Validate Environment Variables" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Build: now-windows-app-python-pytest" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Native App Endpoint: $APP_URL" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Platforms:" $NOW_RUN_LOG_FILE
+    $platformYaml -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $NOW_RUN_LOG_FILE } }
 
     $sdk = Join-Path $venv "Scripts\browserstack-sdk.exe"
     Print-TestsRunningSection -Command "cd $runDirName && browserstack-sdk pytest -s bstack_sample.py"
@@ -386,7 +367,7 @@ $platformYamlIos
     } finally {
       Pop-Location
     }
-    Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
+    Log-Line "ℹ️ Run Test command completed." $NOW_RUN_LOG_FILE
 
   } finally {
     Pop-Location
@@ -406,16 +387,16 @@ function Setup-Mobile-NodeJS {
     Remove-Item -Path $TARGET -Recurse -Force
   }
 
-  Log-Line "ℹ️ Cloning repository: $REPO" $GLOBAL_LOG
+  Log-Line "ℹ️ Cloning repository: $REPO" $NOW_RUN_LOG_FILE
   Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $MOBILE_LOG
 
   $testDir = Join-Path $TARGET "test"
   Push-Location $testDir
   try {
-    Log-Line "⚙️ Running 'npm install'" $GLOBAL_LOG
-    Log-Line "ℹ️ Installing dependencies" $GLOBAL_LOG
+    Log-Line "⚙️ Running 'npm install'" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
     [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","install") -LogFile $LogFile -WorkingDirectory $testDir)
-    Log-Line "✅ Dependencies installed" $GLOBAL_LOG
+    Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
 
     # Generate capabilities JSON and set as environment variable (like Mac)
     $capsJson = Generate-Mobile-Caps-Json-String -MaxTotalParallels $ParallelsPerPlatform
@@ -425,23 +406,24 @@ function Setup-Mobile-NodeJS {
     $env:BSTACK_PARALLELS = $ParallelsPerPlatform
     $env:BSTACK_CAPS_JSON = $capsJson
     $env:BROWSERSTACK_APP = $APP_URL
-    $env:BROWSERSTACK_BUILD_NAME = "now-windows-app-nodejs-wdio"
-    $env:BROWSERSTACK_PROJECT_NAME = "NOW-Mobile-Test"
+    $env:BROWSERSTACK_BUILD_NAME = "now-$NOW_OS-$TEST_TYPE-$TECH_STACK-wdio"
+    $env:BROWSERSTACK_PROJECT_NAME = "NOW-$TEST_TYPE-Test"
     $env:BROWSERSTACK_LOCAL = "true"
 
     # Validate Environment Variables
-    Log-Section "Validate Environment Variables" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Build: $($env:BROWSERSTACK_BUILD_NAME)" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Project: $($env:BROWSERSTACK_PROJECT_NAME)" $GLOBAL_LOG
-    Log-Line "ℹ️ Native App Endpoint: $APP_URL" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Local Flag: $($env:BROWSERSTACK_LOCAL)" $GLOBAL_LOG
-    Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $GLOBAL_LOG
-    Log-Line "ℹ️ Platforms: $capsJson" $GLOBAL_LOG
+    Log-Section "Validate Environment Variables" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Project: $($env:BROWSERSTACK_PROJECT_NAME)" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Build: $($env:BROWSERSTACK_BUILD_NAME)" $NOW_RUN_LOG_FILE
+
+    Log-Line "ℹ️ Native App Endpoint: $APP_URL" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Local Flag: $($env:BROWSERSTACK_LOCAL)" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ Platforms: $capsJson" $NOW_RUN_LOG_FILE
 
     Print-TestsRunningSection -Command "npm run test"
     [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $testDir)
-    Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
+    Log-Line "ℹ️ Run Test command completed." $NOW_RUN_LOG_FILE
 
   } finally {
     Pop-Location
@@ -453,17 +435,17 @@ function Setup-Mobile-NodeJS {
 function Report-BStackLocalStatus {
   param([bool]$LocalFlag)
   if ($LocalFlag) {
-    Log-Line "✅ Target website is behind firewall. BrowserStack Local enabled for this run." $GLOBAL_LOG
+    Log-Line "✅ Target website is behind firewall. BrowserStack Local enabled for this run." $NOW_RUN_LOG_FILE
   } else {
-    Log-Line "✅ Target website is publicly resolvable. BrowserStack Local disabled for this run." $GLOBAL_LOG
+    Log-Line "✅ Target website is publicly resolvable. BrowserStack Local disabled for this run." $NOW_RUN_LOG_FILE
   }
 }
 
 function Print-TestsRunningSection {
   param([string]$Command)
-  Log-Section "🚀 Running Tests: $Command" $GLOBAL_LOG
-  Log-Line "ℹ️ Executing: Test run command. This could take a few minutes..." $GLOBAL_LOG
-  Log-Line "ℹ️ You can monitor test progress here: 🔗 https://automation.browserstack.com/" $GLOBAL_LOG
+  Log-Section "🚀 Running Tests: $Command" $NOW_RUN_LOG_FILE
+  Log-Line "ℹ️ Executing: Test run command. This could take a few minutes..." $NOW_RUN_LOG_FILE
+  Log-Line "ℹ️ You can monitor test progress here: 🔗 https://automation.browserstack.com/" $NOW_RUN_LOG_FILE
 }
 
 function Identify-RunStatus-Java {
@@ -474,7 +456,7 @@ function Identify-RunStatus-Java {
   if (-not $match.Success) { return $false }
   $passed = [int]$match.Groups[1].Value - ([int]$match.Groups[2].Value + [int]$match.Groups[3].Value + [int]$match.Groups[4].Value)
   if ($passed -gt 0) {
-    Log-Line "✅ Success: $passed test(s) passed." $GLOBAL_LOG
+    Log-Line "✅ Success: $passed test(s) passed." $NOW_RUN_LOG_FILE
     return $true
   }
   return $false
@@ -488,7 +470,7 @@ function Identify-RunStatus-Python {
   $passedSum = 0
   foreach ($m in $matches) { $passedSum += [int]$m.Groups[1].Value }
   if ($passedSum -gt 0) {
-    Log-Line "✅ Success: $passedSum test(s) passed." $GLOBAL_LOG
+    Log-Line "✅ Success: $passedSum test(s) passed." $NOW_RUN_LOG_FILE
     return $true
   }
   return $false
@@ -500,7 +482,7 @@ function Identify-RunStatus-NodeJS {
   $content = Get-Content $LogFile -Raw
   $match = [regex]::Match($content, '(\d+)\s+pass')
   if ($match.Success -and [int]$match.Groups[1].Value -gt 0) {
-    Log-Line "✅ Success: $($match.Groups[1].Value) test(s) passed." $GLOBAL_LOG
+    Log-Line "✅ Success: $($match.Groups[1].Value) test(s) passed." $NOW_RUN_LOG_FILE
     return $true
   }
   return $false
@@ -513,16 +495,16 @@ function Setup-Environment {
     [Parameter(Mandatory)][string]$TechStack
   )
 
-  Log-Section "📦 Project Setup" $GLOBAL_LOG
+  Log-Section "📦 Project Setup" $NOW_RUN_LOG_FILE
 
   $maxParallels = if ($SetupType -match "web") { $TEAM_PARALLELS_MAX_ALLOWED_WEB } else { $TEAM_PARALLELS_MAX_ALLOWED_MOBILE }
-  Log-Line "Team max parallels: $maxParallels" $GLOBAL_LOG
+  Log-Line "Team max parallels: $maxParallels" $NOW_RUN_LOG_FILE
 
   $localFlag = $false
-  $totalParallels = [int]([Math]::Floor($maxParallels * $PARALLEL_PERCENTAGE))
+  $totalParallels = [int]([Math]::Floor($maxParallels))
   if ($totalParallels -lt 1) { $totalParallels = 1 }
 
-  Log-Line "Total parallels allocated: $totalParallels" $GLOBAL_LOG
+  Log-Line "Total parallels allocated: $totalParallels" $NOW_RUN_LOG_FILE
 
   $success = $false
   $logFile = if ($SetupType -match "web") { $WEB_LOG } else { $MOBILE_LOG }
@@ -556,16 +538,16 @@ function Setup-Environment {
       }
     }
     default {
-      Log-Line "⚠️ Unknown TECH_STACK: $TechStack" $GLOBAL_LOG
+      Log-Line "⚠️ Unknown TECH_STACK: $TechStack" $NOW_RUN_LOG_FILE
       return
     }
   }
 
-  Log-Section "✅ Results" $GLOBAL_LOG
+  Log-Section "✅ Results" $NOW_RUN_LOG_FILE
   if ($success) {
-    Log-Line "✅ $SetupType setup succeeded." $GLOBAL_LOG
+    Log-Line "✅ $SetupType setup succeeded." $NOW_RUN_LOG_FILE
   } else {
-    Log-Line "❌ $SetupType setup ended. Check $logFile for details." $GLOBAL_LOG
+    Log-Line "❌ $SetupType setup ended. Check $logFile for details." $NOW_RUN_LOG_FILE
   }
 }
 

@@ -33,14 +33,14 @@ $script:PSScriptRootResolved = Split-Path -Parent $MyInvocation.MyCommand.Path
 # ===== Main flow (baseline steps then run) =====
 try {
   # Setup Summary Header
-  Log-Section "🧭 Setup Summary – BrowserStack NOW" $GLOBAL_LOG
-  Log-Line "ℹ️ Timestamp: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))" $GLOBAL_LOG
+  Log-Section "🧭 Setup Summary – BrowserStack NOW" 
+  Log-Line "ℹ️ Timestamp: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))"
 
   # Get test type and tech stack FIRST
   if ($RunMode -match "--silent|--debug") {
     $script:TEST_TYPE = if ($TT) { (Get-Culture).TextInfo.ToTitleCase($TT.ToLowerInvariant()) } else { $env:TEST_TYPE }
     $script:TECH_STACK = if ($TSTACK) { (Get-Culture).TextInfo.ToTitleCase($TSTACK.ToLowerInvariant()) } else { $env:TECH_STACK }
-    Log-Line "ℹ️ Run Mode: $RunMode" $GLOBAL_LOG
+    Log-Line "ℹ️ Run Mode: $RunMode"
   } else {
     Resolve-Test-Type -RunMode $RunMode -CliValue $TT
     Resolve-Tech-Stack -RunMode $RunMode -CliValue $TSTACK
@@ -48,7 +48,7 @@ try {
 
   # Setup log file path
   $logFile = Join-Path $LOG_DIR ("{0}_{1}_run_result.log" -f $TEST_TYPE.ToLowerInvariant(), $TECH_STACK.ToLowerInvariant())
-  Log-Line "ℹ️ Log file path: $logFile" $GLOBAL_LOG
+  Log-Line "ℹ️ Log file path: $logFile"
   Set-RunLogFile $logFile
 
   # Setup workspace and get credentials BEFORE app upload
@@ -59,44 +59,44 @@ try {
   Perform-NextSteps-BasedOnTestType -TestType $TEST_TYPE -RunMode $RunMode -TestUrl $TestUrl -AppPath $AppPath -AppPlatform $AppPlatform
 
   # Platform & Tech Stack section
-  Log-Section "⚙️ Platform & Tech Stack" $GLOBAL_LOG
-  Log-Line "ℹ️ Platform: $TEST_TYPE" $GLOBAL_LOG
-  Log-Line "ℹ️ Tech Stack: $TECH_STACK" $GLOBAL_LOG
+  Log-Section "⚙️ Platform & Tech Stack" $NOW_RUN_LOG_FILE
+  Log-Line "ℹ️ Platform: $TEST_TYPE" $NOW_RUN_LOG_FILE
+  Log-Line "ℹ️ Tech Stack: $TECH_STACK" $NOW_RUN_LOG_FILE
 
   # System Prerequisites Check
-  Log-Section "🧩 System Prerequisites Check" $GLOBAL_LOG
+  Log-Section "🧩 System Prerequisites Check" $NOW_RUN_LOG_FILE
   Validate-Tech-Stack
 
   # Account & Plan Details
-  Log-Section "☁️ Account & Plan Details" $GLOBAL_LOG
+  Log-Section "☁️ Account & Plan Details" $NOW_RUN_LOG_FILE
   Fetch-Plan-Details -TestType $TEST_TYPE
 
-  Log-Line "Plan summary: WEB_PLAN_FETCHED=$WEB_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_WEB), MOBILE_PLAN_FETCHED=$MOBILE_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" $GLOBAL_LOG
-  Log-Line "Checking proxy in environment" $GLOBAL_LOG
+  Log-Line "Plan summary: WEB_PLAN_FETCHED=$WEB_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_WEB), MOBILE_PLAN_FETCHED=$MOBILE_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" $NOW_RUN_LOG_FILE
+  Log-Line "Checking proxy in environment" $NOW_RUN_LOG_FILE
   Set-ProxyInEnv -Username $BROWSERSTACK_USERNAME -AccessKey $BROWSERSTACK_ACCESS_KEY
 
   # Getting Ready section
-  Log-Section "🧹 Getting Ready" $GLOBAL_LOG
-  Log-Line "ℹ️ Detected Operating system: Windows" $GLOBAL_LOG
-  Log-Line "ℹ️ Clearing old logs from NOW Home Directory inside .browserstack" $GLOBAL_LOG
+  Log-Section "🧹 Getting Ready" $NOW_RUN_LOG_FILE
+  Log-Line "ℹ️ Detected Operating system: Windows" $NOW_RUN_LOG_FILE
+  Log-Line "ℹ️ Clearing old logs from NOW Home Directory inside .browserstack" $NOW_RUN_LOG_FILE
   Clear-OldLogs
 
-  Log-Line "ℹ️ Starting $TEST_TYPE setup for $TECH_STACK" $GLOBAL_LOG
+  Log-Line "ℹ️ Starting $TEST_TYPE setup for $TECH_STACK" $NOW_RUN_LOG_FILE
   
   # Run the setup
   Run-Setup -TestType $TEST_TYPE -TechStack $TECH_STACK
 
 } catch {
-  Log-Line " " $GLOBAL_LOG
-  Log-Line "========================================" $GLOBAL_LOG
-  Log-Line "❌ EXECUTION FAILED" $GLOBAL_LOG
-  Log-Line "========================================" $GLOBAL_LOG
-  Log-Line "Error: $($_.Exception.Message)" $GLOBAL_LOG
-  Log-Line "Check logs for details:" $GLOBAL_LOG
-  Log-Line "  Global: $GLOBAL_LOG" $GLOBAL_LOG
-  Log-Line "  Web: $WEB_LOG" $GLOBAL_LOG
-  Log-Line "  Mobile: $MOBILE_LOG" $GLOBAL_LOG
-  Log-Line "========================================" $GLOBAL_LOG
+  Log-Line " " $NOW_RUN_LOG_FILE
+  Log-Line "========================================" $NOW_RUN_LOG_FILE
+  Log-Line "❌ EXECUTION FAILED" $NOW_RUN_LOG_FILE
+  Log-Line "========================================" $NOW_RUN_LOG_FILE
+  Log-Line "Error: $($_.Exception.Message)" $NOW_RUN_LOG_FILE
+  Log-Line "Check logs for details:" $NOW_RUN_LOG_FILE
+  Log-Line "  Global: $NOW_RUN_LOG_FILE" $NOW_RUN_LOG_FILE
+  Log-Line "  Web: $WEB_LOG" $NOW_RUN_LOG_FILE
+  Log-Line "  Mobile: $MOBILE_LOG" $NOW_RUN_LOG_FILE
+  Log-Line "========================================" $NOW_RUN_LOG_FILE
   throw
 }
 
