@@ -369,33 +369,13 @@ function Detect-OS {
 
     # Detect OS using .NET APIs
     $isWindows = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)
-    $isLinux   = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Linux)
-    $isMacOS   = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::OSX)
 
     if ($isWindows) {
         $response = "windows"
-    }
-    elseif ($isMacOS) {
-        $response = "macos"
-    }
-    elseif ($isLinux) {
-        # Check if WSL
-        $procVersion = ""
-        if (Test-Path "/proc/version") {
-            $procVersion = Get-Content "/proc/version" -ErrorAction SilentlyContinue
-        }
-
-        if ($procVersion -match "microsoft") {
-            $response = "wsl"
-        }
-        else {
-            $response = "linux"
-        }
     }
     else {
         $response = "unknown"
     }
 
-    # Export (PowerShell equivalent of export)
     $env:NOW_OS = $response
 }
