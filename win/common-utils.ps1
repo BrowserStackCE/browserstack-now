@@ -53,6 +53,7 @@ function Clear-OldLogs {
 }
 
 # ===== Git Clone =====
+
 function Invoke-GitClone {
     param(
         [Parameter(Mandatory)] [string]$Url,
@@ -61,36 +62,75 @@ function Invoke-GitClone {
         [string]$LogFile
     )
 
-    # Build argument string
-    $args = @("clone")
-    if ($Branch) { $args += @("-b", $Branch) }
-    $args += @($Url, $Target)
-    $argString = ($args -join " ")
+    # Build arguments
+    $branchArg = ""
+    if ($Branch) { $branchArg = "-b `"$Branch`"" }
 
-    # Run the command safely using Start-Process
-    $process = Start-Process `
-        -FilePath "git" `
-        -ArgumentList $argString `
-        -RedirectStandardOutput "$env:TEMP\git_out.txt" `
-        -RedirectStandardError  "$env:TEMP\git_err.txt" `
-        -PassThru `
-        -NoNewWindow `
-        -Wait
+    # Construct the full command as a cmd.exe-safe string
+    $cmd = "git clone $branchArg `"$Url`" `"$Target`""
 
-    # Read output
-    $stdout = Get-Content "$env:TEMP\git_out.txt" -Raw -ErrorAction SilentlyContinue
-    $stderr = Get-Content "$env:TEMP\git_err.txt" -Raw -ErrorAction SilentlyContinue
+    # Paths for temp logs
+    $stdoutFile = Join-Path $env:TEMP "git_stdout.txt"
+    $stderrFile = Join-Path $env:TEMP "git_stderr.txt"
 
-    # Write logs
+    # Run using cmd.exe (prevents hangs on GH Actions)
+    cmd /c "$cmd 1> `"$stdoutFile`" 2> `"$stderrFile`""
+    $exitCode = $LASTEXITCODE
+
+    # Read logs
+    $stdout = ""
+    $stderr = ""
+    if (Test-Path $stdoutFile) { $stdout = Get-Content $stdoutFile -Raw }
+    if (Test-Path $stderrFile) { $stderr = Get-Content $stderrFile -Raw }
+
     if ($LogFile) {
-        if ($stdout) { Add-Content $LogFile $stdout }
-        if ($stderr) { Add-Content $LogFile $stderr }
+        if ($stdout) { Add-Content -Path $LogFile -Value $stdout }
+        if ($stderr) { Add-Content -Path $LogFile -Value $stderr }
     }
 
-    if ($process.ExitCode -ne 0) {
-        throw "git clone failed (exit $($process.ExitCode)): $stderr"
+    if ($exitCode -ne 0) {
+        throw "git clone failed (exit $exitCode): $stderr"
     }
 }
+
+# function Invoke-GitClone {
+#     param(
+#         [Parameter(Mandatory)] [string]$Url,
+#         [Parameter(Mandatory)] [string]$Target,
+#         [string]$Branch,
+#         [string]$LogFile
+#     )
+
+#     # Build argument string
+#     $args = @("clone")
+#     if ($Branch) { $args += @("-b", $Branch) }
+#     $args += @($Url, $Target)
+#     $argString = ($args -join " ")
+
+#     # Run the command safely using Start-Process
+#     $process = Start-Process `
+#         -FilePath "git" `
+#         -ArgumentList $argString `
+#         -RedirectStandardOutput "$env:TEMP\git_out.txt" `
+#         -RedirectStandardError  "$env:TEMP\git_err.txt" `
+#         -PassThru `
+#         -NoNewWindow `
+#         -Wait
+
+#     # Read output
+#     $stdout = Get-Content "$env:TEMP\git_out.txt" -Raw -ErrorAction SilentlyContinue
+#     $stderr = Get-Content "$env:TEMP\git_err.txt" -Raw -ErrorAction SilentlyContinue
+
+#     # Write logs
+#     if ($LogFile) {
+#         if ($stdout) { Add-Content $LogFile $stdout }
+#         if ($stderr) { Add-Content $LogFile $stderr }
+#     }
+
+#     if ($process.ExitCode -ne 0) {
+#         throw "git clone failed (exit $($process.ExitCode)): $stderr"
+#     }
+# }
 
 
 function Set-ContentNoBom {
