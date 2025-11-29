@@ -66,7 +66,7 @@ function Invoke-GitClone {
     $args += @($Url, $Target)
 
     # Run git with normal PowerShell invocation
-    $result = git @args 2>&1
+    $result = git @args *>&1
 
     # Logging
     if ($LogFile) {
@@ -90,75 +90,63 @@ function Set-ContentNoBom {
 }
 
 function Invoke-External {
-  param(
-    [Parameter(Mandatory)][string]$Exe,
-    [Parameter()][string[]]$Arguments = @(),
-    [string]$LogFile,
-    [string]$WorkingDirectory
-  )
-  $psi = New-Object System.Diagnostics.ProcessStartInfo
-  $exeToRun = $Exe
-  $argLine  = ($Arguments | ForEach-Object { if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ } }) -join ' '
+    param(
+        [Parameter(Mandatory)][string]$Exe,
+        [string[]]$Arguments = @(),
+        [string]$LogFile,
+        [string]$WorkingDirectory
+    )
 
-  $ext = [System.IO.Path]::GetExtension($Exe)
-  if ($ext -and ($ext.ToLowerInvariant() -in @('.cmd','.bat'))) {
-    if (-not (Test-Path $Exe)) { throw "Command not found: $Exe" }
-    $psi.FileName = "cmd.exe"
-    $psi.Arguments = "/c `"$Exe`" $argLine"
-  } else {
-    $psi.FileName = $exeToRun
-    $psi.Arguments = $argLine
-  }
+    # Build argument string
+    $argLine = ($Arguments | ForEach-Object {
+        if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ }
+    }) -join ' '
 
-  $psi.RedirectStandardOutput = $true
-  $psi.RedirectStandardError  = $true
-  $psi.UseShellExecute = $false
-  $psi.CreateNoWindow   = $true
-  if ([string]::IsNullOrWhiteSpace($WorkingDirectory)) {
-    $psi.WorkingDirectory = (Get-Location).Path
-  } else {
-    $psi.WorkingDirectory = $WorkingDirectory
-  }
+    # Prepare ProcessStartInfo
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
 
-  $p = New-Object System.Diagnostics.Process
-  $p.StartInfo = $psi
-
-  if ($LogFile) {
-    $logDir = Split-Path -Parent $LogFile
-    if ($logDir -and !(Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }
-
-    $stdoutAction = {
-      if (-not [string]::IsNullOrEmpty($EventArgs.Data)) {
-        Add-Content -Path $Event.MessageData -Value $EventArgs.Data
-      }
+    $ext = [System.IO.Path]::GetExtension($Exe)
+    if ($ext -and ($ext.ToLower() -in @(".cmd",".bat"))) {
+        # Run through cmd.exe for batch files
+        $psi.FileName = "cmd.exe"
+        $psi.Arguments = "/c `"$Exe`" $argLine"
     }
-    $stderrAction = {
-      if (-not [string]::IsNullOrEmpty($EventArgs.Data)) {
-        Add-Content -Path $Event.MessageData -Value $EventArgs.Data
-      }
+    else {
+        $psi.FileName = $Exe
+        $psi.Arguments = $argLine
     }
 
-    $stdoutEvent = Register-ObjectEvent -InputObject $p -EventName OutputDataReceived -Action $stdoutAction -MessageData $LogFile
-    $stderrEvent = Register-ObjectEvent -InputObject $p -EventName ErrorDataReceived -Action $stderrAction -MessageData $LogFile
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError  = $true
+    $psi.UseShellExecute        = $false
+    $psi.CreateNoWindow         = $true
+    $psi.WorkingDirectory       = $(if ($WorkingDirectory) { $WorkingDirectory } else { (Get-Location).Path })
 
+    # Start process
+    $p = New-Object System.Diagnostics.Process
+    $p.StartInfo = $psi
     [void]$p.Start()
-    $p.BeginOutputReadLine()
-    $p.BeginErrorReadLine()
-    $p.WaitForExit()
 
-    Unregister-Event -SourceIdentifier $stdoutEvent.Name
-    Unregister-Event -SourceIdentifier $stderrEvent.Name
-    Remove-Job -Id $stdoutEvent.Id -Force
-    Remove-Job -Id $stderrEvent.Id -Force
-  } else {
-    [void]$p.Start()
+    # Read output synchronously (this avoids all hangs!)
     $stdout = $p.StandardOutput.ReadToEnd()
     $stderr = $p.StandardError.ReadToEnd()
-    $p.WaitForExit()
-  }
 
-  return $p.ExitCode
+    $p.WaitForExit()
+
+    # Logging (if required)
+    if ($LogFile) {
+        $logDir = Split-Path $LogFile -Parent
+        if ($logDir -and !(Test-Path $logDir)) {
+            New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+        }
+
+        if ($stdout) { Add-Content -Path $LogFile -Value $stdout }
+        if ($stderr) { Add-Content -Path $LogFile -Value $stderr }
+    }
+
+    return $p.ExitCode
 }
+
 
 function Get-MavenCommand {
   param([Parameter(Mandatory)][string]$RepoDir)
