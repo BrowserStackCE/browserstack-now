@@ -196,8 +196,8 @@ function Resolve-Test-Type {
 
   $choice = Show-ClickChoice -Title "Testing Type" `
                              -Prompt "What do you want to run?" `
-                             -Choices @("Web","App") `
-                             -DefaultChoice "Web"
+                             -Choices @("web","app") `
+                             -DefaultChoice "web"
   if ([string]::IsNullOrWhiteSpace($choice)) { throw "No testing type selected" }
   $script:TEST_TYPE = $choice
   Log-Line "✅ Selected Testing Type: $script:TEST_TYPE" $NOW_RUN_LOG_FILE
@@ -218,8 +218,8 @@ function Resolve-Tech-Stack {
 
   $choice = Show-ClickChoice -Title "Tech Stack" `
                              -Prompt "Select your installed language / framework:" `
-                             -Choices @("Java","Python","NodeJS") `
-                             -DefaultChoice "Java"
+                             -Choices @("java","python","nodejs") `
+                             -DefaultChoice "java"
   if ([string]::IsNullOrWhiteSpace($choice)) { throw "No tech stack selected" }
   $script:TECH_STACK = $choice
   Log-Line "✅ Selected Tech Stack: $script:TECH_STACK" $NOW_RUN_LOG_FILE

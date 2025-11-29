@@ -240,7 +240,7 @@ function Setup-Mobile-Java {
     $env:BROWSERSTACK_BUILD_NAME = "now-$env:NOW_OS-$TEST_TYPE-$TechStack-testng"
     $env:BROWSERSTACK_PROJECT_NAME = "now-$env:NOW_OS-$TEST_TYPE"
     
-    $platforms = Generate-Mobile-Platforms -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE -platformsListContentFormat "yaml"
+    $platforms = Generate-Mobile-Platforms -MaxTotalParallels $ParallelsPerPlatform -platformsListContentFormat "yaml"
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
     # Write complete browserstack.yml (not just append)
@@ -333,7 +333,7 @@ function Setup-Mobile-Python {
 
     # Generate platform YAMLs
 
-    $platforms = Generate-Mobile-Platforms -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE -platformsListContentFormat "yaml"
+    $platforms = Generate-Mobile-Platforms -MaxTotalParallels $ParallelsPerPlatform -platformsListContentFormat "yaml"
     $yamlContent =@"
 app: $APP_URL
 platforms:
@@ -500,10 +500,7 @@ function Setup-Environment {
   Log-Line "Team max parallels: $maxParallels" $NOW_RUN_LOG_FILE
 
   $localFlag = $false
-  $totalParallels = [int]([Math]::Floor($maxParallels))
-  if ($totalParallels -lt 1) { $totalParallels = 1 }
-
-  Log-Line "Total parallels allocated: $totalParallels" $NOW_RUN_LOG_FILE
+  $totalParallels = $maxParallels
 
   $success = $false
   $logFile = $NOW_RUN_LOG_FILE
@@ -550,7 +547,6 @@ function Setup-Environment {
   }
 }
 
-# ===== Run Setup Wrapper (like Mac's run_setup) =====
 function Run-Setup {
   param(
     [string]$TestType,
