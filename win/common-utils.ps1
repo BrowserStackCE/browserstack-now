@@ -149,70 +149,43 @@ function Invoke-External {
         [string]$WorkingDirectory
     )
 
-    # Prepare argument string
+    # Build argument string
     $argLine = ($Arguments | ForEach-Object {
         if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ }
     }) -join ' '
 
-    # Setup PSI
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $ext = [System.IO.Path]::GetExtension($Exe)
+    # Prepare temp output files (prevents ALL hangs)
+    $outFile = [IO.Path]::GetTempFileName()
+    $errFile = [IO.Path]::GetTempFileName()
 
-    if ($ext -and ($ext.ToLower() -in @(".cmd",".bat"))) {
-        $psi.FileName = "cmd.exe"
-        $psi.Arguments = "/c `"$Exe`" $argLine"
-    } else {
-        $psi.FileName = $Exe
-        $psi.Arguments = $argLine
-    }
+    # Start the external process
+    $process = Start-Process `
+        -FilePath $Exe `
+        -ArgumentList $argLine `
+        -RedirectStandardOutput $outFile `
+        -RedirectStandardError $errFile `
+        -PassThru `
+        -NoNewWindow `
+        -Wait `
+        -WorkingDirectory $(if ($WorkingDirectory) { $WorkingDirectory } else { (Get-Location).Path })
 
-    $psi.UseShellExecute        = $false
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError  = $true
-    $psi.CreateNoWindow         = $true
-    $psi.WorkingDirectory       = $(if ($WorkingDirectory) { $WorkingDirectory } else { (Get-Location).Path })
+    # Read output AFTER process exits (safe)
+    $stdout = Get-Content $outFile -Raw -ErrorAction SilentlyContinue
+    $stderr = Get-Content $errFile -Raw -ErrorAction SilentlyContinue
 
-    # Start process
-    $p = New-Object System.Diagnostics.Process
-    $p.StartInfo = $psi
-
-    # Buffers to store output
-    $stdout = New-Object System.Text.StringBuilder
-    $stderr = New-Object System.Text.StringBuilder
-
-    # Event handlers (very stable compared to ObjectEvent)
-    $p.add_OutputDataReceived({
-        if ($_.Data) { [void]$stdout.AppendLine($_.Data) }
-    })
-    $p.add_ErrorDataReceived({
-        if ($_.Data) { [void]$stderr.AppendLine($_.Data) }
-    })
-
-    [void]$p.Start()
-
-    # Begin async reads (no deadlock)
-    $p.BeginOutputReadLine()
-    $p.BeginErrorReadLine()
-
-    # Wait without blocking streams (safe!)
-    while (-not $p.HasExited) {
-        Start-Sleep -Milliseconds 100
-    }
-
-    # Logging
+    # Write logs if needed
     if ($LogFile) {
         $logDir = Split-Path $LogFile -Parent
         if ($logDir -and !(Test-Path $logDir)) {
             New-Item -ItemType Directory -Path $logDir -Force | Out-Null
         }
 
-        if ($stdout.Length -gt 0) { Add-Content $LogFile $stdout.ToString() }
-        if ($stderr.Length -gt 0) { Add-Content $LogFile $stderr.ToString() }
+        if ($stdout) { Add-Content $LogFile $stdout }
+        if ($stderr) { Add-Content $LogFile $stderr }
     }
 
-    return $p.ExitCode
+    return $process.ExitCode
 }
-
 
 
 function Get-MavenCommand {
