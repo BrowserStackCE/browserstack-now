@@ -338,7 +338,7 @@ function Fetch-Plan-Details {
 
   Log-Line "ℹ️ Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)" $NOW_RUN_LOG_FILE
 
-  if ($RUN_MODE -like "*--silent*") {
+  if ($RunMode -match "--silent|--debug") {
     if ($TestType -eq "web") {
         $env:TEAM_PARALLELS_MAX_ALLOWED_WEB = "5"
     }
@@ -347,8 +347,6 @@ function Fetch-Plan-Details {
     }
     Log-Line "ℹ️ Resetting Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)" $NOW_RUN_LOG_FILE
   }
-
-  
 
 }
 
