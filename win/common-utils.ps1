@@ -65,45 +65,20 @@ function Invoke-GitClone {
     if ($Branch) { $args += @("-b", $Branch) }
     $args += @($Url, $Target)
 
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName  = "git"
-    $psi.Arguments = ($args -join " ")
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError  = $true
-    $psi.UseShellExecute        = $false
-    $psi.CreateNoWindow         = $true
+    # Run git with normal PowerShell invocation
+    $result = git @args 2>&1
 
-    $p = New-Object System.Diagnostics.Process
-    $p.StartInfo = $psi
-
-    # Collect output asynchronously
-    $stdout = New-Object System.Text.StringBuilder
-    $stderr = New-Object System.Text.StringBuilder
-
-    $p.add_OutputDataReceived({
-        if ($_.Data) { $stdout.AppendLine($_.Data) | Out-Null }
-    })
-
-    $p.add_ErrorDataReceived({
-        if ($_.Data) { $stderr.AppendLine($_.Data) | Out-Null }
-    })
-
-    $p.Start() | Out-Null
-    $p.BeginOutputReadLine()
-    $p.BeginErrorReadLine()
-
-    $p.WaitForExit()
-
-    # Write logs
+    # Logging
     if ($LogFile) {
-        if ($stdout.Length -gt 0) { Add-Content $LogFile $stdout.ToString() }
-        if ($stderr.Length -gt 0) { Add-Content $LogFile $stderr.ToString() }
+        $result | Out-File -FilePath $LogFile -Append
     }
 
-    if ($p.ExitCode -ne 0) {
-        throw "git clone failed (exit $($p.ExitCode)): $($stderr.ToString())"
+    # Detect failure
+    if ($LASTEXITCODE -ne 0) {
+        throw "git clone failed (exit $LASTEXITCODE): $result"
     }
 }
+
 
 function Set-ContentNoBom {
   param(

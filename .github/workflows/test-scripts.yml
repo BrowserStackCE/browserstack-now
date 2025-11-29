@@ -328,7 +328,7 @@ jobs:
           path: |
             ${{ github.workspace }}/bs-logs
             C:\Temp\run_test_*.log
-            C:\Users\runneradmin\run_test_*.log
+            C:\Users\runneradmin\*.log
           retention-days: 30
           if-no-files-found: ignore
 
