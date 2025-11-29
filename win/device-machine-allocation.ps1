@@ -72,13 +72,13 @@ function Generate-Platforms {
     if ([string]::IsNullOrWhiteSpace($platformName) -or
         [string]::IsNullOrWhiteSpace($count)) {
 
-        log_msg_to "Platform name for parallel count is invalid: $platformName $count"
+        Log-Line "Platform name for parallel count is invalid: $platformName $count"
         return 1
     }
 
     # Validate numeric count
     if (-not ($count -match '^[0-9]+$')) {
-        log_msg_to "Error: count must be a number."
+        Log-Line "Error: count must be a number."
         return 1
     }
 
