@@ -102,7 +102,7 @@ function Setup-Web-Python {
 
     Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
     #[void](Invoke-External -Exe "pip3" -Arguments @("install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
-    pip3 install -r requirements.txt
+    & pip3 install -r requirements.txt *> $NOW_RUN_LOG_FILE
     Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
     
     #$env:PATH = (Join-Path $venv 'Scripts') + ";" + $env:PATH
@@ -146,7 +146,7 @@ $platforms
     $platforms -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $NOW_RUN_LOG_FILE } }
 
     Print-TestsRunningSection -Command "browserstack-sdk pytest -s tests/bstack-sample-test.py"
-    & browserstack-sdk pytest -s tests/bstack-sample-test.py
+    & browserstack-sdk pytest -s tests/bstack-sample-test.py *> $NOW_RUN_LOG_FILE
     #[void](Invoke-External -Exe "browserstack-sdk" -Arguments @('pytest','-s','tests/bstack-sample-test.py') -LogFile $LogFile -WorkingDirectory $TARGET)
     Log-Line "ℹ️ Run Test command completed." $NOW_RUN_LOG_FILE
 
@@ -176,7 +176,8 @@ function Setup-Web-NodeJS {
     Log-Line "⚙️ Running 'npm install'" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
     #[void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","install") -LogFile $LogFile -WorkingDirectory $TARGET)
-    & npm install
+    & npm install *> $NOW_RUN_LOG_FILE
+    
     Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
 
     $caps = Generate-Web-Platforms -max_total_parallels $TEAM_PARALLELS_MAX_ALLOWED_WEB -platformsListContentFormat "json"
@@ -208,7 +209,7 @@ function Setup-Web-NodeJS {
     Log-Line "  $caps" $NOW_RUN_LOG_FILE
 
     Print-TestsRunningSection -Command "npm run test"
-    & npm run test
+    & npm run test *> $NOW_RUN_LOG_FILE
     #[void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $TARGET)
     Log-Line "ℹ️ Run Test command completed." $NOW_RUN_LOG_FILE
 
@@ -318,7 +319,7 @@ function Setup-Mobile-Python {
     # $venvPy = Get-VenvPython -VenvDir $venv
     
     Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
-    & pip3 install -r requirements.txt
+    & pip3 install -r requirements.txt *> $NOW_RUN_LOG_FILE
     Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
     
     $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
@@ -368,7 +369,7 @@ $platforms
     
     Push-Location $runDirName
     try {
-      & browserstack-sdk pytest -s bstack_sample.py
+      & browserstack-sdk pytest -s bstack_sample.py *> $NOW_RUN_LOG_FILE
       #[void](Invoke-External -Exe "browserstack-sdk" -Arguments @('pytest','-s','bstack_sample.py') -LogFile $LogFile -WorkingDirectory (Get-Location).Path)
     } finally {
       Pop-Location
@@ -401,7 +402,7 @@ function Setup-Mobile-NodeJS {
   try {
     Log-Line "⚙️ Running 'npm install'" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
-    & npm install
+    & npm install *> $NOW_RUN_LOG_FILE
     #[void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","install") -LogFile $LogFile -WorkingDirectory $testDir)
     Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
 
@@ -429,7 +430,7 @@ function Setup-Mobile-NodeJS {
     Log-Line "ℹ️ Platforms: $capsJson" $NOW_RUN_LOG_FILE
 
     Print-TestsRunningSection -Command "npm run test"
-    & npm run test
+    & npm run test *> $NOW_RUN_LOG_FILE
     # [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $testDir)
     Log-Line "ℹ️ Run Test command completed." $NOW_RUN_LOG_FILE
 
