@@ -1,8 +1,4 @@
-﻿# Device and platform allocation utilities for the Windows BrowserStack NOW flow.
-# Mirrors the macOS shell script structure so we can share logic between both platforms.
-
-# ===== Example Platform Templates =====
-$WEB_ALL = @(
+﻿$WEB_ALL = @(
   "Windows|Chrome"
   "Windows|Firefox"
   "Windows|Edge"

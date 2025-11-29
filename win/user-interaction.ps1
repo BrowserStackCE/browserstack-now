@@ -193,7 +193,7 @@ function Resolve-Test-Type {
 
   $choice = Show-ClickChoice -Title "Testing Type" `
                              -Prompt "What do you want to run?" `
-                             -Choices @("Web","App","Both") `
+                             -Choices @("Web","App") `
                              -DefaultChoice "Web"
   if ([string]::IsNullOrWhiteSpace($choice)) { throw "No testing type selected" }
   $script:TEST_TYPE = $choice
@@ -366,10 +366,6 @@ function Perform-NextSteps-BasedOnTestType {
       Ask-User-TestUrl -RunMode $RunMode -CliValue $TestUrl
     }
     "^App$|^app$" {
-      Ask-And-Upload-App -RunMode $RunMode -CliPath $AppPath -CliPlatform $AppPlatform
-    }
-    "^Both$|^both$" {
-      Ask-User-TestUrl -RunMode $RunMode -CliValue $TestUrl
       Ask-And-Upload-App -RunMode $RunMode -CliPath $AppPath -CliPlatform $AppPlatform
     }
   }

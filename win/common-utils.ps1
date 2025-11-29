@@ -10,7 +10,7 @@ $script:LOG_DIR     = Join-Path $GLOBAL_DIR "logs"
 # Script state
 $script:BROWSERSTACK_USERNAME = ""
 $script:BROWSERSTACK_ACCESS_KEY = ""
-$script:TEST_TYPE = ""     # Web / App / Both
+$script:TEST_TYPE = ""     # Web / App
 $script:TECH_STACK = ""    # Java / Python / JS
 
 $script:WEB_PLAN_FETCHED = $false
@@ -296,7 +296,7 @@ function Fetch-Plan-Details {
   $auth = Get-BasicAuthHeader -User $BROWSERSTACK_USERNAME -Key $BROWSERSTACK_ACCESS_KEY
   $headers = @{ Authorization = $auth }
 
-  if ($TestType -in @("Web","Both","web","both")) {
+  if ($TestType -in @("Web","web")) {
     try {
       $resp = Invoke-RestMethod -Method Get -Uri "https://api.browserstack.com/automate/plan.json" -Headers $headers
       $script:WEB_PLAN_FETCHED = $true
@@ -306,7 +306,7 @@ function Fetch-Plan-Details {
       Log-Line "❌ Web Testing Plan fetch failed ($($_.Exception.Message))" $NOW_RUN_LOG_FILE
     }
   }
-  if ($TestType -in @("App","Both","app","both")) {
+  if ($TestType -in @("App","app")) {
     try {
       $resp2 = Invoke-RestMethod -Method Get -Uri "https://api-cloud.browserstack.com/app-automate/plan.json" -Headers $headers
       $script:MOBILE_PLAN_FETCHED = $true
@@ -318,8 +318,7 @@ function Fetch-Plan-Details {
   }
 
   if ( ($TestType -match "^Web$|^web$" -and -not $WEB_PLAN_FETCHED) -or
-       ($TestType -match "^App$|^app$" -and -not $MOBILE_PLAN_FETCHED) -or
-       ($TestType -match "^Both$|^both$" -and -not ($WEB_PLAN_FETCHED -or $MOBILE_PLAN_FETCHED)) ) {
+       ($TestType -match "^App$|^app$" -and -not $MOBILE_PLAN_FETCHED) {
     Log-Line "❌ Unauthorized to fetch required plan(s) or failed request(s). Exiting." $NOW_RUN_LOG_FILE
     throw "Plan fetch failed"
   }

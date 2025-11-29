@@ -231,7 +231,7 @@ fetch_plan_details() {
     local web_unauthorized=false
     local mobile_unauthorized=false
     
-    if [[ "$test_type" == "web" || "$test_type" == "both" ]]; then
+    if [[ "$test_type" == "web" ]]; then
         RESPONSE_WEB=$(curl -s -w "\n%{http_code}" -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" https://api.browserstack.com/automate/plan.json)
         HTTP_CODE_WEB=$(echo "$RESPONSE_WEB" | tail -n1)
         RESPONSE_WEB_BODY=$(echo "$RESPONSE_WEB" | sed '$d')
@@ -246,7 +246,7 @@ fetch_plan_details() {
         fi
     fi
     
-    if [[ "$test_type" == "app" || "$test_type" == "both" ]]; then
+    if [[ "$test_type" == "app" ]]; then
         RESPONSE_MOBILE=$(curl -s -w "\n%{http_code}" -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" https://api-cloud.browserstack.com/app-automate/plan.json)
         HTTP_CODE_MOBILE=$(echo "$RESPONSE_MOBILE" | tail -n1)
         RESPONSE_MOBILE_BODY=$(echo "$RESPONSE_MOBILE" | sed '$d')
@@ -264,8 +264,7 @@ fetch_plan_details() {
     log_info "Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)"
     
     if [[ "$test_type" == "web" && "$web_unauthorized" == true ]] || \
-    [[ "$test_type" == "app" && "$mobile_unauthorized" == true ]] || \
-    [[ "$test_type" == "both" && "$web_unauthorized" == true && "$mobile_unauthorized" == true ]]; then
+    [[ "$test_type" == "app" && "$mobile_unauthorized" == true ]]; then
         log_msg_to "❌ Unauthorized to fetch required plan(s). Exiting."
         exit 1
     fi
