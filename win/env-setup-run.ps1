@@ -101,7 +101,8 @@ function Setup-Web-Python {
     # Log-Line " venv Python path: $venvPy" $NOW_RUN_LOG_FILE
 
     Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
-    [void](Invoke-External -Exe "pip3" -Arguments @("install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
+    #[void](Invoke-External -Exe "pip3" -Arguments @("install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
+    pip3 install -r requirements.txt
     Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
     
     $env:PATH = (Join-Path $venv 'Scripts') + ";" + $env:PATH
@@ -145,7 +146,8 @@ $platforms
     $platforms -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $NOW_RUN_LOG_FILE } }
 
     Print-TestsRunningSection -Command "browserstack-sdk pytest -s tests/bstack-sample-test.py"
-    [void](Invoke-External -Exe "browserstack-sdk" -Arguments @('pytest','-s','tests/bstack-sample-test.py') -LogFile $LogFile -WorkingDirectory $TARGET)
+    & browserstack-sdk pytest -s tests/bstack-sample-test.py
+    #[void](Invoke-External -Exe "browserstack-sdk" -Arguments @('pytest','-s','tests/bstack-sample-test.py') -LogFile $LogFile -WorkingDirectory $TARGET)
     Log-Line "ℹ️ Run Test command completed." $NOW_RUN_LOG_FILE
 
   } finally {
@@ -314,10 +316,9 @@ function Setup-Mobile-Python {
     # $venvPy = Get-VenvPython -VenvDir $venv
     
     Log-Line "ℹ️ Installing dependencies" $NOW_RUN_LOG_FILE
-    [void](Invoke-External -Exe "pip3" -Arguments @("install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
+    & pip3 install -r requirements.txt
     Log-Line "✅ Dependencies installed" $NOW_RUN_LOG_FILE
     
-    $env:PATH = (Join-Path $venv 'Scripts') + ";" + $env:PATH
     $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
     $env:BROWSERSTACK_APP = $APP_URL
@@ -366,7 +367,8 @@ $platforms
     
     Push-Location $runDir
     try {
-      [void](Invoke-External -Exe "browserstack-sdk" -Arguments @('pytest','-s','bstack_sample.py') -LogFile $LogFile -WorkingDirectory (Get-Location).Path)
+      & browserstack-sdk pytest -s bstack_sample.py
+      #[void](Invoke-External -Exe "browserstack-sdk" -Arguments @('pytest','-s','bstack_sample.py') -LogFile $LogFile -WorkingDirectory (Get-Location).Path)
     } finally {
       Pop-Location
     }
