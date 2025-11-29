@@ -38,8 +38,8 @@ $platforms
     $env:BSTACK_PARALLELS = $ParallelsPerPlatform
     $env:BSTACK_PLATFORMS=$platforms
     $env:BROWSERSTACK_LOCAL=$localFlag
-    $env:BROWSERSTACK_BUILD_NAME="now-$NOW_OS-$TEST_TYPE-$TechStack-testng"
-    $env:BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-$TEST_TYPE"
+    $env:BROWSERSTACK_BUILD_NAME="now-$env:NOW_OS-$TEST_TYPE-$TechStack-testng"
+    $env:BROWSERSTACK_PROJECT_NAME="now-$env:NOW_OS-$TEST_TYPE"
 
     Set-Content "browserstack.yml" -Value $yamlContent
     Log-Line "✅ Created browserstack.yml in root directory" $NOW_RUN_LOG_FILE
@@ -122,8 +122,8 @@ $platforms
     $env:BSTACK_PARALLELS = $ParallelsPerPlatform
     $env:BSTACK_PLATFORMS=$platforms
     $env:BROWSERSTACK_LOCAL=$localFlag
-    $env:BROWSERSTACK_BUILD_NAME="now-$NOW_OS-$TEST_TYPE-$TechStack-pytest"
-    $env:BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-$TEST_TYPE"
+    $env:BROWSERSTACK_BUILD_NAME="now-$env:NOW_OS-$TEST_TYPE-$TechStack-pytest"
+    $env:BROWSERSTACK_PROJECT_NAME="now-$env:NOW_OS-$TEST_TYPE"
 
     Log-Line "✅ Updated browserstack.yml with platforms and credentials" $NOW_RUN_LOG_FILE
 
@@ -185,8 +185,8 @@ function Setup-Web-NodeJS {
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
     $localFlagStr = if ($UseLocal) { "true" } else { "false" }
     $env:BROWSERSTACK_LOCAL = $localFlagStr
-    $env:BROWSERSTACK_BUILD_NAME = "now-$NOW_OS-$TEST_TYPE-$TechStack-wdio"
-    $env:BROWSERSTACK_PROJECT_NAME = "now-$NOW_OS-$TEST_TYPE"
+    $env:BROWSERSTACK_BUILD_NAME = "now-$env:NOW_OS-$TEST_TYPE-$TechStack-wdio"
+    $env:BROWSERSTACK_PROJECT_NAME = "now-$env:NOW_OS-$TEST_TYPE"
 
     # Validate Environment Variables
     Log-Section "Validate Environment Variables" $NOW_RUN_LOG_FILE
@@ -406,8 +406,8 @@ function Setup-Mobile-NodeJS {
     $env:BSTACK_PARALLELS = $ParallelsPerPlatform
     $env:BSTACK_CAPS_JSON = $capsJson
     $env:BROWSERSTACK_APP = $APP_URL
-    $env:BROWSERSTACK_BUILD_NAME = "now-$NOW_OS-$TEST_TYPE-$TECH_STACK-wdio"
-    $env:BROWSERSTACK_PROJECT_NAME = "NOW-$TEST_TYPE-Test"
+    $env:BROWSERSTACK_BUILD_NAME = "now-$env:NOW_OS-$TEST_TYPE-$TechStack-wdio"
+    $env:BROWSERSTACK_PROJECT_NAME = "now-$env:NOW_OS-$TEST_TYPE"
     $env:BROWSERSTACK_LOCAL = "true"
 
     # Validate Environment Variables
