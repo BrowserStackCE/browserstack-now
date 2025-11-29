@@ -248,7 +248,7 @@ platforms:
 $platforms
 "@ 
     
-    Add-Content -Path $env:BROWSERSTACK_CONFIG_FILE -Encoding UTF8
+    Add-Content -Path $env:BROWSERSTACK_CONFIG_FILE -Value $yamlContent -Encoding UTF8
 
     Report-BStackLocalStatus -LocalFlag $UseLocal
 
