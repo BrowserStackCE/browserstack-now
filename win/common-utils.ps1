@@ -61,51 +61,36 @@ function Invoke-GitClone {
         [string]$LogFile
     )
 
+    # Build argument string
     $args = @("clone")
     if ($Branch) { $args += @("-b", $Branch) }
     $args += @($Url, $Target)
+    $argString = ($args -join " ")
 
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName  = "git"
-    $psi.Arguments = ($args -join " ")
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError  = $true
-    $psi.UseShellExecute        = $false
-    $psi.CreateNoWindow         = $true
+    # Run the command safely using Start-Process
+    $process = Start-Process `
+        -FilePath "git" `
+        -ArgumentList $argString `
+        -RedirectStandardOutput "$env:TEMP\git_out.txt" `
+        -RedirectStandardError  "$env:TEMP\git_err.txt" `
+        -PassThru `
+        -NoNewWindow `
+        -Wait
 
-    $p = New-Object System.Diagnostics.Process
-    $p.StartInfo = $psi
-
-    # Collect output asynchronously
-    $stdout = New-Object System.Text.StringBuilder
-    $stderr = New-Object System.Text.StringBuilder
-
-    $p.add_OutputDataReceived({
-        if ($_.Data) { $stdout.AppendLine($_.Data) | Out-Null }
-    })
-
-    $p.add_ErrorDataReceived({
-        if ($_.Data) { $stderr.AppendLine($_.Data) | Out-Null }
-    })
-
-    $p.Start() | Out-Null
-    $p.BeginOutputReadLine()
-    $p.BeginErrorReadLine()
-
-    $p.WaitForExit()
+    # Read output
+    $stdout = Get-Content "$env:TEMP\git_out.txt" -Raw -ErrorAction SilentlyContinue
+    $stderr = Get-Content "$env:TEMP\git_err.txt" -Raw -ErrorAction SilentlyContinue
 
     # Write logs
     if ($LogFile) {
-        if ($stdout.Length -gt 0) { Add-Content $LogFile $stdout.ToString() }
-        if ($stderr.Length -gt 0) { Add-Content $LogFile $stderr.ToString() }
+        if ($stdout) { Add-Content $LogFile $stdout }
+        if ($stderr) { Add-Content $LogFile $stderr }
     }
 
-    if ($p.ExitCode -ne 0) {
-        throw "git clone failed (exit $($p.ExitCode)): $($stderr.ToString())"
+    if ($process.ExitCode -ne 0) {
+        throw "git clone failed (exit $($process.ExitCode)): $stderr"
     }
 }
-
-
 
 
 function Set-ContentNoBom {
