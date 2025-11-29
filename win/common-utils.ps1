@@ -348,8 +348,8 @@ function Generate-Web-Platforms {
 
 function Generate-Mobile-Platforms {
     param(
-        [string]$max_total_parallels,
-        [string]$platformsListContentFormat
+        [string]$MaxTotalParallels,
+        [string]$PlatformsListContentFormat
     )
 
     Log-Line "Max Total Parallels inside Generate-Mobile-Platforms: $max_total_parallels" $NOW_RUN_LOG_FILE
@@ -357,8 +357,8 @@ function Generate-Mobile-Platforms {
 
     $platformsList = Generate-Platforms `
         -platformName $app_platform `
-        -count $max_total_parallels `
-        -platformsListContentFormat $platformsListContentFormat
+        -count $MaxTotalParallels `
+        -platformsListContentFormat $PlatformsListContentFormat
 
     return $platformsList
 }
