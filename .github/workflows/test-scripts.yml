@@ -309,13 +309,11 @@ jobs:
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
 
           $logPath = Join-Path $env:USERPROFILE ".browserstack\NOW\logs"
-          $logPath2 = Join-Path $env:USERPROFILE "AppData\Local\Temp"
           $logPath3 = Join-Path "C:\Temp" "*.log"
 
           if (Test-Path $logPath) {
               Write-Host "Copying logs from $logPath"
               Copy-Item -Path (Join-Path $logPath "*") -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue
-              Copy-Item -Path (Join-Path $logPath2 "*") -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue
               Copy-Item -Path (Join-Path $logPath3 "*") -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue
           }
           else {
