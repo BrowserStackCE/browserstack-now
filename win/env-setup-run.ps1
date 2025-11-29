@@ -47,8 +47,8 @@ $platforms
     # Validate Environment Variables
     Log-Section "Validate Environment Variables" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $NOW_RUN_LOG_FILE
-    Log-Line "ℹ️ BrowserStack Project: $BROWSERSTACK_PROJECT_NAME" $NOW_RUN_LOG_FILE
-    Log-Line "ℹ️ BrowserStack Build: $BROWSERSTACK_BUILD_NAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Project: $env:BROWSERSTACK_PROJECT_NAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Build: $env:BROWSERSTACK_BUILD_NAME" $NOW_RUN_LOG_FILE
 
     Log-Line "ℹ️ Web Application Endpoint: $CX_TEST_URL" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $NOW_RUN_LOG_FILE
@@ -252,8 +252,8 @@ $platforms
     # Validate Environment Variables
     Log-Section "Validate Environment Variables" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $NOW_RUN_LOG_FILE
-    Log-Line "ℹ️ BrowserStack Project: $BROWSERSTACK_PROJECT_NAME" $NOW_RUN_LOG_FILE
-    Log-Line "ℹ️ BrowserStack Build: $BROWSERSTACK_BUILD_NAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Project: $env:BROWSERSTACK_PROJECT_NAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Build: $env:BROWSERSTACK_BUILD_NAME" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ Native App Endpoint: $APP_URL" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $NOW_RUN_LOG_FILE
@@ -330,13 +330,6 @@ function Setup-Mobile-Python {
 
     $platforms = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE -platformsListContentFormat "yaml"
 @"
-userName: $BROWSERSTACK_USERNAME
-accessKey: $BROWSERSTACK_ACCESS_KEY
-framework: pytest
-browserstackLocal: $localFlag
-buildName: now-windows-app-python-pytest
-projectName: NOW-Mobile-Test
-parallelsPerPlatform: $ParallelsPerPlatform
 app: $APP_URL
 platforms:
 $platforms
@@ -351,7 +344,8 @@ $platforms
     # Validate Environment Variables
     Log-Section "Validate Environment Variables" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $NOW_RUN_LOG_FILE
-    Log-Line "ℹ️ BrowserStack Build: now-windows-app-python-pytest" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Project: $env:BROWSERSTACK_PROJECT_NAME" $NOW_RUN_LOG_FILE
+    Log-Line "ℹ️ BrowserStack Build: now-$env:NOW_OS-$TEST_TYPE-$TECH_STACK-pytest" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ Native App Endpoint: $APP_URL" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $NOW_RUN_LOG_FILE
