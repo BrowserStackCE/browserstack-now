@@ -62,34 +62,33 @@ function Invoke-GitClone {
         [string]$LogFile
     )
 
-    # Build arguments
+    # Build branch flag
     $branchArg = ""
     if ($Branch) { $branchArg = "-b `"$Branch`"" }
 
-    # Construct the full command as a cmd.exe-safe string
+    # Command string
     $cmd = "git clone $branchArg `"$Url`" `"$Target`""
 
-    # Paths for temp logs
-    $stdoutFile = Join-Path $env:TEMP "git_stdout.txt"
-    $stderrFile = Join-Path $env:TEMP "git_stderr.txt"
+    # Always safe: redirect via CMD so PowerShell can't corrupt the cmdline
+    $tempOut = Join-Path $env:TEMP "git_clone_output.txt"
+    cmd.exe /c "$cmd > `"$tempOut`" 2>&1"
+    $exit = $LASTEXITCODE
 
-    # Run using cmd.exe (prevents hangs on GH Actions)
-    cmd /c "$cmd 1> `"$stdoutFile`" 2> `"$stderrFile`""
-    $exitCode = $LASTEXITCODE
-
-    # Read logs
-    $stdout = ""
-    $stderr = ""
-    if (Test-Path $stdoutFile) { $stdout = Get-Content $stdoutFile -Raw }
-    if (Test-Path $stderrFile) { $stderr = Get-Content $stderrFile -Raw }
-
-    if ($LogFile) {
-        if ($stdout) { Add-Content -Path $LogFile -Value $stdout }
-        if ($stderr) { Add-Content -Path $LogFile -Value $stderr }
+    # Read output
+    $output = ""
+    if (Test-Path $tempOut) {
+        $output = Get-Content $tempOut -Raw
     }
 
-    if ($exitCode -ne 0) {
-        throw "git clone failed (exit $exitCode): $stderr"
+    # Write log if needed
+    if ($LogFile) {
+        Add-Content $LogFile "[git clone cmd] $cmd"
+        Add-Content $LogFile $output
+    }
+
+    # Throw if git clone failed
+    if ($exit -ne 0) {
+        throw "git clone failed with exit code $exit.`n$output"
     }
 }
 
