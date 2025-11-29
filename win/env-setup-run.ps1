@@ -360,7 +360,7 @@ $platforms
     Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $NOW_RUN_LOG_FILE
     Log-Line "ℹ️ Platforms:" $NOW_RUN_LOG_FILE
-    $platformYaml -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $NOW_RUN_LOG_FILE } }
+    $yamlContent -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $NOW_RUN_LOG_FILE } }
 
     Print-TestsRunningSection -Command "cd $runDirName && browserstack-sdk pytest -s bstack_sample.py"
     
