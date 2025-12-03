@@ -187,17 +187,20 @@ function Resolve-Test-Type {
   if ($RunMode -match "--silent" -or $RunMode -match "--debug") {
     if (-not $CliValue) { $CliValue = $env:TEST_TYPE }
     if ([string]::IsNullOrWhiteSpace($CliValue)) { throw "TEST_TYPE is required in silent/debug mode." }
-    $script:TEST_TYPE = (Get-Culture).TextInfo.ToTitleCase($CliValue.ToLowerInvariant())
+    $candidate = (Get-Culture).TextInfo.ToTitleCase($CliValue.ToLowerInvariant())
+    if ($candidate -notin @("Web","App")) {
+      throw "TEST_TYPE must be either 'Web' or 'App'."
+    }
+    $script:TEST_TYPE = $candidate
     return
   }
 
   $choice = Show-ClickChoice -Title "Testing Type" `
                              -Prompt "What do you want to run?" `
-                             -Choices @("Web","App","Both") `
+                             -Choices @("Web","App") `
                              -DefaultChoice "Web"
   if ([string]::IsNullOrWhiteSpace($choice)) { throw "No testing type selected" }
   $script:TEST_TYPE = $choice
-  Log-Line "✅ Selected Testing Type: $script:TEST_TYPE" $GLOBAL_LOG
 }
 
 function Resolve-Tech-Stack {
@@ -209,7 +212,11 @@ function Resolve-Tech-Stack {
     if (-not $CliValue) { $CliValue = $env:TECH_STACK }
     if ([string]::IsNullOrWhiteSpace($CliValue)) { throw "TECH_STACK is required in silent/debug mode." }
     $textInfo = (Get-Culture).TextInfo
-    $script:TECH_STACK = $textInfo.ToTitleCase($CliValue.ToLowerInvariant())
+    $candidate = $textInfo.ToTitleCase($CliValue.ToLowerInvariant())
+    if ($candidate -notin @("Java","Python","NodeJS")) {
+      throw "TECH_STACK must be one of: Java, Python, NodeJS."
+    }
+    $script:TECH_STACK = $candidate
     return
   }
 
@@ -219,7 +226,6 @@ function Resolve-Tech-Stack {
                              -DefaultChoice "Java"
   if ([string]::IsNullOrWhiteSpace($choice)) { throw "No tech stack selected" }
   $script:TECH_STACK = $choice
-  Log-Line "✅ Selected Tech Stack: $script:TECH_STACK" $GLOBAL_LOG
 }
 
 function Ask-User-TestUrl {
@@ -368,9 +374,8 @@ function Perform-NextSteps-BasedOnTestType {
     "^App$|^app$" {
       Ask-And-Upload-App -RunMode $RunMode -CliPath $AppPath -CliPlatform $AppPlatform
     }
-    "^Both$|^both$" {
-      Ask-User-TestUrl -RunMode $RunMode -CliValue $TestUrl
-      Ask-And-Upload-App -RunMode $RunMode -CliPath $AppPath -CliPlatform $AppPlatform
+    default {
+      throw "Unsupported TEST_TYPE: $TestType. Allowed values: Web, App."
     }
   }
 }

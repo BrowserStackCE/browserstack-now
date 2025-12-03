@@ -32,24 +32,41 @@ $script:PSScriptRootResolved = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # ===== Main flow (baseline steps then run) =====
 try {
-  # Setup Summary Header
-  Log-Section "🧭 Setup Summary – BrowserStack NOW" $GLOBAL_LOG
-  Log-Line "ℹ️ Timestamp: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))" $GLOBAL_LOG
-
-  # Get test type and tech stack FIRST
+  # Get test type and tech stack before logging
   if ($RunMode -match "--silent|--debug") {
-    $script:TEST_TYPE = if ($TT) { (Get-Culture).TextInfo.ToTitleCase($TT.ToLowerInvariant()) } else { $env:TEST_TYPE }
-    $script:TECH_STACK = if ($TSTACK) { (Get-Culture).TextInfo.ToTitleCase($TSTACK.ToLowerInvariant()) } else { $env:TECH_STACK }
-    Log-Line "ℹ️ Run Mode: $RunMode" $GLOBAL_LOG
+    $textInfo = (Get-Culture).TextInfo
+    $ttCandidate = if ($TT) { $TT } else { $env:TEST_TYPE }
+    if ([string]::IsNullOrWhiteSpace($ttCandidate)) { throw "TEST_TYPE is required in silent/debug mode." }
+    $tsCandidate = if ($TSTACK) { $TSTACK } else { $env:TECH_STACK }
+    if ([string]::IsNullOrWhiteSpace($tsCandidate)) { throw "TECH_STACK is required in silent/debug mode." }
+    $script:TEST_TYPE = $textInfo.ToTitleCase($ttCandidate.ToLowerInvariant())
+    $script:TECH_STACK = $textInfo.ToTitleCase($tsCandidate.ToLowerInvariant())
+    if ($TEST_TYPE -notin @("Web","App")) { throw "TEST_TYPE must be either 'Web' or 'App'." }
+    if ($TECH_STACK -notin @("Java","Python","NodeJS")) { throw "TECH_STACK must be one of: Java, Python, NodeJS." }
   } else {
     Resolve-Test-Type -RunMode $RunMode -CliValue $TT
     Resolve-Tech-Stack -RunMode $RunMode -CliValue $TSTACK
   }
 
-  # Setup log file path
-  $logFile = Join-Path $LOG_DIR ("{0}_{1}_run_result.log" -f $TEST_TYPE.ToLowerInvariant(), $TECH_STACK.ToLowerInvariant())
-  Log-Line "ℹ️ Log file path: $logFile" $GLOBAL_LOG
+  # Setup log file path AFTER selections
+  $logFileName = "{0}_{1}_run_result.log" -f $TEST_TYPE.ToLowerInvariant(), $TECH_STACK.ToLowerInvariant()
+  $logFile = Join-Path $LOG_DIR $logFileName
+  if (!(Test-Path $LOG_DIR)) {
+    New-Item -ItemType Directory -Path $LOG_DIR -Force | Out-Null
+  }
+  '' | Out-File -FilePath $logFile -Encoding UTF8
   Set-RunLogFile $logFile
+  $script:GLOBAL_LOG = $logFile
+  $script:WEB_LOG = $logFile
+  $script:MOBILE_LOG = $logFile
+  Log-Line "ℹ️ Log file path: $logFile" $GLOBAL_LOG
+
+  # Setup Summary Header
+  Log-Section "🧭 Setup Summary – BrowserStack NOW" $GLOBAL_LOG
+  Log-Line "ℹ️ Timestamp: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))" $GLOBAL_LOG
+  Log-Line "ℹ️ Run Mode: $RunMode" $GLOBAL_LOG
+  Log-Line "ℹ️ Selected Testing Type: $TEST_TYPE" $GLOBAL_LOG
+  Log-Line "ℹ️ Selected Tech Stack: $TECH_STACK" $GLOBAL_LOG
 
   # Setup workspace and get credentials BEFORE app upload
   Setup-Workspace
@@ -93,9 +110,7 @@ try {
   Log-Line "========================================" $GLOBAL_LOG
   Log-Line "Error: $($_.Exception.Message)" $GLOBAL_LOG
   Log-Line "Check logs for details:" $GLOBAL_LOG
-  Log-Line "  Global: $GLOBAL_LOG" $GLOBAL_LOG
-  Log-Line "  Web: $WEB_LOG" $GLOBAL_LOG
-  Log-Line "  Mobile: $MOBILE_LOG" $GLOBAL_LOG
+  Log-Line ("  Run Log: {0}" -f (Get-RunLogFile)) $GLOBAL_LOG
   Log-Line "========================================" $GLOBAL_LOG
   throw
 }

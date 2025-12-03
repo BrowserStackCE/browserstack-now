@@ -6,14 +6,14 @@ $script:PROJECT_FOLDER = "NOW"
 
 $script:GLOBAL_DIR = Join-Path $WORKSPACE_DIR $PROJECT_FOLDER
 $script:LOG_DIR     = Join-Path $GLOBAL_DIR "logs"
-$script:GLOBAL_LOG  = Join-Path $LOG_DIR "global.log"
-$script:WEB_LOG     = Join-Path $LOG_DIR "web_run_result.log"
-$script:MOBILE_LOG  = Join-Path $LOG_DIR "mobile_run_result.log"
+$script:GLOBAL_LOG  = ""
+$script:WEB_LOG     = ""
+$script:MOBILE_LOG  = ""
 
 # Script state
 $script:BROWSERSTACK_USERNAME = ""
 $script:BROWSERSTACK_ACCESS_KEY = ""
-$script:TEST_TYPE = ""     # Web / App / Both
+$script:TEST_TYPE = ""     # Web / App
 $script:TECH_STACK = ""    # Java / Python / JS
 [double]$script:PARALLEL_PERCENTAGE = 1.00
 
@@ -58,10 +58,16 @@ function Clear-OldLogs {
   if (!(Test-Path $LOG_DIR)) { 
     New-Item -ItemType Directory -Path $LOG_DIR | Out-Null 
   }
-  '' | Out-File -FilePath $GLOBAL_LOG -Encoding UTF8
-  '' | Out-File -FilePath $WEB_LOG -Encoding UTF8
-  '' | Out-File -FilePath $MOBILE_LOG -Encoding UTF8
-  Log-Line "✅ Logs cleared and fresh run initiated." $GLOBAL_LOG
+
+  $legacyLogs = @("global.log","web_run_result.log","mobile_run_result.log")
+  foreach ($legacy in $legacyLogs) {
+    $legacyPath = Join-Path $LOG_DIR $legacy
+    if (Test-Path $legacyPath) {
+      Remove-Item -Path $legacyPath -Force -ErrorAction SilentlyContinue
+    }
+  }
+
+  Log-Line "✅ Logs directory cleaned. Legacy files removed." $GLOBAL_LOG
 }
 
 # ===== Git Clone =====
@@ -304,39 +310,49 @@ function Get-BasicAuthHeader {
 function Fetch-Plan-Details {
   param([string]$TestType)
   
-  Log-Line "ℹ️ Fetching BrowserStack plan for $TestType" $GLOBAL_LOG
+  if ([string]::IsNullOrWhiteSpace($TestType)) {
+    throw "Test type is required to fetch plan details."
+  }
+
+  $normalized = $TestType.ToLowerInvariant()
+  Log-Line "ℹ️ Fetching BrowserStack plan for $normalized" $GLOBAL_LOG
+
   $auth = Get-BasicAuthHeader -User $BROWSERSTACK_USERNAME -Key $BROWSERSTACK_ACCESS_KEY
   $headers = @{ Authorization = $auth }
 
-  if ($TestType -in @("Web","Both","web","both")) {
-    try {
-      $resp = Invoke-RestMethod -Method Get -Uri "https://api.browserstack.com/automate/plan.json" -Headers $headers
-      $script:WEB_PLAN_FETCHED = $true
-      $script:TEAM_PARALLELS_MAX_ALLOWED_WEB = [int]$resp.parallel_sessions_max_allowed
-      Log-Line "✅ Web Testing Plan fetched: Team max parallel sessions = $TEAM_PARALLELS_MAX_ALLOWED_WEB" $GLOBAL_LOG
-    } catch {
-      Log-Line "❌ Web Testing Plan fetch failed ($($_.Exception.Message))" $GLOBAL_LOG
+  switch ($normalized) {
+    "web" {
+      try {
+        $resp = Invoke-RestMethod -Method Get -Uri "https://api.browserstack.com/automate/plan.json" -Headers $headers
+        $script:WEB_PLAN_FETCHED = $true
+        $script:TEAM_PARALLELS_MAX_ALLOWED_WEB = [int]$resp.parallel_sessions_max_allowed
+        Log-Line "✅ Web Testing Plan fetched: Team max parallel sessions = $TEAM_PARALLELS_MAX_ALLOWED_WEB" $GLOBAL_LOG
+      } catch {
+        Log-Line "❌ Web Testing Plan fetch failed ($($_.Exception.Message))" $GLOBAL_LOG
+      }
+      if (-not $WEB_PLAN_FETCHED) {
+        throw "Unable to fetch Web Testing plan details."
+      }
     }
-  }
-  if ($TestType -in @("App","Both","app","both")) {
-    try {
-      $resp2 = Invoke-RestMethod -Method Get -Uri "https://api-cloud.browserstack.com/app-automate/plan.json" -Headers $headers
-      $script:MOBILE_PLAN_FETCHED = $true
-      $script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE = [int]$resp2.parallel_sessions_max_allowed
-      Log-Line "✅ Mobile App Testing Plan fetched: Team max parallel sessions = $TEAM_PARALLELS_MAX_ALLOWED_MOBILE" $GLOBAL_LOG
-    } catch {
-      Log-Line "❌ Mobile App Testing Plan fetch failed ($($_.Exception.Message))" $GLOBAL_LOG
+    "app" {
+      try {
+        $resp2 = Invoke-RestMethod -Method Get -Uri "https://api-cloud.browserstack.com/app-automate/plan.json" -Headers $headers
+        $script:MOBILE_PLAN_FETCHED = $true
+        $script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE = [int]$resp2.parallel_sessions_max_allowed
+        Log-Line "✅ Mobile App Testing Plan fetched: Team max parallel sessions = $TEAM_PARALLELS_MAX_ALLOWED_MOBILE" $GLOBAL_LOG
+      } catch {
+        Log-Line "❌ Mobile App Testing Plan fetch failed ($($_.Exception.Message))" $GLOBAL_LOG
+      }
+      if (-not $MOBILE_PLAN_FETCHED) {
+        throw "Unable to fetch Mobile App Testing plan details."
+      }
+    }
+    default {
+      throw "Unsupported TEST_TYPE: $TestType. Allowed values: Web, App."
     }
   }
 
-  if ( ($TestType -match "^Web$|^web$" -and -not $WEB_PLAN_FETCHED) -or
-       ($TestType -match "^App$|^app$" -and -not $MOBILE_PLAN_FETCHED) -or
-       ($TestType -match "^Both$|^both$" -and -not ($WEB_PLAN_FETCHED -or $MOBILE_PLAN_FETCHED)) ) {
-    Log-Line "❌ Unauthorized to fetch required plan(s) or failed request(s). Exiting." $GLOBAL_LOG
-    throw "Plan fetch failed"
-  }
-  
-  Log-Line "ℹ️ Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)" $GLOBAL_LOG
+  Log-Line "ℹ️ Plan summary: Web fetched=$WEB_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_WEB), Mobile fetched=$MOBILE_PLAN_FETCHED (team max=$TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" $GLOBAL_LOG
 }
 
 

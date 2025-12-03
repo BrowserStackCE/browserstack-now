@@ -14,7 +14,7 @@ function Setup-Web-Java {
   }
 
   Log-Line "ℹ️ Cloning repository: $REPO" $GLOBAL_LOG
-  Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $WEB_LOG
+  Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile (Get-RunLogFile)
 
   Push-Location $TARGET
   try {
@@ -86,7 +86,7 @@ function Setup-Web-Python {
   }
 
   Log-Line "ℹ️ Cloning repository: $REPO" $GLOBAL_LOG
-  Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $WEB_LOG
+  Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile (Get-RunLogFile)
 
   Push-Location $TARGET
   try {
@@ -165,7 +165,7 @@ function Setup-Web-NodeJS {
   New-Item -ItemType Directory -Path $GLOBAL_DIR -Force | Out-Null
 
   Log-Line "ℹ️ Cloning repository: $REPO" $GLOBAL_LOG
-  Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $WEB_LOG
+  Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile (Get-RunLogFile)
 
   Push-Location $TARGET
   try {
@@ -225,7 +225,7 @@ function Setup-Mobile-Java {
   }
 
   Log-Line "ℹ️ Cloning repository: $REPO" $GLOBAL_LOG
-  Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $MOBILE_LOG
+  Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile (Get-RunLogFile)
 
   Push-Location $TARGET
   try {
@@ -302,7 +302,7 @@ function Setup-Mobile-Python {
   }
 
   Log-Line "ℹ️ Cloning repository: $REPO" $GLOBAL_LOG
-  Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $MOBILE_LOG
+  Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile (Get-RunLogFile)
 
   Push-Location $TARGET
   try {
@@ -407,7 +407,7 @@ function Setup-Mobile-NodeJS {
   }
 
   Log-Line "ℹ️ Cloning repository: $REPO" $GLOBAL_LOG
-  Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile $MOBILE_LOG
+  Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile (Get-RunLogFile)
 
   $testDir = Join-Path $TARGET "test"
   Push-Location $testDir
@@ -525,7 +525,7 @@ function Setup-Environment {
   Log-Line "Total parallels allocated: $totalParallels" $GLOBAL_LOG
 
   $success = $false
-  $logFile = if ($SetupType -match "web") { $WEB_LOG } else { $MOBILE_LOG }
+  $logFile = Get-RunLogFile
 
   switch ($TechStack) {
     "Java" {
