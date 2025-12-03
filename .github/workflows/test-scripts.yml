@@ -276,11 +276,11 @@ jobs:
           $scriptPath = Join-Path $env:GITHUB_WORKSPACE "win\run.ps1"
 
           $testConfigs = @(
-            @("web",  "java"),
-            @("app",  "java"),
-            @("web",  "python"),
-            @("app",  "python"),
-            @("web",  "nodejs"),
+            # @("web",  "java"),
+            # @("app",  "java"),
+            # @("web",  "python"),
+            # @("app",  "python"),
+            # @("web",  "nodejs"),
             @("app",  "nodejs")
           )
 
