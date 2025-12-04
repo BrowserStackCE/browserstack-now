@@ -427,21 +427,19 @@ function Setup-Mobile-NodeJS {
 
     if ($nodeCmd) {
       Log-Line "ℹ️ node.exe path: $($nodeCmd.Source)" $GLOBAL_LOG
+      Log-Line "ℹ️ Running 'node --version' for debug" $GLOBAL_LOG
+      [void](Invoke-External -Exe $nodeCmd.Source -Arguments @("--version") -LogFile $LogFile -WorkingDirectory $testDir)
     } else {
       Log-Line "⚠️ node.exe not found in PATH" $GLOBAL_LOG
     }
 
     if ($npmCmd) {
       Log-Line "ℹ️ npm.cmd path: $($npmCmd.Source)" $GLOBAL_LOG
+      Log-Line "ℹ️ Running 'npm --version' for debug" $GLOBAL_LOG
+      [void](Invoke-External -Exe $npmCmd.Source -Arguments @("--version") -LogFile $LogFile -WorkingDirectory $testDir)
     } else {
       Log-Line "⚠️ npm not found in PATH" $GLOBAL_LOG
     }
-
-    Log-Line "ℹ️ Running 'node --version' for debug" $GLOBAL_LOG
-    [void](Invoke-External -Exe "node" -Arguments @("--version") -LogFile $LogFile -WorkingDirectory $testDir)
-
-    Log-Line "ℹ️ Running 'npm --version' for debug" $GLOBAL_LOG
-    [void](Invoke-External -Exe "npm" -Arguments @("--version") -LogFile $LogFile -WorkingDirectory $testDir)
 
     # ---- npm install ----
     Log-Section "📦 npm install (mobile / nodejs)" $GLOBAL_LOG
