@@ -500,8 +500,19 @@ function Setup-Mobile-NodeJS {
 
     # ---- npm run test ----
     Print-TestsRunningSection -Command "npm run test"
-    Log-Line "ℹ️ About to run tests: cmd.exe /c npm run test" $GLOBAL_LOG
-    Log-Line "ℹ️ Working directory for tests: $testDir" $GLOBAL_LOG
+
+    $testTimeout = 300  # 15 minutes hard cap for CI
+    Log-Line "ℹ️ Starting 'npm run test' with timeout of $testTimeout seconds..." $GLOBAL_LOG
+
+    $exit = Invoke-External `
+      -Exe "cmd.exe" `
+      -Arguments @("/c","npm","run","test") `
+      -LogFile $LogFile `
+      -WorkingDirectory $testDir `
+      -TimeoutSeconds $testTimeout
+
+    Log-Line "ℹ️ 'npm run test' finished with exit code: $exit" $GLOBAL_LOG
+    Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
 
     $testStart = Get-Date
     $testExit  = Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $testDir

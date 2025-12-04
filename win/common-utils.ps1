@@ -124,8 +124,10 @@ function Invoke-External {
     [Parameter(Mandatory)][string]$Exe,
     [Parameter()][string[]]$Arguments = @(),
     [string]$LogFile,
-    [string]$WorkingDirectory
+    [string]$WorkingDirectory,
+    [int]$TimeoutSeconds = 0   # 0 = no timeout (current behaviour)
   )
+
   $psi = New-Object System.Diagnostics.ProcessStartInfo
   $exeToRun = $Exe
   $argLine  = ($Arguments | ForEach-Object { if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ } }) -join ' '
@@ -142,8 +144,9 @@ function Invoke-External {
 
   $psi.RedirectStandardOutput = $true
   $psi.RedirectStandardError  = $true
-  $psi.UseShellExecute = $false
-  $psi.CreateNoWindow   = $true
+  $psi.UseShellExecute        = $false
+  $psi.CreateNoWindow         = $true
+
   if ([string]::IsNullOrWhiteSpace($WorkingDirectory)) {
     $psi.WorkingDirectory = (Get-Location).Path
   } else {
@@ -155,7 +158,9 @@ function Invoke-External {
 
   if ($LogFile) {
     $logDir = Split-Path -Parent $LogFile
-    if ($logDir -and !(Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }
+    if ($logDir -and !(Test-Path $logDir)) {
+      New-Item -ItemType Directory -Path $logDir | Out-Null
+    }
 
     $stdoutAction = {
       if (-not [string]::IsNullOrEmpty($EventArgs.Data)) {
@@ -169,12 +174,24 @@ function Invoke-External {
     }
 
     $stdoutEvent = Register-ObjectEvent -InputObject $p -EventName OutputDataReceived -Action $stdoutAction -MessageData $LogFile
-    $stderrEvent = Register-ObjectEvent -InputObject $p -EventName ErrorDataReceived -Action $stderrAction -MessageData $LogFile
+    $stderrEvent = Register-ObjectEvent -InputObject $p -EventName ErrorDataReceived  -Action $stderrAction -MessageData $LogFile
 
     [void]$p.Start()
     $p.BeginOutputReadLine()
     $p.BeginErrorReadLine()
-    $p.WaitForExit()
+
+    if ($TimeoutSeconds -gt 0) {
+      $waitMs = $TimeoutSeconds * 1000
+      if (-not $p.WaitForExit($waitMs)) {
+        try {
+          Log-Line "⚠️ Process '$Exe $argLine' exceeded timeout of $TimeoutSeconds seconds. Killing it..." $GLOBAL_LOG
+        } catch {}
+        try { $p.Kill() } catch {}
+        $p.WaitForExit()
+      }
+    } else {
+      $p.WaitForExit()
+    }
 
     Unregister-Event -SourceIdentifier $stdoutEvent.Name
     Unregister-Event -SourceIdentifier $stderrEvent.Name
@@ -182,13 +199,25 @@ function Invoke-External {
     Remove-Job -Id $stderrEvent.Id -Force
   } else {
     [void]$p.Start()
-    $stdout = $p.StandardOutput.ReadToEnd()
-    $stderr = $p.StandardError.ReadToEnd()
-    $p.WaitForExit()
+
+    if ($TimeoutSeconds -gt 0) {
+      $waitMs = $TimeoutSeconds * 1000
+      if (-not $p.WaitForExit($waitMs)) {
+        try { $p.Kill() } catch {}
+        $p.WaitForExit()
+      }
+      $stdout = $p.StandardOutput.ReadToEnd()
+      $stderr = $p.StandardError.ReadToEnd()
+    } else {
+      $stdout = $p.StandardOutput.ReadToEnd()
+      $stderr = $p.StandardError.ReadToEnd()
+      $p.WaitForExit()
+    }
   }
 
   return $p.ExitCode
 }
+
 
 function Get-MavenCommand {
   param([Parameter(Mandatory)][string]$RepoDir)
