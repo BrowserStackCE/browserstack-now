@@ -398,11 +398,16 @@ $platformYamlIos
 function Setup-Mobile-NodeJS {
   param([bool]$UseLocal, [int]$ParallelsPerPlatform, [string]$LogFile)
 
-  $REPO = "now-webdriverio-appium-app-browserstack"
+  $REPO   = "now-webdriverio-appium-app-browserstack"
   $TARGET = Join-Path $GLOBAL_DIR $REPO
+
+  Log-Section "🐛 DEBUG: Setup-Mobile-NodeJS (App / NodeJS)" $GLOBAL_LOG
+  Log-Line "ℹ️ Repo name: $REPO" $GLOBAL_LOG
+  Log-Line "ℹ️ Target clone directory: $TARGET" $GLOBAL_LOG
 
   New-Item -ItemType Directory -Path $GLOBAL_DIR -Force | Out-Null
   if (Test-Path $TARGET) {
+    Log-Line "ℹ️ Cleaning existing target directory: $TARGET" $GLOBAL_LOG
     Remove-Item -Path $TARGET -Recurse -Force
   }
 
@@ -410,37 +415,109 @@ function Setup-Mobile-NodeJS {
   Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile (Get-RunLogFile)
 
   $testDir = Join-Path $TARGET "test"
+  Log-Line "ℹ️ Test directory (working directory for npm): $testDir" $GLOBAL_LOG
+
   Push-Location $testDir
   try {
-    Log-Line "⚙️ Running 'npm install'" $GLOBAL_LOG
-    Log-Line "ℹ️ Installing dependencies" $GLOBAL_LOG
-    [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","install") -LogFile $LogFile -WorkingDirectory $testDir)
+    # ---- Node / npm environment diagnostics ----
+    Log-Section "🔍 NodeJS Environment Diagnostics" $GLOBAL_LOG
+
+    $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+    $npmCmd  = Get-Command npm  -ErrorAction SilentlyContinue
+
+    if ($nodeCmd) {
+      Log-Line "ℹ️ node.exe path: $($nodeCmd.Source)" $GLOBAL_LOG
+    } else {
+      Log-Line "⚠️ node.exe not found in PATH" $GLOBAL_LOG
+    }
+
+    if ($npmCmd) {
+      Log-Line "ℹ️ npm.cmd path: $($npmCmd.Source)" $GLOBAL_LOG
+    } else {
+      Log-Line "⚠️ npm not found in PATH" $GLOBAL_LOG
+    }
+
+    Log-Line "ℹ️ Running 'node --version' for debug" $GLOBAL_LOG
+    [void](Invoke-External -Exe "node" -Arguments @("--version") -LogFile $LogFile -WorkingDirectory $testDir)
+
+    Log-Line "ℹ️ Running 'npm --version' for debug" $GLOBAL_LOG
+    [void](Invoke-External -Exe "npm" -Arguments @("--version") -LogFile $LogFile -WorkingDirectory $testDir)
+
+    # ---- npm install ----
+    Log-Section "📦 npm install (mobile / nodejs)" $GLOBAL_LOG
+    Log-Line "⚙️ About to run: cmd.exe /c npm install" $GLOBAL_LOG
+    Log-Line "ℹ️ Working directory: $testDir" $GLOBAL_LOG
+    $npmInstallStart = Get-Date
+    $npmInstallExit  = Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","install") -LogFile $LogFile -WorkingDirectory $testDir
+    $npmInstallEnd   = Get-Date
+    $npmInstallDuration = [int]($npmInstallEnd - $npmInstallStart).TotalSeconds
+
+    Log-Line "ℹ️ npm install exit code: $npmInstallExit (duration: ${npmInstallDuration}s)" $GLOBAL_LOG
+    if ($npmInstallExit -ne 0) {
+      Log-Line "❌ npm install failed with exit code $npmInstallExit. See $LogFile for details." $GLOBAL_LOG
+      throw "npm install failed (exit $npmInstallExit)"
+    }
+
     Log-Line "✅ Dependencies installed" $GLOBAL_LOG
 
-    # Generate capabilities JSON and set as environment variable (like Mac)
+    # ---- Capabilities / env setup ----
+    Log-Section "⚙️ Generating capabilities & setting environment variables" $GLOBAL_LOG
     $capsJson = Generate-Mobile-Caps-Json-String -MaxTotalParallels $ParallelsPerPlatform
 
-    $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
-    $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
-    $env:BSTACK_PARALLELS = $ParallelsPerPlatform
-    $env:BSTACK_CAPS_JSON = $capsJson
-    $env:BROWSERSTACK_APP = $APP_URL
-    $env:BROWSERSTACK_BUILD_NAME = "now-windows-app-nodejs-wdio"
-    $env:BROWSERSTACK_PROJECT_NAME = "NOW-Mobile-Test"
-    $env:BROWSERSTACK_LOCAL = "true"
+    $env:BROWSERSTACK_USERNAME      = $BROWSERSTACK_USERNAME
+    $env:BROWSERSTACK_ACCESS_KEY    = $BROWSERSTACK_ACCESS_KEY
+    $env:BSTACK_PARALLELS           = $ParallelsPerPlatform
+    $env:BSTACK_CAPS_JSON           = $capsJson
+    $env:BROWSERSTACK_APP           = $APP_URL
+    $env:BROWSERSTACK_BUILD_NAME    = "now-windows-app-nodejs-wdio"
+    $env:BROWSERSTACK_PROJECT_NAME  = "NOW-Mobile-Test"
+    $env:BROWSERSTACK_LOCAL         = "true"
 
     # Validate Environment Variables
-    Log-Section "Validate Environment Variables" $GLOBAL_LOG
+    Log-Section "🧾 Validate Environment Variables (Mobile / NodeJS)" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Build: $($env:BROWSERSTACK_BUILD_NAME)" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Project: $($env:BROWSERSTACK_PROJECT_NAME)" $GLOBAL_LOG
     Log-Line "ℹ️ Native App Endpoint: $APP_URL" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Local Flag: $($env:BROWSERSTACK_LOCAL)" $GLOBAL_LOG
     Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $GLOBAL_LOG
-    Log-Line "ℹ️ Platforms: $capsJson" $GLOBAL_LOG
+    Log-Line "ℹ️ Platforms JSON (caps): $capsJson" $GLOBAL_LOG
 
+    # For additional safety, dump the relevant npm script from package.json
+    $pkgPath = Join-Path $testDir "package.json"
+    if (Test-Path $pkgPath) {
+      try {
+        $pkgRaw = Get-Content $pkgPath -Raw | ConvertFrom-Json
+        if ($pkgRaw.scripts.test) {
+          Log-Line "ℹ️ package.json 'test' script: $($pkgRaw.scripts.test)" $GLOBAL_LOG
+        } else {
+          Log-Line "⚠️ package.json has no 'test' script defined" $GLOBAL_LOG
+        }
+      } catch {
+        Log-Line "⚠️ Failed to parse package.json for logging: $($_.Exception.Message)" $GLOBAL_LOG
+      }
+    } else {
+      Log-Line "⚠️ package.json not found at $pkgPath" $GLOBAL_LOG
+    }
+
+    # ---- npm run test ----
     Print-TestsRunningSection -Command "npm run test"
-    [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $testDir)
+    Log-Line "ℹ️ About to run tests: cmd.exe /c npm run test" $GLOBAL_LOG
+    Log-Line "ℹ️ Working directory for tests: $testDir" $GLOBAL_LOG
+
+    $testStart = Get-Date
+    $testExit  = Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $testDir
+    $testEnd   = Get-Date
+    $testDuration = [int]($testEnd - $testStart).TotalSeconds
+
+    Log-Line "ℹ️ npm run test exit code: $testExit (duration: ${testDuration}s)" $GLOBAL_LOG
+
+    if ($testExit -eq 0) {
+      Log-Line "✅ npm run test exited cleanly (exit code 0)" $GLOBAL_LOG
+    } else {
+      Log-Line "❌ npm run test exited with non-zero code $testExit. Check $LogFile for details." $GLOBAL_LOG
+    }
+
     Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
 
   } finally {
@@ -448,6 +525,7 @@ function Setup-Mobile-NodeJS {
     Set-Location (Join-Path $WORKSPACE_DIR $PROJECT_FOLDER)
   }
 }
+
 
 # ===== Helper Functions =====
 function Report-BStackLocalStatus {
