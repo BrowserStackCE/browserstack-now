@@ -5,7 +5,6 @@ $script:WORKSPACE_DIR = Join-Path $env:USERPROFILE ".browserstack"
 $script:PROJECT_FOLDER = "NOW"
 $script:NOW_OS = "windows"
 
-
 $script:GLOBAL_DIR = Join-Path $WORKSPACE_DIR $PROJECT_FOLDER
 $script:LOG_DIR     = Join-Path $GLOBAL_DIR "logs"
 $script:GLOBAL_LOG  = ""
@@ -110,6 +109,50 @@ function Invoke-GitClone {
   if ($p.ExitCode -ne 0) {
     throw "git clone failed (exit $($p.ExitCode)): $stderr"
   }
+}
+
+function Reset-BrowserStackConfigFile {
+  param(
+    [Parameter(Mandatory)][string]$RepoRoot,
+    [Parameter(Mandatory)][string]$RelativePath
+  )
+  $gitDir = Join-Path $RepoRoot ".git"
+  if (!(Test-Path $gitDir)) { return }
+  $normalized = $RelativePath -replace '\\','/'
+  try {
+    [void](Invoke-External -Exe "git" -Arguments @("checkout","--",$normalized) -LogFile $GLOBAL_LOG -WorkingDirectory $RepoRoot)
+  } catch {
+    Log-Line "⚠️ Unable to reset $RelativePath via git checkout ($($_.Exception.Message))" $GLOBAL_LOG
+  }
+}
+
+function Set-BrowserStackPlatformsSection {
+  param(
+    [Parameter(Mandatory)][string]$RepoRoot,
+    [Parameter(Mandatory)][string]$RelativeConfigPath,
+    [Parameter(Mandatory)][string]$PlatformsYaml
+  )
+
+  $configPath = Join-Path $RepoRoot $RelativeConfigPath
+  if (!(Test-Path $configPath)) {
+    throw "browserstack config not found: $configPath"
+  }
+
+  Reset-BrowserStackConfigFile -RepoRoot $RepoRoot -RelativePath $RelativeConfigPath
+
+  $normalizedPlatforms = ($PlatformsYaml -replace "`r","").TrimEnd("`n")
+  $blockBuilder = New-Object System.Text.StringBuilder
+  [void]$blockBuilder.AppendLine("")
+  [void]$blockBuilder.AppendLine("platforms:")
+  if (-not [string]::IsNullOrWhiteSpace($normalizedPlatforms)) {
+    foreach ($line in ($normalizedPlatforms -split "`n")) {
+      [void]$blockBuilder.AppendLine($line)
+    }
+  }
+
+  $appendText = ($blockBuilder.ToString() -replace "`n","`r`n")
+  Add-Content -Path $configPath -Value $appendText
+  Log-Line "✅ Updated platforms in $RelativeConfigPath" $GLOBAL_LOG
 }
 
 function Set-ContentNoBom {

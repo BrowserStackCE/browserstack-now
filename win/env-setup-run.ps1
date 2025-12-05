@@ -25,27 +25,19 @@ function Setup-Web-Java {
     }
 
     Report-BStackLocalStatus -LocalFlag $UseLocal
-
+    $UseLocal = $true    # BROWSERSTACK_LOCAL ISSUE 
     Log-Line "🧩 Generating YAML config (browserstack.yml)" $GLOBAL_LOG
     $platforms = Generate-Web-Platforms-Yaml -MaxTotalParallels $ParallelsPerPlatform
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
-    $yamlContent = @"
-userName: $BROWSERSTACK_USERNAME
-accessKey: $BROWSERSTACK_ACCESS_KEY
-framework: testng
-browserstackLocal: $localFlag
-buildName: now-$NOW_OS-web-java-testng
-projectName: now-$NOW_OS-web
-percy: true
-accessibility: true
-platforms:
-$platforms
-parallelsPerPlatform: $ParallelsPerPlatform
-"@
-
-    Set-Content "browserstack.yml" -Value $yamlContent
-    Log-Line "✅ Created browserstack.yml in root directory" $GLOBAL_LOG
+    Set-BrowserStackPlatformsSection -RepoRoot $TARGET -RelativeConfigPath "browserstack.yml" -PlatformsYaml $platforms
+    $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
+    $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
+    $env:BSTACK_PARALLELS = $ParallelsPerPlatform
+    $env:BROWSERSTACK_LOCAL = $localFlag
+    $env:BSTACK_PLATFORMS = $platforms
+    $env:BROWSERSTACK_BUILD_NAME = "now-$NOW_OS-web-java-testng"
+    $env:BROWSERSTACK_PROJECT_NAME = "now-$NOW_OS-web"
 
     # Validate Environment Variables
     Log-Section "Validate Environment Variables" $GLOBAL_LOG
@@ -90,6 +82,7 @@ function Setup-Web-Python {
 
   Push-Location $TARGET
   try {
+    $UseLocal = $true
     if (-not $PY_CMD -or $PY_CMD.Count -eq 0) { Set-PythonCmd }
     $venv = Join-Path $TARGET "venv"
     if (!(Test-Path $venv)) {
@@ -115,21 +108,12 @@ function Setup-Web-Python {
     $platforms = Generate-Web-Platforms-Yaml -MaxTotalParallels $ParallelsPerPlatform
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
-@"
-userName: $BROWSERSTACK_USERNAME
-accessKey: $BROWSERSTACK_ACCESS_KEY
-framework: pytest
-browserstackLocal: $localFlag
-buildName: now-$NOW_OS-web-python-pytest
-projectName: now-$NOW_OS-web
-percy: true
-accessibility: true
-platforms:
-$platforms
-parallelsPerPlatform: $ParallelsPerPlatform
-"@ | Set-Content "browserstack.yml"
-
-    Log-Line "✅ Updated browserstack.yml with platforms and credentials" $GLOBAL_LOG
+    Set-BrowserStackPlatformsSection -RepoRoot $TARGET -RelativeConfigPath "browserstack.yml" -PlatformsYaml $platforms
+    $env:BSTACK_PARALLELS = $ParallelsPerPlatform
+    $env:BSTACK_PLATFORMS = $platforms
+    $env:BROWSERSTACK_LOCAL = $localFlag
+    $env:BROWSERSTACK_BUILD_NAME = "now-$NOW_OS-web-python-pytest"
+    $env:BROWSERSTACK_PROJECT_NAME = "now-$NOW_OS-web"
 
     # Validate Environment Variables
     Log-Section "Validate Environment Variables" $GLOBAL_LOG
@@ -229,6 +213,16 @@ function Setup-Mobile-Java {
 
   Push-Location $TARGET
   try {
+    $UseLocal = $true
+    $platforms = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $ParallelsPerPlatform
+    $localFlag = "true"
+    $configRelativePath = if ($APP_PLATFORM -eq "all" -or $APP_PLATFORM -eq "android") {
+      "android\testng-examples\browserstack.yml"
+    } else {
+      "ios\testng-examples\browserstack.yml"
+    }
+    Set-BrowserStackPlatformsSection -RepoRoot $TARGET -RelativeConfigPath $configRelativePath -PlatformsYaml $platforms
+
     if ($APP_PLATFORM -eq "all" -or $APP_PLATFORM -eq "android") {
       Set-Location "android\testng-examples"
     } else {
@@ -237,25 +231,12 @@ function Setup-Mobile-Java {
     
     $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
+    $env:BROWSERSTACK_APP = $APP_URL
+    $env:BSTACK_PARALLELS = $ParallelsPerPlatform
+    $env:BROWSERSTACK_LOCAL = $localFlag
     $env:BROWSERSTACK_CONFIG_FILE = ".\browserstack.yml"
-    
-    $platforms = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $ParallelsPerPlatform
-    $localFlag = if ($UseLocal) { "true" } else { "false" }
-
-    # Write complete browserstack.yml (not just append)
-    $yamlContent = @"
-userName: $BROWSERSTACK_USERNAME
-accessKey: $BROWSERSTACK_ACCESS_KEY
-framework: testng
-browserstackLocal: $localFlag
-buildName: now-$NOW_OS-app-java-testng
-projectName: now-$NOW_OS-app
-parallelsPerPlatform: $ParallelsPerPlatform
-app: $APP_URL
-platforms:
-$platforms
-"@
-    $yamlContent | Set-Content -Path $env:BROWSERSTACK_CONFIG_FILE -Encoding UTF8
+    $env:BROWSERSTACK_BUILD_NAME = "now-$NOW_OS-app-java-testng"
+    $env:BROWSERSTACK_PROJECT_NAME = "now-$NOW_OS-app"
 
     Report-BStackLocalStatus -LocalFlag $UseLocal
 
@@ -323,40 +304,16 @@ function Setup-Mobile-Python {
     $env:BROWSERSTACK_APP = $APP_URL
 
     $originalPlatform = $APP_PLATFORM
-    $localFlag = if ($UseLocal) { "true" } else { "false" }
+    $localFlag = "true"
 
     # Generate platform YAMLs
     $script:APP_PLATFORM = "android"
     $platformYamlAndroid = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $ParallelsPerPlatform
-    $androidYmlPath = Join-Path $TARGET "android\browserstack.yml"
-@"
-userName: $BROWSERSTACK_USERNAME
-accessKey: $BROWSERSTACK_ACCESS_KEY
-framework: pytest
-browserstackLocal: $localFlag
-buildName: now-$NOW_OS-app-python-pytest
-projectName: now-$NOW_OS-app
-parallelsPerPlatform: $ParallelsPerPlatform
-app: $APP_URL
-platforms:
-$platformYamlAndroid
-"@ | Set-Content $androidYmlPath
+    Set-BrowserStackPlatformsSection -RepoRoot $TARGET -RelativeConfigPath "android\browserstack.yml" -PlatformsYaml $platformYamlAndroid
 
     $script:APP_PLATFORM = "ios"
     $platformYamlIos = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $ParallelsPerPlatform
-    $iosYmlPath = Join-Path $TARGET "ios\browserstack.yml"
-@"
-userName: $BROWSERSTACK_USERNAME
-accessKey: $BROWSERSTACK_ACCESS_KEY
-framework: pytest
-browserstackLocal: $localFlag
-buildName: now-$NOW_OS-app-python-pytest
-projectName: now-$NOW_OS-app
-parallelsPerPlatform: $ParallelsPerPlatform
-app: $APP_URL
-platforms:
-$platformYamlIos
-"@ | Set-Content $iosYmlPath
+    Set-BrowserStackPlatformsSection -RepoRoot $TARGET -RelativeConfigPath "ios\browserstack.yml" -PlatformsYaml $platformYamlIos
 
     $script:APP_PLATFORM = $originalPlatform
     Log-Line "✅ Wrote platform YAMLs" $GLOBAL_LOG
@@ -366,6 +323,14 @@ $platformYamlIos
     $platformYaml = if ($runDirName -eq "ios") { $platformYamlIos } else { $platformYamlAndroid }
 
     Report-BStackLocalStatus -LocalFlag $UseLocal
+
+    $env:BSTACK_PARALLELS = $ParallelsPerPlatform
+    $env:BROWSERSTACK_APP = $APP_URL
+    $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
+    $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
+    $env:BROWSERSTACK_LOCAL = $localFlag
+    $env:BROWSERSTACK_BUILD_NAME = "now-$NOW_OS-app-python-pytest"
+    $env:BROWSERSTACK_PROJECT_NAME = "now-$NOW_OS-app"
 
     # Validate Environment Variables
     Log-Section "Validate Environment Variables" $GLOBAL_LOG
@@ -412,6 +377,7 @@ function Setup-Mobile-NodeJS {
   $testDir = Join-Path $TARGET "test"
   Push-Location $testDir
   try {
+    $UseLocal = $true
     Log-Line "⚙️ Running 'npm install'" $GLOBAL_LOG
     Log-Line "ℹ️ Installing dependencies" $GLOBAL_LOG
     [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","install") -LogFile $LogFile -WorkingDirectory $testDir)
@@ -428,6 +394,8 @@ function Setup-Mobile-NodeJS {
     $env:BROWSERSTACK_BUILD_NAME = "now-$NOW_OS-app-nodejs-wdio"
     $env:BROWSERSTACK_PROJECT_NAME = "now-$NOW_OS-app"
     $env:BROWSERSTACK_LOCAL = "true"
+
+    Report-BStackLocalStatus -LocalFlag $UseLocal
 
     # Validate Environment Variables
     Log-Section "Validate Environment Variables" $GLOBAL_LOG
