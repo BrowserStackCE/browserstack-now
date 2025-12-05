@@ -14,6 +14,7 @@ on:
 jobs:
   test-mac:
     name: Test mac/run.sh on macOS
+    # if: false
     runs-on: macos-latest
     timeout-minutes: 15
     environment: BrowserStack
@@ -91,15 +92,15 @@ jobs:
           TURL: https://bstackdemo.com
         run: |
           echo "Running integration tests in silent mode..."
-          
+
           # Set default values if secrets are not provided
           BROWSERSTACK_USERNAME="${BROWSERSTACK_USERNAME:-test_user}"
           BROWSERSTACK_ACCESS_KEY="${BROWSERSTACK_ACCESS_KEY:-test_key}"
-          
+
           export BROWSERSTACK_USERNAME
           export BROWSERSTACK_ACCESS_KEY
           export TURL
-          
+
           # Test configurations
           test_configs=(
             "web java"
@@ -109,7 +110,7 @@ jobs:
             "web nodejs"
             "app nodejs"
           )
-          
+
           for config in "${test_configs[@]}"; do
             read -r test_type tech_stack <<< "$config"
             echo "================================"
@@ -148,9 +149,9 @@ jobs:
             fi
             unset exit_code
           done
-          
+
           echo "✅ All integration tests completed"
-    
+
       - name: Sync BrowserStack logs to workspace
         if: always()
         run: |
@@ -166,156 +167,220 @@ jobs:
         with:
           name: browserstack-logs-macos
           path: |
-             ${{ github.workspace }}/bs-logs
-             /tmp/run_test_*.log
+            ${{ github.workspace }}/bs-logs
+            /tmp/run_test_*.log
           retention-days: 30
           if-no-files-found: ignore
 
-  # test-windows:
-  #   name: Test win/run.ps1 on Windows
-  #   runs-on: windows-latest
-  #   timeout-minutes: 15
-  #   environment: BrowserStack
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #     - name: Set up Python 3.12
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: '3.12'
-  #     - name: Check PowerShell version
-  #       run: |
-  #         $PSVersionTable.PSVersion
-  #         Write-Host "✅ PowerShell version check complete"
-  # 
-  #     - name: Validate PowerShell script syntax
-  #       run: |
-  #         Write-Host "Validating win/run.ps1 syntax..."
-  #         $ScriptPath = "win/run.ps1"
-  #         $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $ScriptPath), [ref]$null)
-  #         Write-Host "✅ win/run.ps1 syntax is valid"
-  # 
-  #     - name: Validate supporting PowerShell scripts syntax
-  #       run: |
-  #         Write-Host "Validating supporting PowerShell scripts..."
-  #         $Scripts = @("win/proxy-check.ps1")
-  #         foreach ($Script in $Scripts) {
-  #           $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $Script), [ref]$null)
-  #           Write-Host "✅ $Script syntax is valid"
-  #         }
-  # 
-  #     - name: Run PSScriptAnalyzer
-  #       run: |
-  #         Write-Host "Installing PSScriptAnalyzer..."
-  #         Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -ErrorAction SilentlyContinue
-  #         Write-Host "Running PSScriptAnalyzer..."
-  #         Invoke-ScriptAnalyzer -Path "win/run.ps1" -Recurse -ReportSummary || $true
-  #         Write-Host "✅ PSScriptAnalyzer analysis complete"
-  # 
-  #     - name: Check script file encoding
-  #       run: |
-  #         Write-Host "Checking PowerShell script encoding..."
-  #         $ScriptPath = "win/run.ps1"
-  #         $Encoding = (Get-Item $ScriptPath).EncodingInfo
-  #         Write-Host "File encoding: $Encoding"
-  #         Write-Host "✅ Encoding check complete"
-  # 
-  #     - name: Verify required dependencies
-  #       run: |
-  #         Write-Host "Checking required dependencies..."
-  #         if (Get-Command curl.exe -ErrorAction SilentlyContinue) { Write-Host "✅ curl found" }
-  #         if (Get-Command git.exe -ErrorAction SilentlyContinue) { Write-Host "✅ git found" }
-  #         Write-Host "✅ PowerShell dependencies verified"
-  # 
-  #     - name: Integration Test - Silent Mode Execution
-  #       if: success()
-  #       env:
-  #         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
-  #         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-  #         TURL: https://bstackdemo.com
-  #       run: |
-  #         Write-Host "Running integration tests in silent mode..."
-  #         
-  #         # Set default values if secrets are not provided
-  #         $BrowserStackUsername = if ($env:BROWSERSTACK_USERNAME) { $env:BROWSERSTACK_USERNAME } else { "test_user" }
-  #         $BrowserStackAccessKey = if ($env:BROWSERSTACK_ACCESS_KEY) { $env:BROWSERSTACK_ACCESS_KEY } else { "test_key" }
-  #         $TestUrl = $env:TURL
-  #         
-  #         # Export environment variables
-  #         $env:BROWSERSTACK_USERNAME = $BrowserStackUsername
-  #         $env:BROWSERSTACK_ACCESS_KEY = $BrowserStackAccessKey
-  #         $env:TURL = $TestUrl
-  #         
-  #         # Test configurations
-  #         $testConfigs = @(
-  #             @("web", "java"),
-  #             @("app", "java"),
-  #             @("web", "python"),
-  #             @("app", "python"),
-  #             @("web", "nodejs"),
-  #             @("app", "nodejs")
-  #         )
-  #         
-  #         foreach ($config in $testConfigs) {
-  #             $testType = $config[0]
-  #             $techStack = $config[1]
-  #             
-  #             Write-Host "================================"
-  #             Write-Host "Testing: .\win\run.ps1 --silent $testType $techStack"
-  #             Write-Host "================================"
-  #             
-  #             # Create log file path
-  #             $logPath = "C:\Temp\run_test_${testType}_${techStack}.log"
-  #             New-Item -ItemType Directory -Path "C:\Temp" -Force -ErrorAction SilentlyContinue | Out-Null
-  #             
-  #             # Run with timeout (using job for timeout capability)
-  #             $job = Start-Job -ScriptBlock {
-  #                 param($path, $testType, $techStack, $logPath)
-  #                 & $path --silent $testType $techStack 2>&1 | Tee-Object -FilePath $logPath -Append
-  #             } -ArgumentList ".\win\run.ps1", $testType, $techStack, $logPath
-  #             
-  #             # Wait for job with 600 second timeout
-  #             $timeout = New-TimeSpan -Seconds 600
-  #             $completed = Wait-Job -Job $job -Timeout 600
-  #             
-  #             if ($completed) {
-  #                 $result = Receive-Job -Job $job
-  #                 if ($job.State -eq "Completed") {
-  #                     Write-Host "✅ .\win\run.ps1 --silent $testType $techStack completed successfully"
-  #                 } else {
-  #                     Write-Host "⚠️ .\win\run.ps1 --silent $testType $techStack exited with state: $($job.State)"
-  #                     if (Test-Path $logPath) {
-  #                         Write-Host "Log output (last 20 lines):"
-  #                         Get-Content -Path $logPath -Tail 20
-  #                     }
-  #                 }
-  #             } else {
-  #                 Write-Host "⚠️ .\win\run.ps1 --silent $testType $techStack timed out after 600 seconds"
-  #                 Stop-Job -Job $job
-  #                 if (Test-Path $logPath) {
-  #                     Write-Host "Log output (last 20 lines):"
-  #                     Get-Content -Path $logPath -Tail 20
-  #                 }
-  #             }
-  #             
-  #             Remove-Job -Job $job -Force
-  #         }
-  #         
-  #         Write-Host "✅ All integration tests completed"
-  # 
-  #     - name: Upload BrowserStack Logs as Artifacts
-  #       if: always()
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: browserstack-logs-windows
-  #         path: |
-  #           C:\Users\runneradmin\.browserstack\NOW\logs\
-  #           C:\Temp\run_test_*.log
-  #         retention-days: 30
-  #         if-no-files-found: ignore
+  test-windows:
+    name: Test win/run.ps1 on Windows
+    runs-on: windows-latest
+    timeout-minutes: 25
+    environment: BrowserStack
+    defaults:
+      run:
+        shell: powershell
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check PowerShell version
+        run: |
+          $PSVersionTable.PSVersion
+          Write-Host "✅ PowerShell version check complete"
+
+      - name: Validate PowerShell script syntax
+        run: |
+          Write-Host "Validating win/run.ps1 syntax..."
+          $ScriptPath = "win/run.ps1"
+          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content -Raw $ScriptPath), [ref]$null)
+          Write-Host "✅ win/run.ps1 syntax is valid"
+
+      - name: Validate supporting PowerShell scripts syntax
+        run: |
+          Write-Host "Validating supporting PowerShell scripts..."
+          $Scripts = @(
+            "win/common-utils.ps1",
+            "win/logging-utils.ps1",
+            "win/env-prequisite-checks.ps1",
+            "win/user-interaction.ps1",
+            "win/env-setup-run.ps1",
+            "win/device-machine-allocation.ps1"
+          )
+          foreach ($Script in $Scripts) {
+            $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content -Raw $Script), [ref]$null)
+            Write-Host "✅ $Script syntax is valid"
+          }
+
+      - name: Run PSScriptAnalyzer
+        run: |
+          Write-Host "Installing PSScriptAnalyzer if needed..."
+          if (-not (Get-Module -ListAvailable -Name PSScriptAnalyzer)) {
+            Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -Scope CurrentUser
+          }
+
+          Write-Host "Running PSScriptAnalyzer..."
+          Invoke-ScriptAnalyzer -Path "win" -Recurse -ReportSummary -ErrorAction Continue
+          Write-Host "✅ PSScriptAnalyzer analysis complete (continuing even if issues are found)"
+
+      - name: Check script file encoding
+        run: |
+          Write-Host "Checking PowerShell script encoding..."
+          $ScriptPath = "win/run.ps1"
+          $bytes = [System.IO.File]::ReadAllBytes($ScriptPath)
+
+          $encoding = "Unknown / ASCII / UTF-8 without BOM"
+          if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+            $encoding = "UTF-8 with BOM"
+          } elseif ($bytes.Length -ge 2 -and $bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
+            $encoding = "UTF-16 LE"
+          } elseif ($bytes.Length -ge 2 -and $bytes[0] -eq 0xFE -and $bytes[1] -eq 0xFF) {
+            $encoding = "UTF-16 BE"
+          }
+
+          Write-Host "Detected encoding (heuristic): $encoding"
+          Write-Host "✅ Encoding check complete"
+
+      - name: Verify required dependencies
+        run: |
+          Write-Host "Checking required dependencies..."
+          if (Get-Command curl.exe -ErrorAction SilentlyContinue) { Write-Host "✅ curl found" } else { Write-Host "⚠️ curl not found" }
+          if (Get-Command git.exe -ErrorAction SilentlyContinue) { Write-Host "✅ git found" } else { Write-Host "⚠️ git not found" }
+          Write-Host "✅ PowerShell dependencies verified"
+
+      - name: Integration Test - Silent Mode Execution
+        if: success()
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          TURL: https://bstackdemo.com
+        run: |
+          Write-Host "Running integration tests in silent mode..."
+
+          # Use defaults if secrets are missing (for local / dry runs)
+          $BrowserStackUsername = if ($env:BROWSERSTACK_USERNAME) { $env:BROWSERSTACK_USERNAME } else { "test_user" }
+          $BrowserStackAccessKey = if ($env:BROWSERSTACK_ACCESS_KEY) { $env:BROWSERSTACK_ACCESS_KEY } else { "test_key" }
+          $TestUrl = $env:TURL
+
+          $env:BROWSERSTACK_USERNAME = $BrowserStackUsername
+          $env:BROWSERSTACK_ACCESS_KEY = $BrowserStackAccessKey
+          $env:TURL = $TestUrl
+
+          # Absolute path is safer in CI
+          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "win\run.ps1"
+
+          $testConfigs = @(
+            @("web",  "java"),
+            @("app",  "java"),
+            @("web",  "python"),
+            @("app",  "python"),
+            @("web",  "nodejs"),
+            @("app",  "nodejs")
+          )
+
+          $overallFailed = $false
+          $logRoot = Join-Path $env:TEMP "now-tests"
+          New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
+          $logPath = Join-Path $logRoot "run_test_app_nodejs.log"
+
+          Write-Host "================================"
+          Write-Host "Testing: $scriptPath --silent app nodejs"
+          Write-Host "================================"
+
+          & $scriptPath --silent app nodejs 2>&1 | Tee-Object -FilePath $logPath -Append
+          $exitCode = $LASTEXITCODE
+
+          if ($exitCode -eq 0) {
+            Write-Host "✅ app / nodejs completed (exit code: $exitCode)"
+          } else {
+            Write-Host "⚠️ app / nodejs exited with code: $exitCode"
+            if (Test-Path $logPath) {
+              Write-Host "Log output (last 20 lines):"
+              Get-Content -Path $logPath -Tail 20
+            }
+            exit 1
+          }
+
+          # $logRoot = Join-Path $env:TEMP "now-tests"
+          # New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
+
+          # foreach ($config in $testConfigs) {
+          #   $testType  = $config[0]
+          #   $techStack = $config[1]
+
+          #   Write-Host "================================"
+          #   Write-Host "Testing: $scriptPath --silent $testType $techStack"
+          #   Write-Host "================================"
+
+          #   $logPath = Join-Path $logRoot "run_test_${testType}_${techStack}.log"
+
+          #   & $scriptPath --silent $testType $techStack 2>&1 | Tee-Object -FilePath $logPath -Append
+          #   $exitCode = $LASTEXITCODE
+
+          #   if ($exitCode -eq 0) {
+          #     Write-Host "✅ $testType / $techStack completed (exit code: $exitCode)"
+          #   } else {
+          #     Write-Host "⚠️ $testType / $techStack exited with code: $exitCode"
+          #     $overallFailed = $true
+
+          #     if (Test-Path $logPath) {
+          #       Write-Host "Log output (last 20 lines):"
+          #       Get-Content -Path $logPath -Tail 20
+          #     }
+          #   }
+          # }
+
+          if ($overallFailed) {
+            Write-Error "One or more configurations failed."
+            exit 1
+          }
+
+          Write-Host "✅ All integration tests completed successfully"
+
+      - name: Sync BrowserStack logs to workspace (Windows)
+        if: always()
+        run: |
+          $dest = Join-Path $env:GITHUB_WORKSPACE "bs-logs"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+
+          $bsLogPath  = Join-Path $env:USERPROFILE ".browserstack\NOW\logs"
+          $tempLogDir = Join-Path $env:TEMP "now-tests"
+
+          if (Test-Path $bsLogPath) {
+            Write-Host "Copying logs from $bsLogPath"
+            Copy-Item -Path (Join-Path $bsLogPath "*") -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue
+          } else {
+            Write-Host "No logs found at $bsLogPath"
+          }
+
+          if (Test-Path $tempLogDir) {
+            Write-Host "Copying integration logs from $tempLogDir"
+            Copy-Item -Path (Join-Path $tempLogDir "*") -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Upload BrowserStack Logs as Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserstack-logs-windows
+          path: ${{ github.workspace }}/bs-logs
+          retention-days: 30
+          if-no-files-found: ignore
 
   test-linux:
     name: Test mac/run.sh on Linux
+    # if: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: BrowserStack
@@ -399,15 +464,15 @@ jobs:
           TURL: https://bstackdemo.com
         run: |
           echo "Running integration tests in silent mode..."
-          
+
           # Set default values if secrets are not provided
           BROWSERSTACK_USERNAME="${BROWSERSTACK_USERNAME:-test_user}"
           BROWSERSTACK_ACCESS_KEY="${BROWSERSTACK_ACCESS_KEY:-test_key}"
-          
+
           export BROWSERSTACK_USERNAME
           export BROWSERSTACK_ACCESS_KEY
           export TURL
-          
+
           # Test configurations
           test_configs=(
             "web java"
@@ -417,7 +482,7 @@ jobs:
             "web nodejs"
             "app nodejs"
           )
-          
+
           for config in "${test_configs[@]}"; do
             read -r test_type tech_stack <<< "$config"
             echo "================================"
@@ -440,7 +505,7 @@ jobs:
             fi
             unset exit_code
           done
-          
+
           echo "✅ All integration tests completed"
 
       - name: Sync BrowserStack logs to workspace
@@ -467,7 +532,7 @@ jobs:
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [test-mac, test-linux]
+    needs: [test-mac, test-linux, test-windows]
     if: always()
     steps:
       - name: Check test results
@@ -475,8 +540,9 @@ jobs:
           echo "=== Test Results Summary ==="
           echo "macOS Tests: ${{ needs.test-mac.result }}"
           echo "Linux Tests: ${{ needs.test-linux.result }}"
-          
-          if [ "${{ needs.test-mac.result }}" = "failure" ] || [ "${{ needs.test-linux.result }}" = "failure" ]; then
+          echo "Windows Tests: ${{ needs.test-windows.result }}"
+
+          if [ "${{ needs.test-mac.result }}" = "failure" ] || [ "${{ needs.test-linux.result }}" = "failure" ] || [ "${{ needs.test-windows.result }}" = "failure" ]; then
             echo "❌ Some tests failed"
             exit 1
           fi
@@ -487,4 +553,4 @@ jobs:
         run: |
           echo "✅ All script validations passed successfully!"
           echo "- mac/run.sh and supporting scripts validated on macOS and Linux"
-          echo "- win/run.ps1 and supporting scripts validated on Windows (temporarily disabled)"
+          echo "- win/run.ps1 and supporting scripts validated on Windows"

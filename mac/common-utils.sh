@@ -88,13 +88,25 @@ handle_app_upload() {
         log_msg_to "Exported APP_PLATFORM=$APP_PLATFORM"
     else
         local choice
-        choice=$(osascript -e '
-            display dialog "How would you like to select your app?" ¬
-            with title "BrowserStack App Upload" ¬
-            with icon note ¬
-            buttons {"Use Sample App", "Upload my App (.apk/.ipa)", "Cancel"} ¬
-            default button "Upload my App (.apk/.ipa)"
-        ' 2>/dev/null)
+        if [[ "$NOW_OS" == "macos" ]]; then
+            choice=$(osascript -e '
+                display dialog "How would you like to select your app?" ¬
+                with title "BrowserStack App Upload" ¬
+                with icon note ¬
+                buttons {"Use Sample App", "Upload my App (.apk/.ipa)", "Cancel"} ¬
+                default button "Upload my App (.apk/.ipa)"
+            ' 2>/dev/null)
+        else
+            echo "How would you like to select your app?"
+            select opt in "Use Sample App" "Upload my App (.apk/.ipa)" "Cancel"; do
+                case $opt in
+                    "Use Sample App") choice="Use Sample App"; break ;;
+                    "Upload my App (.apk/.ipa)") choice="Upload my App"; break ;;
+                    "Cancel") choice="Cancel"; break ;;
+                    *) echo "Invalid option";;
+                esac
+            done
+        fi
         
         if [[ "$choice" == *"Use Sample App"* ]]; then
             upload_sample_app
@@ -135,9 +147,18 @@ upload_custom_app() {
     local file_path
 
       # Convert to POSIX path
-    file_path=$(osascript -e \
-        'POSIX path of (choose file with prompt "Select your .apk or .ipa file:" of type {"apk", "ipa"})' \
-        2>/dev/null)
+    # Convert to POSIX path
+    if [[ "$NOW_OS" == "macos" ]]; then
+        file_path=$(osascript -e \
+            'POSIX path of (choose file with prompt "Select your .apk or .ipa file:" of type {"apk", "ipa"})' \
+            2>/dev/null)
+    else
+        echo "Please enter the full path to your .apk or .ipa file:"
+        read -r file_path
+        # Remove quotes if user added them
+        file_path="${file_path%\"}"
+        file_path="${file_path#\"}"
+    fi
 
     # Trim whitespace
     file_path="${file_path%"${file_path##*[![:space:]]}"}"
@@ -210,7 +231,7 @@ fetch_plan_details() {
     local web_unauthorized=false
     local mobile_unauthorized=false
     
-    if [[ "$test_type" == "web" || "$test_type" == "both" ]]; then
+    if [[ "$test_type" == "web" ]]; then
         RESPONSE_WEB=$(curl -s -w "\n%{http_code}" -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" https://api.browserstack.com/automate/plan.json)
         HTTP_CODE_WEB=$(echo "$RESPONSE_WEB" | tail -n1)
         RESPONSE_WEB_BODY=$(echo "$RESPONSE_WEB" | sed '$d')
@@ -225,7 +246,7 @@ fetch_plan_details() {
         fi
     fi
     
-    if [[ "$test_type" == "app" || "$test_type" == "both" ]]; then
+    if [[ "$test_type" == "app" ]]; then
         RESPONSE_MOBILE=$(curl -s -w "\n%{http_code}" -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" https://api-cloud.browserstack.com/app-automate/plan.json)
         HTTP_CODE_MOBILE=$(echo "$RESPONSE_MOBILE" | tail -n1)
         RESPONSE_MOBILE_BODY=$(echo "$RESPONSE_MOBILE" | sed '$d')
@@ -243,10 +264,20 @@ fetch_plan_details() {
     log_info "Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)"
     
     if [[ "$test_type" == "web" && "$web_unauthorized" == true ]] || \
-    [[ "$test_type" == "app" && "$mobile_unauthorized" == true ]] || \
-    [[ "$test_type" == "both" && "$web_unauthorized" == true && "$mobile_unauthorized" == true ]]; then
+    [[ "$test_type" == "app" && "$mobile_unauthorized" == true ]]; then
         log_msg_to "❌ Unauthorized to fetch required plan(s). Exiting."
         exit 1
+    fi
+
+    if [[ "$RUN_MODE" == *"--silent"* ]]; then
+        if [[ "$test_type" == "web" ]]; then
+            TEAM_PARALLELS_MAX_ALLOWED_WEB=5
+            export TEAM_PARALLELS_MAX_ALLOWED_WEB=5
+        else
+            TEAM_PARALLELS_MAX_ALLOWED_MOBILE=5
+            export TEAM_PARALLELS_MAX_ALLOWED_MOBILE=5
+        fi
+        log_info "Resetting Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)"
     fi
 }
 
@@ -270,7 +301,7 @@ is_domain_private() {
     export CX_TEST_URL="$CX_TEST_URL"
     
     # Resolve domain using Cloudflare DNS
-    IP_ADDRESS=$(dig +short "$domain" @1.1.1.1 | head -n1)
+    IP_ADDRESS=$(resolve_ip "$domain")
     
     # Determine if domain is private
     if is_private_ip "$IP_ADDRESS"; then
@@ -282,6 +313,31 @@ is_domain_private() {
     log_msg_to "Resolved IPs: $IP_ADDRESS"
     
     return $is_cx_domain_private
+}
+
+resolve_ip() {
+    local domain=$1
+    local ip=""
+
+    # Try dig first (standard on macOS/Linux, optional on Windows)
+    if command -v dig >/dev/null 2>&1; then
+        ip=$(dig +short "$domain" @1.1.1.1 | head -n1)
+    fi
+
+    # Try Python if dig failed or missing
+    if [ -z "$ip" ] && command -v python3 >/dev/null 2>&1; then
+        ip=$(python3 -c "import socket; print(socket.gethostbyname('$domain'))" 2>/dev/null)
+    fi
+    
+    # Try nslookup as last resort (parsing is fragile)
+    if [ -z "$ip" ] && command -v nslookup >/dev/null 2>&1; then
+        # Windows/Generic nslookup parsing
+        # Look for "Address:" or "Addresses:" after "Name:"
+        # This is a best-effort attempt
+        ip=$(nslookup "$domain" 2>/dev/null | grep -A 10 "Name:" | grep "Address" | tail -n1 | awk '{print $NF}')
+    fi
+
+    echo "$ip"
 }
 
 
@@ -401,4 +457,3 @@ detect_os() {
     
     export NOW_OS=$response
 }
-
