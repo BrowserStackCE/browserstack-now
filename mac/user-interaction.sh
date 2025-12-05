@@ -137,10 +137,6 @@ perform_next_steps_based_on_test_type() {
         "app")
             get_upload_app
         ;;
-        "both")
-            get_test_url
-            get_upload_app
-        ;;
     esac
 }
 
