@@ -27,7 +27,7 @@ function Setup-Web-Java {
     Report-BStackLocalStatus -LocalFlag $UseLocal
 
     Log-Line "🧩 Generating YAML config (browserstack.yml)" $GLOBAL_LOG
-    $platforms = Generate-Web-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_WEB
+    $platforms = Generate-Web-Platforms-Yaml -MaxTotalParallels $ParallelsPerPlatform
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
     $yamlContent = @"
@@ -112,7 +112,7 @@ function Setup-Web-Python {
     Report-BStackLocalStatus -LocalFlag $UseLocal
 
     $env:BROWSERSTACK_CONFIG_FILE = "browserstack.yml"
-    $platforms = Generate-Web-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_WEB
+    $platforms = Generate-Web-Platforms-Yaml -MaxTotalParallels $ParallelsPerPlatform
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
 @"
@@ -239,7 +239,7 @@ function Setup-Mobile-Java {
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
     $env:BROWSERSTACK_CONFIG_FILE = ".\browserstack.yml"
     
-    $platforms = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE
+    $platforms = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $ParallelsPerPlatform
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
     # Write complete browserstack.yml (not just append)
@@ -327,7 +327,7 @@ function Setup-Mobile-Python {
 
     # Generate platform YAMLs
     $script:APP_PLATFORM = "android"
-    $platformYamlAndroid = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE
+    $platformYamlAndroid = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $ParallelsPerPlatform
     $androidYmlPath = Join-Path $TARGET "android\browserstack.yml"
 @"
 userName: $BROWSERSTACK_USERNAME
@@ -343,7 +343,7 @@ $platformYamlAndroid
 "@ | Set-Content $androidYmlPath
 
     $script:APP_PLATFORM = "ios"
-    $platformYamlIos = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $TEAM_PARALLELS_MAX_ALLOWED_MOBILE
+    $platformYamlIos = Generate-Mobile-Platforms-Yaml -MaxTotalParallels $ParallelsPerPlatform
     $iosYmlPath = Join-Path $TARGET "ios\browserstack.yml"
 @"
 userName: $BROWSERSTACK_USERNAME
@@ -398,16 +398,11 @@ $platformYamlIos
 function Setup-Mobile-NodeJS {
   param([bool]$UseLocal, [int]$ParallelsPerPlatform, [string]$LogFile)
 
-  $REPO   = "now-webdriverio-appium-app-browserstack"
+  $REPO = "now-webdriverio-appium-app-browserstack"
   $TARGET = Join-Path $GLOBAL_DIR $REPO
-
-  Log-Section "🐛 DEBUG: Setup-Mobile-NodeJS (App / NodeJS)" $GLOBAL_LOG
-  Log-Line "ℹ️ Repo name: $REPO" $GLOBAL_LOG
-  Log-Line "ℹ️ Target clone directory: $TARGET" $GLOBAL_LOG
 
   New-Item -ItemType Directory -Path $GLOBAL_DIR -Force | Out-Null
   if (Test-Path $TARGET) {
-    Log-Line "ℹ️ Cleaning existing target directory: $TARGET" $GLOBAL_LOG
     Remove-Item -Path $TARGET -Recurse -Force
   }
 
@@ -415,118 +410,37 @@ function Setup-Mobile-NodeJS {
   Invoke-GitClone -Url "https://github.com/BrowserStackCE/$REPO.git" -Target $TARGET -LogFile (Get-RunLogFile)
 
   $testDir = Join-Path $TARGET "test"
-  Log-Line "ℹ️ Test directory (working directory for npm): $testDir" $GLOBAL_LOG
-
   Push-Location $testDir
   try {
-    # ---- Node / npm environment diagnostics ----
-    Log-Section "🔍 NodeJS Environment Diagnostics" $GLOBAL_LOG
-
-    $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
-    $npmCmd  = Get-Command npm  -ErrorAction SilentlyContinue
-
-    if ($nodeCmd) {
-      Log-Line "ℹ️ node.exe path: $($nodeCmd.Source)" $GLOBAL_LOG
-      Log-Line "ℹ️ Running 'node --version' for debug" $GLOBAL_LOG
-      [void](Invoke-External -Exe $nodeCmd.Source -Arguments @("--version") -LogFile $LogFile -WorkingDirectory $testDir)
-    } else {
-      Log-Line "⚠️ node.exe not found in PATH" $GLOBAL_LOG
-    }
-
-    if ($npmCmd) {
-      Log-Line "ℹ️ npm.cmd path: $($npmCmd.Source)" $GLOBAL_LOG
-      Log-Line "ℹ️ Running 'npm --version' for debug" $GLOBAL_LOG
-      [void](Invoke-External -Exe $npmCmd.Source -Arguments @("--version") -LogFile $LogFile -WorkingDirectory $testDir)
-    } else {
-      Log-Line "⚠️ npm not found in PATH" $GLOBAL_LOG
-    }
-
-    # ---- npm install ----
-    Log-Section "📦 npm install (mobile / nodejs)" $GLOBAL_LOG
-    Log-Line "⚙️ About to run: cmd.exe /c npm install" $GLOBAL_LOG
-    Log-Line "ℹ️ Working directory: $testDir" $GLOBAL_LOG
-    $npmInstallStart = Get-Date
-    $npmInstallExit  = Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","install") -LogFile $LogFile -WorkingDirectory $testDir
-    $npmInstallEnd   = Get-Date
-    $npmInstallDuration = [int]($npmInstallEnd - $npmInstallStart).TotalSeconds
-
-    Log-Line "ℹ️ npm install exit code: $npmInstallExit (duration: ${npmInstallDuration}s)" $GLOBAL_LOG
-    if ($npmInstallExit -ne 0) {
-      Log-Line "❌ npm install failed with exit code $npmInstallExit. See $LogFile for details." $GLOBAL_LOG
-      throw "npm install failed (exit $npmInstallExit)"
-    }
-
+    Log-Line "⚙️ Running 'npm install'" $GLOBAL_LOG
+    Log-Line "ℹ️ Installing dependencies" $GLOBAL_LOG
+    [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","install") -LogFile $LogFile -WorkingDirectory $testDir)
     Log-Line "✅ Dependencies installed" $GLOBAL_LOG
 
-    # ---- Capabilities / env setup ----
-    Log-Section "⚙️ Generating capabilities & setting environment variables" $GLOBAL_LOG
+    # Generate capabilities JSON and set as environment variable (like Mac)
     $capsJson = Generate-Mobile-Caps-Json-String -MaxTotalParallels $ParallelsPerPlatform
 
-    $env:BROWSERSTACK_USERNAME      = $BROWSERSTACK_USERNAME
-    $env:BROWSERSTACK_ACCESS_KEY    = $BROWSERSTACK_ACCESS_KEY
-    $env:BSTACK_PARALLELS           = $ParallelsPerPlatform
-    $env:BSTACK_CAPS_JSON           = $capsJson
-    $env:BROWSERSTACK_APP           = $APP_URL
-    $env:BROWSERSTACK_BUILD_NAME    = "now-windows-app-nodejs-wdio"
-    $env:BROWSERSTACK_PROJECT_NAME  = "NOW-Mobile-Test"
-    $env:BROWSERSTACK_LOCAL         = "true"
+    $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
+    $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
+    $env:BSTACK_PARALLELS = $ParallelsPerPlatform
+    $env:BSTACK_CAPS_JSON = $capsJson
+    $env:BROWSERSTACK_APP = $APP_URL
+    $env:BROWSERSTACK_BUILD_NAME = "now-windows-app-nodejs-wdio"
+    $env:BROWSERSTACK_PROJECT_NAME = "NOW-Mobile-Test"
+    $env:BROWSERSTACK_LOCAL = "true"
 
     # Validate Environment Variables
-    Log-Section "🧾 Validate Environment Variables (Mobile / NodeJS)" $GLOBAL_LOG
+    Log-Section "Validate Environment Variables" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Build: $($env:BROWSERSTACK_BUILD_NAME)" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Project: $($env:BROWSERSTACK_PROJECT_NAME)" $GLOBAL_LOG
     Log-Line "ℹ️ Native App Endpoint: $APP_URL" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Local Flag: $($env:BROWSERSTACK_LOCAL)" $GLOBAL_LOG
     Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $GLOBAL_LOG
-    Log-Line "ℹ️ Platforms JSON (caps): $capsJson" $GLOBAL_LOG
+    Log-Line "ℹ️ Platforms: $capsJson" $GLOBAL_LOG
 
-    # For additional safety, dump the relevant npm script from package.json
-    $pkgPath = Join-Path $testDir "package.json"
-    if (Test-Path $pkgPath) {
-      try {
-        $pkgRaw = Get-Content $pkgPath -Raw | ConvertFrom-Json
-        if ($pkgRaw.scripts.test) {
-          Log-Line "ℹ️ package.json 'test' script: $($pkgRaw.scripts.test)" $GLOBAL_LOG
-        } else {
-          Log-Line "⚠️ package.json has no 'test' script defined" $GLOBAL_LOG
-        }
-      } catch {
-        Log-Line "⚠️ Failed to parse package.json for logging: $($_.Exception.Message)" $GLOBAL_LOG
-      }
-    } else {
-      Log-Line "⚠️ package.json not found at $pkgPath" $GLOBAL_LOG
-    }
-
-    # ---- npm run test ----
     Print-TestsRunningSection -Command "npm run test"
-
-    $testTimeout = 300  # 15 minutes hard cap for CI
-    Log-Line "ℹ️ Starting 'npm run test' with timeout of $testTimeout seconds..." $GLOBAL_LOG
-
-    $exit = Invoke-External `
-      -Exe "cmd.exe" `
-      -Arguments @("/c","npm","run","test") `
-      -LogFile $LogFile `
-      -WorkingDirectory $testDir `
-      -TimeoutSeconds $testTimeout
-
-    Log-Line "ℹ️ 'npm run test' finished with exit code: $exit" $GLOBAL_LOG
-    Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
-
-    $testStart = Get-Date
-    $testExit  = Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $testDir
-    $testEnd   = Get-Date
-    $testDuration = [int]($testEnd - $testStart).TotalSeconds
-
-    Log-Line "ℹ️ npm run test exit code: $testExit (duration: ${testDuration}s)" $GLOBAL_LOG
-
-    if ($testExit -eq 0) {
-      Log-Line "✅ npm run test exited cleanly (exit code 0)" $GLOBAL_LOG
-    } else {
-      Log-Line "❌ npm run test exited with non-zero code $testExit. Check $LogFile for details." $GLOBAL_LOG
-    }
-
+    [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $testDir)
     Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
 
   } finally {
@@ -534,7 +448,6 @@ function Setup-Mobile-NodeJS {
     Set-Location (Join-Path $WORKSPACE_DIR $PROJECT_FOLDER)
   }
 }
-
 
 # ===== Helper Functions =====
 function Report-BStackLocalStatus {
@@ -597,7 +510,8 @@ function Identify-RunStatus-NodeJS {
 function Setup-Environment {
   param(
     [Parameter(Mandatory)][string]$SetupType,
-    [Parameter(Mandatory)][string]$TechStack
+    [Parameter(Mandatory)][string]$TechStack,
+    [string]$RunMode = "--interactive"
   )
 
   Log-Section "📦 Project Setup" $GLOBAL_LOG
@@ -608,6 +522,12 @@ function Setup-Environment {
   $localFlag = $false
   $totalParallels = [int]([Math]::Floor($maxParallels * $PARALLEL_PERCENTAGE))
   if ($totalParallels -lt 1) { $totalParallels = 1 }
+
+  if ($RunMode -match "--silent" -and $totalParallels -gt 5) {
+    $originalParallels = $totalParallels
+    $totalParallels = 5
+    Log-Line "ℹ️ Silent mode: capping parallels per platform to $totalParallels (requested $originalParallels)" $GLOBAL_LOG
+  }
 
   Log-Line "Total parallels allocated: $totalParallels" $GLOBAL_LOG
 
@@ -660,9 +580,10 @@ function Setup-Environment {
 function Run-Setup {
   param(
     [string]$TestType,
-    [string]$TechStack
+    [string]$TechStack,
+    [string]$RunMode = "--interactive"
   )
-  Setup-Environment -SetupType $TestType -TechStack $TechStack
+  Setup-Environment -SetupType $TestType -TechStack $TechStack -RunMode $RunMode
 }
 
 

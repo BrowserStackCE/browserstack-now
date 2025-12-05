@@ -101,7 +101,7 @@ try {
   Log-Line "ℹ️ Starting $TEST_TYPE setup for $TECH_STACK" $GLOBAL_LOG
   
   # Run the setup
-  Run-Setup -TestType $TEST_TYPE -TechStack $TECH_STACK
+  Run-Setup -TestType $TEST_TYPE -TechStack $TECH_STACK -RunMode $RunMode
 
 } catch {
   Log-Line " " $GLOBAL_LOG
