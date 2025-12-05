@@ -281,6 +281,11 @@ jobs:
           $scriptPath = Join-Path $env:GITHUB_WORKSPACE "win\run.ps1"
 
           $testConfigs = @(
+            @("web",  "java"),
+            @("app",  "java"),
+            @("web",  "python"),
+            @("app",  "python"),
+            @("web",  "nodejs"),
             @("app",  "nodejs")
           )
 
@@ -527,15 +532,17 @@ jobs:
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [test-windows]
+    needs: [test-mac, test-linux, test-windows]
     if: always()
     steps:
       - name: Check test results
         run: |
           echo "=== Test Results Summary ==="
+          echo "macOS Tests: ${{ needs.test-mac.result }}"
+          echo "Linux Tests: ${{ needs.test-linux.result }}"
           echo "Windows Tests: ${{ needs.test-windows.result }}"
 
-          if [ "${{ needs.test-windows.result }}" = "failure" ]; then
+          if [ "${{ needs.test-mac.result }}" = "failure" ] || [ "${{ needs.test-linux.result }}" = "failure" ] || [ "${{ needs.test-windows.result }}" = "failure" ]; then
             echo "❌ Some tests failed"
             exit 1
           fi
@@ -546,5 +553,4 @@ jobs:
         run: |
           echo "✅ All script validations passed successfully!"
           echo "- mac/run.sh and supporting scripts validated on macOS and Linux"
-          echo "- win/run.ps1 and supporting scripts validated on Windows"
           echo "- win/run.ps1 and supporting scripts validated on Windows"
