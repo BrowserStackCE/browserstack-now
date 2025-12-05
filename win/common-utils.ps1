@@ -3,6 +3,8 @@
 # ===== Global Variables =====
 $script:WORKSPACE_DIR = Join-Path $env:USERPROFILE ".browserstack"
 $script:PROJECT_FOLDER = "NOW"
+$script:NOW_OS = "windows"
+
 
 $script:GLOBAL_DIR = Join-Path $WORKSPACE_DIR $PROJECT_FOLDER
 $script:LOG_DIR     = Join-Path $GLOBAL_DIR "logs"

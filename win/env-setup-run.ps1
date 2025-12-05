@@ -35,8 +35,8 @@ userName: $BROWSERSTACK_USERNAME
 accessKey: $BROWSERSTACK_ACCESS_KEY
 framework: testng
 browserstackLocal: $localFlag
-buildName: now-windows-web-java-testng
-projectName: NOW-Web-Test
+buildName: now-$NOW_OS-web-java-testng
+projectName: now-$NOW_OS-web
 percy: true
 accessibility: true
 platforms:
@@ -50,7 +50,7 @@ parallelsPerPlatform: $ParallelsPerPlatform
     # Validate Environment Variables
     Log-Section "Validate Environment Variables" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Build: now-windows-web-java-testng" $GLOBAL_LOG
+    Log-Line "ℹ️ BrowserStack Build: now-$NOW_OS-web-java-testng" $GLOBAL_LOG
     Log-Line "ℹ️ Web Application Endpoint: $CX_TEST_URL" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $GLOBAL_LOG
     Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $GLOBAL_LOG
@@ -120,8 +120,8 @@ userName: $BROWSERSTACK_USERNAME
 accessKey: $BROWSERSTACK_ACCESS_KEY
 framework: pytest
 browserstackLocal: $localFlag
-buildName: now-windows-web-python-pytest
-projectName: NOW-Web-Test
+buildName: now-$NOW_OS-web-python-pytest
+projectName: now-$NOW_OS-web
 percy: true
 accessibility: true
 platforms:
@@ -134,7 +134,7 @@ parallelsPerPlatform: $ParallelsPerPlatform
     # Validate Environment Variables
     Log-Section "Validate Environment Variables" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Build: now-windows-web-python-pytest" $GLOBAL_LOG
+    Log-Line "ℹ️ BrowserStack Build: now-$NOW_OS-web-python-pytest" $GLOBAL_LOG
     Log-Line "ℹ️ Web Application Endpoint: $CX_TEST_URL" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $GLOBAL_LOG
     Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $GLOBAL_LOG
@@ -188,8 +188,8 @@ function Setup-Web-NodeJS {
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
     $localFlagStr = if ($UseLocal) { "true" } else { "false" }
     $env:BROWSERSTACK_LOCAL = $localFlagStr
-    $env:BROWSERSTACK_BUILD_NAME = "now-windows-web-nodejs-wdio"
-    $env:BROWSERSTACK_PROJECT_NAME = "NOW-Web-Test"
+    $env:BROWSERSTACK_BUILD_NAME = "now-$NOW_OS-web-nodejs-wdio"
+    $env:BROWSERSTACK_PROJECT_NAME = "now-$NOW_OS-web"
 
     # Validate Environment Variables
     Log-Section "Validate Environment Variables" $GLOBAL_LOG
@@ -248,8 +248,8 @@ userName: $BROWSERSTACK_USERNAME
 accessKey: $BROWSERSTACK_ACCESS_KEY
 framework: testng
 browserstackLocal: $localFlag
-buildName: now-windows-app-java-testng
-projectName: NOW-Mobile-Test
+buildName: now-$NOW_OS-app-java-testng
+projectName: now-$NOW_OS-app
 parallelsPerPlatform: $ParallelsPerPlatform
 app: $APP_URL
 platforms:
@@ -262,7 +262,7 @@ $platforms
     # Validate Environment Variables
     Log-Section "Validate Environment Variables" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Build: now-windows-app-java-testng" $GLOBAL_LOG
+    Log-Line "ℹ️ BrowserStack Build: now-$NOW_OS-app-java-testng" $GLOBAL_LOG
     Log-Line "ℹ️ Native App Endpoint: $APP_URL" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $GLOBAL_LOG
     Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $GLOBAL_LOG
@@ -334,8 +334,8 @@ userName: $BROWSERSTACK_USERNAME
 accessKey: $BROWSERSTACK_ACCESS_KEY
 framework: pytest
 browserstackLocal: $localFlag
-buildName: now-windows-app-python-pytest
-projectName: NOW-Mobile-Test
+buildName: now-$NOW_OS-app-python-pytest
+projectName: now-$NOW_OS-app
 parallelsPerPlatform: $ParallelsPerPlatform
 app: $APP_URL
 platforms:
@@ -350,8 +350,8 @@ userName: $BROWSERSTACK_USERNAME
 accessKey: $BROWSERSTACK_ACCESS_KEY
 framework: pytest
 browserstackLocal: $localFlag
-buildName: now-windows-app-python-pytest
-projectName: NOW-Mobile-Test
+buildName: now-$NOW_OS-app-python-pytest
+projectName: now-$NOW_OS-app
 parallelsPerPlatform: $ParallelsPerPlatform
 app: $APP_URL
 platforms:
@@ -370,7 +370,7 @@ $platformYamlIos
     # Validate Environment Variables
     Log-Section "Validate Environment Variables" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Username: $BROWSERSTACK_USERNAME" $GLOBAL_LOG
-    Log-Line "ℹ️ BrowserStack Build: now-windows-app-python-pytest" $GLOBAL_LOG
+    Log-Line "ℹ️ BrowserStack Build: now-$NOW_OS-app-python-pytest" $GLOBAL_LOG
     Log-Line "ℹ️ Native App Endpoint: $APP_URL" $GLOBAL_LOG
     Log-Line "ℹ️ BrowserStack Local Flag: $localFlag" $GLOBAL_LOG
     Log-Line "ℹ️ Parallels per platform: $ParallelsPerPlatform" $GLOBAL_LOG
@@ -425,8 +425,8 @@ function Setup-Mobile-NodeJS {
     $env:BSTACK_PARALLELS = $ParallelsPerPlatform
     $env:BSTACK_CAPS_JSON = $capsJson
     $env:BROWSERSTACK_APP = $APP_URL
-    $env:BROWSERSTACK_BUILD_NAME = "now-windows-app-nodejs-wdio"
-    $env:BROWSERSTACK_PROJECT_NAME = "NOW-Mobile-Test"
+    $env:BROWSERSTACK_BUILD_NAME = "now-$NOW_OS-app-nodejs-wdio"
+    $env:BROWSERSTACK_PROJECT_NAME = "now-$NOW_OS-app"
     $env:BROWSERSTACK_LOCAL = "true"
 
     # Validate Environment Variables
