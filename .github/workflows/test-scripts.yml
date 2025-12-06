@@ -305,9 +305,10 @@ jobs:
             Write-Host "================================"
 
             $logPath = Join-Path $logRoot "run_test_${testType}_${techStack}.log"
+            $logPathErr = Join-Path $logRoot "run_test_${testType}_${techStack}.err"
 
             # Run with timeout (600 seconds)
-            $p = Start-Process -FilePath "pwsh" -ArgumentList "-File", $scriptPath, "--silent", $testType, $techStack -RedirectStandardOutput $logPath -RedirectStandardError $logPath -PassThru -NoNewWindow
+            $p = Start-Process -FilePath "pwsh" -ArgumentList "-File", $scriptPath, "--silent", $testType, $techStack -RedirectStandardOutput $logPath -RedirectStandardError $logPathErr -PassThru -NoNewWindow
             
             # Wait for 600 seconds (600000 ms)
             $exited = $p.WaitForExit(600000)
@@ -330,6 +331,11 @@ jobs:
                 Write-Host "Log output (last 20 lines):"
                 Get-Content -Path $logPath -Tail 20
               }
+            }
+
+            if (Test-Path $logPathErr) {
+              Write-Host "Error output (last 20 lines):"
+              Get-Content -Path $logPathErr -Tail 20
             }
           }
 
