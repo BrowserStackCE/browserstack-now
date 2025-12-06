@@ -85,13 +85,15 @@ EOF
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-web-java-testng"
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-web"
     
+    print_env_vars
+
     log_info "Installing dependencies"
     mvn install -DskipTests >> "$NOW_RUN_LOG_FILE" 2>&1 || return 1
 
-    print_env_vars
     
     
-    log_info "Running tests..."
+    
+    log_section "BrowserStack SDK Test Run Execution"
     mvn test -P sample-test >> "$NOW_RUN_LOG_FILE" 2>&1 &
     cmd_pid=$!
     show_spinner "$cmd_pid"
@@ -127,7 +129,7 @@ EOF
     log_info "Installing dependencies"
     mvn clean >> "$NOW_RUN_LOG_FILE" 2>&1 || return 1
     
-    log_info "Running tests..."
+    log_section "BrowserStack SDK Test Run Execution"
     mvn test -P sample-test >> "$NOW_RUN_LOG_FILE" 2>&1 &
     cmd_pid=$!
     show_spinner "$cmd_pid"
@@ -158,7 +160,7 @@ EOF
 
     print_env_vars
     
-    log_info "Running tests..."
+    log_section "BrowserStack SDK Test Run Execution"
     browserstack-sdk pytest -s tests/*.py >> "$NOW_RUN_LOG_FILE" 2>&1 &
     cmd_pid=$!
     show_spinner "$cmd_pid"
@@ -191,7 +193,7 @@ EOF
 
     print_env_vars
     
-    log_info "Running tests..."
+    log_section "BrowserStack SDK Test Run Execution"
     (
         cd "$run_dir" && browserstack-sdk pytest -s bstack_sample.py >> "$NOW_RUN_LOG_FILE" 2>&1
     ) &
@@ -218,7 +220,7 @@ setup_web_nodejs() {
 
     print_env_vars
     
-    log_info "Running tests..."
+    log_section "BrowserStack SDK Test Run Execution"
     npm run test >> "$NOW_RUN_LOG_FILE" 2>&1 &
     cmd_pid=$!
     show_spinner "$cmd_pid"
@@ -247,7 +249,7 @@ setup_app_nodejs() {
 
     print_env_vars
     
-    log_info "Running tests..."
+    log_section "BrowserStack SDK Test Run Execution"
     npm run test >> "$NOW_RUN_LOG_FILE" 2>&1 &
     cmd_pid=$!
     show_spinner "$cmd_pid"
