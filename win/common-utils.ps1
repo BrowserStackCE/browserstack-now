@@ -253,7 +253,7 @@ function Invoke-External {
     Start-Sleep -Milliseconds 200
     if ($p.HasExited) {
       $exitCode = $p.ExitCode
-      $errorMsg = "Process exited immediately with code $exitCode: $exeToRun $argLine"
+      $errorMsg = "Process exited immediately with code ${exitCode}: ${exeToRun} ${argLine}"
       if ($LogFile) {
         Add-Content -Path $LogFile -Value "[ERROR] $errorMsg"
       }
