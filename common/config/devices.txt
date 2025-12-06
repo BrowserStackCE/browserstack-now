@@ -1,0 +1,23 @@
+# Format: TYPE|PLATFORM|DEVICE_OR_BROWSER
+# Web
+WEB|Windows|Chrome
+WEB|Windows|Firefox
+WEB|Windows|Edge
+MOBILE|ios|iPhone 1[234567]*
+MOBILE|android|Samsung Galaxy S*
+WEB|OS X|Chrome
+WEB|OS X|Safari
+WEB|OS X|Firefox
+MOBILE|ios|iPad Air*
+MOBILE|android|Samsung Galaxy Tab*
+MOBILE|android|Samsung Galaxy M*
+MOBILE|android|Google Pixel [56789]*
+MOBILE|android|Vivo Y*
+MOBILE|android|Oppo*
+MOBILE|ios|iPad Pro*
+MOBILE|android|Samsung Galaxy A*
+MOBILE|android|Google Pixel 10*
+MOBILE|android|OnePlus *
+MOBILE|android|Vivo V*
+MOBILE|android|Xiaomi *
+MOBILE|android|Huawei *
