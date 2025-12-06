@@ -64,6 +64,9 @@ try {
   # Setup Summary Header
   Log-Section "Setup Summary - BrowserStack NOW"
   Log-Line "Timestamp: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))" $global:NOW_RUN_LOG_FILE
+
+  $script:CurrentDir = (Get-Location).Path
+  
   Log-Line "Run Mode: $RunMode" $global:NOW_RUN_LOG_FILE
   Log-Line "Selected Testing Type: $TEST_TYPE" $global:NOW_RUN_LOG_FILE
   Log-Line "Selected Tech Stack: $TECH_STACK" $global:NOW_RUN_LOG_FILE
