@@ -177,6 +177,8 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 25
     environment: BrowserStack
+    env:
+      ACTIONS_STEP_DEBUG: true
     defaults:
       run:
         shell: powershell
@@ -199,6 +201,16 @@ jobs:
         run: |
           $PSVersionTable.PSVersion
           Write-Host "✅ PowerShell version check complete"
+
+      - name: Enable PowerShell debug logging
+        run: |
+          Write-Host "Enabling PowerShell debug and verbose logging..."
+          $DebugPreference = "Continue"
+          $VerbosePreference = "Continue"
+          $ErrorActionPreference = "Continue"
+          Write-Host "✅ Debug logging enabled"
+          Write-Debug "Debug logging is now active"
+          Write-Verbose "Verbose logging is now active"
 
       - name: Validate PowerShell script syntax
         run: |
@@ -225,13 +237,15 @@ jobs:
 
       - name: Run PSScriptAnalyzer
         run: |
+          $DebugPreference = "Continue"
+          $VerbosePreference = "Continue"
           Write-Host "Installing PSScriptAnalyzer if needed..."
           if (-not (Get-Module -ListAvailable -Name PSScriptAnalyzer)) {
-            Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -Scope CurrentUser
+            Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -Scope CurrentUser -Verbose
           }
 
           Write-Host "Running PSScriptAnalyzer..."
-          Invoke-ScriptAnalyzer -Path "win" -Recurse -ReportSummary -ErrorAction Continue
+          Invoke-ScriptAnalyzer -Path "win" -Recurse -ReportSummary -ErrorAction Continue -Verbose
           Write-Host "✅ PSScriptAnalyzer analysis complete (continuing even if issues are found)"
 
       - name: Check script file encoding
@@ -259,6 +273,47 @@ jobs:
           if (Get-Command git.exe -ErrorAction SilentlyContinue) { Write-Host "✅ git found" } else { Write-Host "⚠️ git not found" }
           Write-Host "✅ PowerShell dependencies verified"
 
+      - name: Check initial system resources
+        run: |
+          Write-Host "=== Initial System Resources ==="
+          
+          # Get system memory info
+          $os = Get-CimInstance Win32_OperatingSystem
+          $totalMemoryGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
+          $freeMemoryGB = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
+          $usedMemoryGB = [math]::Round(($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / 1MB, 2)
+          $memoryPercent = [math]::Round(($usedMemoryGB / $totalMemoryGB) * 100, 2)
+          
+          Write-Host "Total Physical Memory: $totalMemoryGB GB"
+          Write-Host "Free Physical Memory: $freeMemoryGB GB"
+          Write-Host "Used Physical Memory: $usedMemoryGB GB ($memoryPercent%)"
+          
+          # Get CPU info
+          $cpu = Get-CimInstance Win32_Processor
+          Write-Host "CPU Name: $($cpu.Name)"
+          Write-Host "CPU Cores: $($cpu.NumberOfCores)"
+          Write-Host "CPU Logical Processors: $($cpu.NumberOfLogicalProcessors)"
+          
+          # Get current CPU usage (average over 3 samples)
+          Write-Host "Measuring CPU usage..."
+          $cpuSamples = @()
+          for ($i = 0; $i -lt 3; $i++) {
+            $cpuSample = (Get-Counter '\Processor(_Total)\% Processor Time').CounterSamples[0].CookedValue
+            $cpuSamples += $cpuSample
+            Start-Sleep -Seconds 1
+          }
+          $avgCpu = [math]::Round(($cpuSamples | Measure-Object -Average).Average, 2)
+          Write-Host "Current CPU Usage: $avgCpu%"
+          
+          # Get disk space
+          $disk = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'"
+          $freeDiskGB = [math]::Round($disk.FreeSpace / 1GB, 2)
+          $totalDiskGB = [math]::Round($disk.Size / 1GB, 2)
+          $usedDiskGB = [math]::Round(($disk.Size - $disk.FreeSpace) / 1GB, 2)
+          Write-Host "C: Drive Free Space: $freeDiskGB GB / $totalDiskGB GB"
+          
+          Write-Host "✅ Initial resource check complete"
+
       - name: Integration Test - Silent Mode Execution
         if: success()
         env:
@@ -266,12 +321,20 @@ jobs:
           BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           TURL: https://bstackdemo.com
         run: |
+          $DebugPreference = "Continue"
+          $VerbosePreference = "Continue"
+          $ErrorActionPreference = "Continue"
           Write-Host "Running integration tests in silent mode..."
+          Write-Debug "Debug logging enabled for integration tests"
+          Write-Verbose "Verbose logging enabled for integration tests"
 
           # Use defaults if secrets are missing (for local / dry runs)
           $BrowserStackUsername = if ($env:BROWSERSTACK_USERNAME) { $env:BROWSERSTACK_USERNAME } else { "test_user" }
           $BrowserStackAccessKey = if ($env:BROWSERSTACK_ACCESS_KEY) { $env:BROWSERSTACK_ACCESS_KEY } else { "test_key" }
           $TestUrl = $env:TURL
+
+          Write-Debug "BrowserStack Username: $BrowserStackUsername"
+          Write-Verbose "Test URL: $TestUrl"
 
           $env:BROWSERSTACK_USERNAME = $BrowserStackUsername
           $env:BROWSERSTACK_ACCESS_KEY = $BrowserStackAccessKey
@@ -279,6 +342,7 @@ jobs:
 
           # Absolute path is safer in CI
           $scriptPath = Join-Path $env:GITHUB_WORKSPACE "win\run.ps1"
+          Write-Debug "Script path: $scriptPath"
 
           $testConfigs = @(
             @("web",  "java"),
@@ -289,9 +353,43 @@ jobs:
             @("app",  "nodejs")
           )
 
+          # Function to get system resources
+          function Get-SystemResources {
+            $os = Get-CimInstance Win32_OperatingSystem
+            $totalMemoryGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
+            $freeMemoryGB = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
+            $usedMemoryGB = [math]::Round(($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / 1MB, 2)
+            $memoryPercent = [math]::Round(($usedMemoryGB / $totalMemoryGB) * 100, 2)
+            
+            $cpuSample = (Get-Counter '\Processor(_Total)\% Processor Time' -ErrorAction SilentlyContinue).CounterSamples[0].CookedValue
+            $cpuUsage = [math]::Round($cpuSample, 2)
+            
+            # Get PowerShell process memory
+            $pwshProcess = Get-Process -Id $PID -ErrorAction SilentlyContinue
+            $pwshMemoryMB = if ($pwshProcess) { [math]::Round($pwshProcess.WorkingSet64 / 1MB, 2) } else { 0 }
+            
+            return @{
+              TotalMemoryGB = $totalMemoryGB
+              FreeMemoryGB = $freeMemoryGB
+              UsedMemoryGB = $usedMemoryGB
+              MemoryPercent = $memoryPercent
+              CpuUsage = $cpuUsage
+              PwshMemoryMB = $pwshMemoryMB
+            }
+          }
+
           $overallFailed = $false
           $logRoot = Join-Path $env:TEMP "now-tests"
+          $resourceLogPath = Join-Path $logRoot "resource_usage.log"
           New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
+          
+          # Log initial resources
+          $initialResources = Get-SystemResources
+          Write-Host "=== Initial Resources Before Tests ==="
+          Write-Host "Memory: $($initialResources.UsedMemoryGB) GB / $($initialResources.TotalMemoryGB) GB ($($initialResources.MemoryPercent)%)"
+          Write-Host "CPU: $($initialResources.CpuUsage)%"
+          Write-Host "PowerShell Memory: $($initialResources.PwshMemoryMB) MB"
+          "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - INITIAL - Memory: $($initialResources.UsedMemoryGB)GB/$($initialResources.TotalMemoryGB)GB ($($initialResources.MemoryPercent)%), CPU: $($initialResources.CpuUsage)%, Pwsh: $($initialResources.PwshMemoryMB)MB" | Out-File -FilePath $resourceLogPath -Append
 
           foreach ($config in $testConfigs) {
             $testType  = $config[0]
@@ -300,11 +398,66 @@ jobs:
             Write-Host "================================"
             Write-Host "Testing: $scriptPath --silent $testType $techStack"
             Write-Host "================================"
+            Write-Debug "Test type: $testType, Tech stack: $techStack"
+
+            # Get resources before test
+            $resourcesBefore = Get-SystemResources
+            Write-Host "--- Resources Before Test ---"
+            Write-Host "Memory: $($resourcesBefore.UsedMemoryGB) GB / $($resourcesBefore.TotalMemoryGB) GB ($($resourcesBefore.MemoryPercent)%)"
+            Write-Host "CPU: $($resourcesBefore.CpuUsage)%"
+            Write-Host "PowerShell Memory: $($resourcesBefore.PwshMemoryMB) MB"
+            "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - BEFORE [$testType/$techStack] - Memory: $($resourcesBefore.UsedMemoryGB)GB/$($resourcesBefore.TotalMemoryGB)GB ($($resourcesBefore.MemoryPercent)%), CPU: $($resourcesBefore.CpuUsage)%, Pwsh: $($resourcesBefore.PwshMemoryMB)MB" | Out-File -FilePath $resourceLogPath -Append
 
             $logPath = Join-Path $logRoot "run_test_${testType}_${techStack}.log"
+            Write-Verbose "Log path: $logPath"
 
+            # Start background resource monitoring
+            $monitorJob = Start-Job -ScriptBlock {
+              param($logFile, $testName)
+              $endTime = (Get-Date).AddMinutes(10) # Monitor for max 10 minutes
+              while ((Get-Date) -lt $endTime) {
+                try {
+                  $os = Get-CimInstance Win32_OperatingSystem
+                  $usedMemoryGB = [math]::Round(($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / 1MB, 2)
+                  $totalMemoryGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
+                  $memoryPercent = [math]::Round(($usedMemoryGB / $totalMemoryGB) * 100, 2)
+                  $cpuSample = (Get-Counter '\Processor(_Total)\% Processor Time' -ErrorAction SilentlyContinue).CounterSamples[0].CookedValue
+                  $cpuUsage = [math]::Round($cpuSample, 2)
+                  "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - MONITOR [$testName] - Memory: $usedMemoryGB GB/$totalMemoryGB GB ($memoryPercent%), CPU: $cpuUsage%" | Out-File -FilePath $logFile -Append
+                } catch {
+                  # Ignore errors in monitoring
+                }
+                Start-Sleep -Seconds 30 # Sample every 30 seconds
+              }
+            } -ArgumentList $resourceLogPath, "${testType}_${techStack}"
+
+            Write-Debug "Executing script: $scriptPath --silent $testType $techStack"
+            $startTime = Get-Date
             & $scriptPath --silent $testType $techStack 2>&1 | Tee-Object -FilePath $logPath -Append
             $exitCode = $LASTEXITCODE
+            $endTime = Get-Date
+            $duration = $endTime - $startTime
+            Write-Debug "Script exit code: $exitCode"
+            
+            # Stop monitoring job
+            Stop-Job -Job $monitorJob -ErrorAction SilentlyContinue
+            Remove-Job -Job $monitorJob -ErrorAction SilentlyContinue
+            
+            # Get resources after test
+            Start-Sleep -Seconds 2 # Brief pause to let system settle
+            $resourcesAfter = Get-SystemResources
+            Write-Host "--- Resources After Test ---"
+            Write-Host "Memory: $($resourcesAfter.UsedMemoryGB) GB / $($resourcesAfter.TotalMemoryGB) GB ($($resourcesAfter.MemoryPercent)%)"
+            Write-Host "CPU: $($resourcesAfter.CpuUsage)%"
+            Write-Host "PowerShell Memory: $($resourcesAfter.PwshMemoryMB) MB"
+            Write-Host "Test Duration: $($duration.TotalSeconds) seconds"
+            
+            $memoryDelta = [math]::Round($resourcesAfter.UsedMemoryGB - $resourcesBefore.UsedMemoryGB, 2)
+            $cpuDelta = [math]::Round($resourcesAfter.CpuUsage - $resourcesBefore.CpuUsage, 2)
+            Write-Host "Memory Change: $memoryDelta GB"
+            Write-Host "CPU Change: $cpuDelta%"
+            
+            "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - AFTER [$testType/$techStack] - Memory: $($resourcesAfter.UsedMemoryGB)GB/$($resourcesAfter.TotalMemoryGB)GB ($($resourcesAfter.MemoryPercent)%), CPU: $($resourcesAfter.CpuUsage)%, Pwsh: $($resourcesAfter.PwshMemoryMB)MB, Duration: $([math]::Round($duration.TotalSeconds, 2))s, MemoryDelta: ${memoryDelta}GB, CpuDelta: ${cpuDelta}%" | Out-File -FilePath $resourceLogPath -Append
 
             if ($exitCode -eq 0) {
               Write-Host "✅ $testType / $techStack completed (exit code: $exitCode)"
@@ -325,26 +478,109 @@ jobs:
           }
 
           Write-Host "✅ All integration tests completed successfully"
+          
+          # Log final resources
+          $finalResources = Get-SystemResources
+          Write-Host "=== Final Resources After All Tests ==="
+          Write-Host "Memory: $($finalResources.UsedMemoryGB) GB / $($finalResources.TotalMemoryGB) GB ($($finalResources.MemoryPercent)%)"
+          Write-Host "CPU: $($finalResources.CpuUsage)%"
+          Write-Host "PowerShell Memory: $($finalResources.PwshMemoryMB) MB"
+          
+          $totalMemoryDelta = [math]::Round($finalResources.UsedMemoryGB - $initialResources.UsedMemoryGB, 2)
+          $totalCpuDelta = [math]::Round($finalResources.CpuUsage - $initialResources.CpuUsage, 2)
+          Write-Host "Total Memory Change: $totalMemoryDelta GB"
+          Write-Host "Total CPU Change: $totalCpuDelta%"
+          
+          "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - FINAL - Memory: $($finalResources.UsedMemoryGB)GB/$($finalResources.TotalMemoryGB)GB ($($finalResources.MemoryPercent)%), CPU: $($finalResources.CpuUsage)%, Pwsh: $($finalResources.PwshMemoryMB)MB, TotalMemoryDelta: ${totalMemoryDelta}GB, TotalCpuDelta: ${totalCpuDelta}%" | Out-File -FilePath $resourceLogPath -Append
+          
+          Write-Host "Resource usage log saved to: $resourceLogPath"
+
+      - name: Check final system resources
+        if: always()
+        run: |
+          Write-Host "=== Final System Resources ==="
+          
+          # Get system memory info
+          $os = Get-CimInstance Win32_OperatingSystem
+          $totalMemoryGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
+          $freeMemoryGB = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
+          $usedMemoryGB = [math]::Round(($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / 1MB, 2)
+          $memoryPercent = [math]::Round(($usedMemoryGB / $totalMemoryGB) * 100, 2)
+          
+          Write-Host "Total Physical Memory: $totalMemoryGB GB"
+          Write-Host "Free Physical Memory: $freeMemoryGB GB"
+          Write-Host "Used Physical Memory: $usedMemoryGB GB ($memoryPercent%)"
+          
+          # Get current CPU usage
+          Write-Host "Measuring CPU usage..."
+          $cpuSamples = @()
+          for ($i = 0; $i -lt 3; $i++) {
+            $cpuSample = (Get-Counter '\Processor(_Total)\% Processor Time').CounterSamples[0].CookedValue
+            $cpuSamples += $cpuSample
+            Start-Sleep -Seconds 1
+          }
+          $avgCpu = [math]::Round(($cpuSamples | Measure-Object -Average).Average, 2)
+          Write-Host "Current CPU Usage: $avgCpu%"
+          
+          # Get top processes by memory
+          Write-Host "`n=== Top 10 Processes by Memory Usage ==="
+          Get-Process | Sort-Object WorkingSet64 -Descending | Select-Object -First 10 | Format-Table -Property Name, @{Name="Memory(MB)";Expression={[math]::Round($_.WorkingSet64 / 1MB, 2)}}, CPU, Id -AutoSize
+          
+          # Get top processes by CPU
+          Write-Host "=== Top 10 Processes by CPU Usage ==="
+          Get-Process | Sort-Object CPU -Descending | Select-Object -First 10 | Format-Table -Property Name, CPU, @{Name="Memory(MB)";Expression={[math]::Round($_.WorkingSet64 / 1MB, 2)}}, Id -AutoSize
+          
+          Write-Host "✅ Final resource check complete"
 
       - name: Sync BrowserStack logs to workspace (Windows)
         if: always()
         run: |
+          $DebugPreference = "Continue"
+          $VerbosePreference = "Continue"
           $dest = Join-Path $env:GITHUB_WORKSPACE "bs-logs"
-          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Write-Debug "Destination directory: $dest"
+          New-Item -ItemType Directory -Force -Path $dest -Verbose | Out-Null
 
           $bsLogPath  = Join-Path $env:USERPROFILE ".browserstack\NOW\logs"
           $tempLogDir = Join-Path $env:TEMP "now-tests"
+          Write-Debug "BrowserStack log path: $bsLogPath"
+          Write-Debug "Temp log directory: $tempLogDir"
 
           if (Test-Path $bsLogPath) {
             Write-Host "Copying logs from $bsLogPath"
-            Copy-Item -Path (Join-Path $bsLogPath "*") -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue
+            Write-Verbose "Copying logs from $bsLogPath to $dest"
+            Copy-Item -Path (Join-Path $bsLogPath "*") -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue -Verbose
           } else {
             Write-Host "No logs found at $bsLogPath"
+            Write-Debug "BrowserStack logs directory does not exist"
           }
 
           if (Test-Path $tempLogDir) {
             Write-Host "Copying integration logs from $tempLogDir"
-            Copy-Item -Path (Join-Path $tempLogDir "*") -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue
+            Write-Verbose "Copying integration logs from $tempLogDir to $dest"
+            Copy-Item -Path (Join-Path $tempLogDir "*") -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue -Verbose
+          } else {
+            Write-Debug "Temp log directory does not exist"
+          }
+          
+          # Copy resource usage log if it exists
+          $resourceLogPath = Join-Path $tempLogDir "resource_usage.log"
+          if (Test-Path $resourceLogPath) {
+            Write-Host "Copying resource usage log"
+            Copy-Item -Path $resourceLogPath -Destination $dest -Force -ErrorAction SilentlyContinue -Verbose
+          }
+
+      - name: Display resource usage summary
+        if: always()
+        run: |
+          $resourceLogPath = Join-Path $env:TEMP "now-tests\resource_usage.log"
+          if (Test-Path $resourceLogPath) {
+            Write-Host "=== Resource Usage Summary ==="
+            Write-Host "`nFull resource usage log:"
+            Get-Content -Path $resourceLogPath
+            Write-Host "`n✅ Resource usage summary displayed"
+          } else {
+            Write-Host "Resource usage log not found at $resourceLogPath"
           }
 
       - name: Upload BrowserStack Logs as Artifacts
