@@ -232,7 +232,6 @@ function Setup-Web-Python {
             # Tests passed but SDK cleanup hung - this is a known issue
             # We'll still throw but with a message indicating tests passed
             $errorMsg = "Tests completed successfully but SDK cleanup timed out. Check BrowserStack dashboard for results."
-          }
           } else {
             Log-Line "⚠️ No test completion indicators found. Tests may still be running." $GLOBAL_LOG
           }
@@ -241,9 +240,9 @@ function Setup-Web-Python {
         Log-Line "⚠️ Check the log file for details: $LogFile" $GLOBAL_LOG
       }
       throw
-    }
+    } # End of inner catch block
 
-  } finally {
+  } finally { # End of outer try block, start of finally
     Pop-Location
     Set-Location (Join-Path $WORKSPACE_DIR $PROJECT_FOLDER)
   }
