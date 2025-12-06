@@ -229,13 +229,52 @@ function Invoke-External {
 
     [void]$p.Start()
     $startTime = Get-Date
+    $processId = $p.Id
+    
+    # Log process start immediately (before BeginOutputReadLine to ensure it's logged)
+    $startLogMsg = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Process started: PID=$processId, Command=$exeToRun $argLine"
+    if ($LogFile) {
+      try {
+        Add-Content -Path $LogFile -Value $startLogMsg -ErrorAction Stop
+      } catch {
+        # If log file write fails, try to log to GLOBAL_LOG
+        if ($GLOBAL_LOG) {
+          Log-Line "⚠️ Failed to write to log file $LogFile, error: $($_.Exception.Message)" $GLOBAL_LOG
+        }
+      }
+    }
+    
+    # Also log to GLOBAL_LOG for visibility
+    if ($GLOBAL_LOG) {
+      Log-Line "ℹ️ External process started: PID=$processId, Command=$exeToRun" $GLOBAL_LOG
+    }
+    
+    # Verify process is actually running and log initial state
+    Start-Sleep -Milliseconds 200
+    if ($p.HasExited) {
+      $exitCode = $p.ExitCode
+      $errorMsg = "Process exited immediately with code $exitCode: $exeToRun $argLine"
+      if ($LogFile) {
+        Add-Content -Path $LogFile -Value "[ERROR] $errorMsg"
+      }
+      throw $errorMsg
+    }
+    
+    # Log process state verification
+    try {
+      $procInfo = Get-Process -Id $processId -ErrorAction SilentlyContinue
+      if ($procInfo) {
+        $procStateMsg = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Process verified running: PID=$processId, CPU=$([math]::Round($procInfo.CPU, 2))s, Memory=$([math]::Round($procInfo.WorkingSet64/1MB, 2))MB"
+        if ($LogFile) {
+          Add-Content -Path $LogFile -Value $procStateMsg
+        }
+      }
+    } catch {
+      # Ignore process info errors
+    }
+    
     $p.BeginOutputReadLine()
     $p.BeginErrorReadLine()
-    
-    # Log process start
-    if ($LogFile) {
-      Add-Content -Path $LogFile -Value "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Process started: PID=$($p.Id), Command=$exeToRun $argLine"
-    }
     
     # Wait with timeout support and periodic status checks
     if ($TimeoutSeconds -gt 0) {
@@ -314,17 +353,36 @@ function Invoke-External {
           }
           
           # Check if log file has been updated recently (indicates process is producing output)
+          $hasOutput = $false
           if ($LogFile -and (Test-Path $LogFile)) {
             $logLastWrite = (Get-Item $LogFile).LastWriteTime
             if ($logLastWrite -gt $lastOutputTime) {
               $lastOutputTime = $logLastWrite
+              $hasOutput = $true
             }
             
             # Log status every minute
             if (((Get-Date) - $lastLogCheck).TotalSeconds -ge 60) {
-              Add-Content -Path $LogFile -Value "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Process still running... Elapsed: $([math]::Round($elapsed, 0))s, Remaining: $([math]::Round($remainingMs/1000, 0))s"
+              $statusMsg = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Process still running... Elapsed: $([math]::Round($elapsed, 0))s, Remaining: $([math]::Round($remainingMs/1000, 0))s"
+              if (-not $hasOutput -and $elapsed -gt 60) {
+                $statusMsg += " [WARNING: No output detected in last 60+ seconds - process may be hung]"
+              }
+              Add-Content -Path $LogFile -Value $statusMsg
               $lastLogCheck = Get-Date
             }
+          }
+          
+          # Warn if process has been running for 2+ minutes with no output
+          if (-not $hasOutput -and $elapsed -ge 120) {
+            $noOutputWarning = "⚠️ Process has been running for $([math]::Round($elapsed, 0))s with no output. This may indicate the process is hung."
+            if ($LogFile) {
+              Add-Content -Path $LogFile -Value "[WARNING] $noOutputWarning"
+            }
+            if ($GLOBAL_LOG) {
+              Log-Line $noOutputWarning $GLOBAL_LOG
+            }
+            # Reset check to avoid spam
+            $lastOutputTime = Get-Date
           }
         } else {
           break  # Process exited

@@ -137,19 +137,67 @@ function Setup-Web-Python {
     $platforms -split "`n" | ForEach-Object { if ($_.Trim()) { Log-Line "  $_" $GLOBAL_LOG } }
 
     $sdk = Join-Path $venv "Scripts\browserstack-sdk.exe"
+    
+    # Verify SDK exists before attempting to run
+    if (-not (Test-Path $sdk)) {
+      throw "BrowserStack SDK not found at: $sdk"
+    }
+    Log-Line "ℹ️ SDK path verified: $sdk" $GLOBAL_LOG
+    
+    # Check if BrowserStack Local binary might be needed
+    $bsLocalPath = Join-Path $venv "Scripts\BrowserStackLocal.exe"
+    if ($UseLocal -and -not (Test-Path $bsLocalPath)) {
+      Log-Line "⚠️ BrowserStack Local binary not found at: $bsLocalPath" $GLOBAL_LOG
+      Log-Line "⚠️ Tests may hang if BrowserStack Local is required but missing." $GLOBAL_LOG
+    }
+    
     Print-TestsRunningSection -Command "browserstack-sdk pytest -s tests/bstack-sample-test.py"
     
     $testTimeout = 300
     Log-Line "ℹ️ Starting test execution with timeout of $testTimeout seconds..." $GLOBAL_LOG
+    Log-Line "ℹ️ Working directory: $TARGET" $GLOBAL_LOG
+    Log-Line "ℹ️ Log file: $LogFile" $GLOBAL_LOG
+    
+    # Log environment variables that might affect execution
+    Log-Line "ℹ️ Environment check - BROWSERSTACK_USERNAME: $($env:BROWSERSTACK_USERNAME -ne $null)" $GLOBAL_LOG
+    Log-Line "ℹ️ Environment check - BROWSERSTACK_ACCESS_KEY: $($env:BROWSERSTACK_ACCESS_KEY -ne $null)" $GLOBAL_LOG
+    Log-Line "ℹ️ Environment check - BROWSERSTACK_LOCAL: $($env:BROWSERSTACK_LOCAL)" $GLOBAL_LOG
+    
     try {
+      $startTime = Get-Date
+      Log-Line "ℹ️ Invoking external command at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')..." $GLOBAL_LOG
+      
       $exitCode = Invoke-External -Exe $sdk -Arguments @('pytest','-s','tests/bstack-sample-test.py') -LogFile $LogFile -WorkingDirectory $TARGET -TimeoutSeconds $testTimeout
-      Log-Line "ℹ️ Run Test command completed with exit code: $exitCode" $GLOBAL_LOG
+      
+      $endTime = Get-Date
+      $duration = ($endTime - $startTime).TotalSeconds
+      Log-Line "ℹ️ Run Test command completed with exit code: $exitCode (Duration: $([math]::Round($duration, 2))s)" $GLOBAL_LOG
     } catch {
       $errorMsg = $_.Exception.Message
-      Log-Line "❌ Test execution failed: $errorMsg" $GLOBAL_LOG
+      $endTime = Get-Date
+      $duration = ($endTime - $startTime).TotalSeconds
+      Log-Line "❌ Test execution failed after $([math]::Round($duration, 2))s: $errorMsg" $GLOBAL_LOG
+      
+      # Check if process is still running (might indicate hang)
+      try {
+        $runningProcesses = Get-Process -Name "browserstack-sdk" -ErrorAction SilentlyContinue
+        if ($runningProcesses) {
+          Log-Line "⚠️ Warning: browserstack-sdk processes still running: $($runningProcesses.Id -join ', ')" $GLOBAL_LOG
+        }
+        
+        # Check for BrowserStack Local processes
+        $bsLocalProcesses = Get-Process -Name "BrowserStackLocal" -ErrorAction SilentlyContinue
+        if ($bsLocalProcesses) {
+          Log-Line "ℹ️ BrowserStack Local processes running: $($bsLocalProcesses.Id -join ', ')" $GLOBAL_LOG
+        }
+      } catch {
+        # Ignore process check errors
+      }
+      
       if ($errorMsg -match "timed out") {
         Log-Line "⚠️ Test execution timed out after $testTimeout seconds. Check BrowserStack dashboard for test status." $GLOBAL_LOG
         Log-Line "⚠️ This may indicate tests are still running on BrowserStack but the local process timed out." $GLOBAL_LOG
+        Log-Line "⚠️ Check the log file for any output from browserstack-sdk: $LogFile" $GLOBAL_LOG
       }
       throw
     }
