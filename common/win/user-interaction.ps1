@@ -175,12 +175,12 @@ function Ask-BrowserStack-Credentials {
 
   $script:BROWSERSTACK_USERNAME = Show-InputBox -Title "BrowserStack Setup" -Prompt "Enter your BrowserStack Username:`n`nLocate it on https://www.browserstack.com/accounts/profile/details" -DefaultText ""
   if ([string]::IsNullOrWhiteSpace($script:BROWSERSTACK_USERNAME)) {
-    Log-Line "❌ Username empty" $global:NOW_RUN_LOG_FILE
+    Log-Error "Username empty" $global:NOW_RUN_LOG_FILE
     throw "Username is required"
   }
   $script:BROWSERSTACK_ACCESS_KEY = Show-PasswordBox -Title "BrowserStack Setup" -Prompt "Enter your BrowserStack Access Key:`n`nLocate it on https://www.browserstack.com/accounts/profile/details"
   if ([string]::IsNullOrWhiteSpace($script:BROWSERSTACK_ACCESS_KEY)) {
-    Log-Line "❌ Access Key empty" $global:NOW_RUN_LOG_FILE
+    Log-Error "❌ Access Key empty" $global:NOW_RUN_LOG_FILE
     throw "Access Key is required"
   }
   
@@ -255,16 +255,16 @@ function Ask-User-TestUrl {
   
   if (-not [string]::IsNullOrWhiteSpace($CliValue)) {
       $script:CX_TEST_URL = $CliValue
-      Log-Line "🌐 Using custom test URL from CLI: $CliValue" $global:NOW_RUN_LOG_FILE
+      Log-Line "Using custom test URL from CLI: $CliValue" $global:NOW_RUN_LOG_FILE
       return
   }
 
   $testUrl = Show-InputBox -Title "Test URL Setup" -Prompt "Enter the URL you want to test with BrowserStack:`n(Leave blank for default: $script:DEFAULT_TEST_URL)" -DefaultText ""
   if ([string]::IsNullOrWhiteSpace($testUrl)) {
     $testUrl = $script:DEFAULT_TEST_URL
-    Log-Line "⚠️ No URL entered. Falling back to default: $testUrl" $global:NOW_RUN_LOG_FILE
+    Log-Line "No URL entered. Falling back to default: $testUrl" $global:NOW_RUN_LOG_FILE
   } else {
-    Log-Line "🌐 Using custom test URL: $testUrl" $global:NOW_RUN_LOG_FILE
+    Log-Line "Using custom test URL: $testUrl" $global:NOW_RUN_LOG_FILE
   }
   $script:CX_TEST_URL = $testUrl
 }
@@ -292,7 +292,7 @@ function Ask-And-Upload-App {
       return
     }
     $result = Invoke-SampleAppUpload
-    Log-Line "⚠️ Using auto-uploaded sample app: $($result.Url)" $global:NOW_RUN_LOG_FILE
+    Log-Line "Using auto-uploaded sample app: $($result.Url)" $global:NOW_RUN_LOG_FILE
     $script:BROWSERSTACK_APP = $result.Url
     $script:APP_PLATFORM = $result.Platform
     return
@@ -308,7 +308,7 @@ function Ask-And-Upload-App {
   $choice = Show-OpenOrSampleAppDialog
   if ([string]::IsNullOrWhiteSpace($choice) -or $choice -eq "Sample App") {
     $result = Invoke-SampleAppUpload
-    Log-Line "⚠️ Using sample app: $($result.Url)" $global:NOW_RUN_LOG_FILE
+    Log-Line "Using sample app: $($result.Url)" $global:NOW_RUN_LOG_FILE
     $script:BROWSERSTACK_APP = $result.Url
     $script:APP_PLATFORM = $result.Platform
     return
@@ -326,7 +326,7 @@ function Ask-And-Upload-App {
   $result = Invoke-CustomAppUpload -FilePath $path
   $script:BROWSERSTACK_APP = $result.Url
   $script:APP_PLATFORM = $result.Platform
-  Log-Line "✅ App uploaded successfully: $($result.Url)" $global:NOW_RUN_LOG_FILE
+  Log-Line "App uploaded successfully: $($result.Url)" $global:NOW_RUN_LOG_FILE
 }
 
 function Perform-NextSteps-BasedOnTestType {

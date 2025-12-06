@@ -43,7 +43,7 @@ function Set-ProxyInEnv {
     try {
         $resp = Invoke-WebRequest -Uri $PROXY_TEST_URL -Proxy $proxy -Headers @{ Authorization = "Basic $auth" } -Method Head -ErrorAction Stop
         $statusCode = $resp.StatusCode
-        Log-Line "✅ Reachable. HTTP $statusCode" $global:NOW_RUN_LOG_FILE
+        Log-Line "Endpoint reachable. HTTP $statusCode" $global:NOW_RUN_LOG_FILE
         Log-Line "Exporting PROXY_HOST=$script:PROXY_HOST" $global:NOW_RUN_LOG_FILE
         Log-Line "Exporting PROXY_PORT=$script:PROXY_PORT" $global:NOW_RUN_LOG_FILE
         
@@ -51,8 +51,8 @@ function Set-ProxyInEnv {
         $env:PROXY_PORT = $script:PROXY_PORT
         Log-Success "Connected to BrowserStack from proxy: $script:PROXY_HOST:$script:PROXY_PORT"
     } catch {
-        Log-Warn "⚠️ Could not connect to BrowserStack using proxy. Using direct connection."
-        Log-Line "❌ Not reachable ($($_.Exception.Message)). Clearing variables." $global:NOW_RUN_LOG_FILE
+        Log-Error "Could not connect to BrowserStack using proxy. Using direct connection."
+        Log-Warn "Not reachable ($($_.Exception.Message)). Clearing variables." $global:NOW_RUN_LOG_FILE
         $script:PROXY_HOST = ""
         $script:PROXY_PORT = ""
         $env:PROXY_HOST = ""
@@ -105,17 +105,17 @@ function Check-Python-Installation {
 function Check-NodeJS-Installation {
     Log-Line "🔍 Checking if 'node' command exists..." $global:NOW_RUN_LOG_FILE
     if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-        Log-Line "❌ Node.js command not found in PATH." $global:NOW_RUN_LOG_FILE
+        Log-Warn "Node.js command not found in PATH." $global:NOW_RUN_LOG_FILE
         return $false
     }
 
-    Log-Line "🔍 Checking if 'npm' command exists..." $global:NOW_RUN_LOG_FILE
+    Log-Line "Checking if 'npm' command exists..." $global:NOW_RUN_LOG_FILE
     if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
-        Log-Line "❌ npm command not found in PATH." $global:NOW_RUN_LOG_FILE
+        Log-Warn "npm command not found in PATH." $global:NOW_RUN_LOG_FILE
         return $false
     }
 
-    Log-Line "🔍 Checking if Node.js runs correctly..." $global:NOW_RUN_LOG_FILE
+    Log-Line "Checking if Node.js runs correctly..." $global:NOW_RUN_LOG_FILE
     try {
         $nodeVer = node -v 2>&1 | Out-String
         $npmVer = npm -v 2>&1 | Out-String
@@ -123,7 +123,7 @@ function Check-NodeJS-Installation {
         Log-Success "npm installed: $npmVer"
         return $true
     } catch {
-        Log-Line "❌ Node.js/npm exists but failed to run." $global:NOW_RUN_LOG_FILE
+        Log-Warn "Node.js/npm exists but failed to run." $global:NOW_RUN_LOG_FILE
         return $false
     }
 }
@@ -131,7 +131,7 @@ function Check-NodeJS-Installation {
 function Validate-Tech-Stack {
     param([string]$TechStack)
     
-    Log-Section "🧩 System Prerequisites Check"
+    Log-Section "System Prerequisites Check"
     Log-Info "Checking prerequisites for $TechStack"
 
     $valid = $false
@@ -146,7 +146,7 @@ function Validate-Tech-Stack {
     }
 
     if ($valid) {
-        Log-Line "✅ Prerequisites validated for $TechStack" $global:NOW_RUN_LOG_FILE
+        Log-Line "Prerequisites validated for $TechStack" $global:NOW_RUN_LOG_FILE
         return $true
     } else {
         return $false

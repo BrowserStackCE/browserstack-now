@@ -316,9 +316,9 @@ function Fetch-Plan-Details {
         $resp = Invoke-RestMethod -Method Get -Uri "https://api.browserstack.com/automate/plan.json" -Headers $headers
         $script:WEB_PLAN_FETCHED = $true
         $script:TEAM_PARALLELS_MAX_ALLOWED_WEB = [int]$resp.parallel_sessions_max_allowed
-        Log-Line "✅ Web Testing Plan fetched: Team max parallel sessions = $script:TEAM_PARALLELS_MAX_ALLOWED_WEB" $global:NOW_RUN_LOG_FILE
+        Log-Line "Web Testing Plan fetched: Team max parallel sessions = $script:TEAM_PARALLELS_MAX_ALLOWED_WEB" $global:NOW_RUN_LOG_FILE
       } catch {
-        Log-Line "❌ Web Testing Plan fetch failed ($($_.Exception.Message))" $global:NOW_RUN_LOG_FILE
+        Log-Line "Web Testing Plan fetch failed ($($_.Exception.Message))" $global:NOW_RUN_LOG_FILE
       }
       if (-not $script:WEB_PLAN_FETCHED) {
         throw "Unable to fetch Web Testing plan details."
@@ -329,9 +329,9 @@ function Fetch-Plan-Details {
         $resp2 = Invoke-RestMethod -Method Get -Uri "https://api-cloud.browserstack.com/app-automate/plan.json" -Headers $headers
         $script:MOBILE_PLAN_FETCHED = $true
         $script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE = [int]$resp2.parallel_sessions_max_allowed
-        Log-Line "✅ Mobile App Testing Plan fetched: Team max parallel sessions = $script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE" $global:NOW_RUN_LOG_FILE
+        Log-Line "Mobile App Testing Plan fetched: Team max parallel sessions = $script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE" $global:NOW_RUN_LOG_FILE
       } catch {
-        Log-Line "❌ Mobile App Testing Plan fetch failed ($($_.Exception.Message))" $global:NOW_RUN_LOG_FILE
+        Log-Line "Mobile App Testing Plan fetch failed ($($_.Exception.Message))" $global:NOW_RUN_LOG_FILE
       }
       if (-not $script:MOBILE_PLAN_FETCHED) {
         throw "Unable to fetch Mobile App Testing plan details."
@@ -347,7 +347,7 @@ function Fetch-Plan-Details {
         $script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE = 5
         Log-Line "Silent mode: Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)" $global:NOW_RUN_LOG_FILE
     } else {
-    Log-Line "ℹ️ Plan summary: Web fetched=$script:WEB_PLAN_FETCHED (team max=$script:TEAM_PARALLELS_MAX_ALLOWED_WEB), Mobile fetched=$script:MOBILE_PLAN_FETCHED (team max=$script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" $global:NOW_RUN_LOG_FILE
+    Log-Line "Plan summary: Web fetched=$script:WEB_PLAN_FETCHED (team max=$script:TEAM_PARALLELS_MAX_ALLOWED_WEB), Mobile fetched=$script:MOBILE_PLAN_FETCHED (team max=$script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" $global:NOW_RUN_LOG_FILE
   }
 
 }
@@ -366,13 +366,13 @@ function Invoke-SampleAppUpload {
       if ([string]::IsNullOrWhiteSpace($url)) {
         throw "Sample app upload failed (empty URL)"
       }
-      Log-Line "✅ App uploaded successfully: $url" $global:NOW_RUN_LOG_FILE
+      Log-Success "App uploaded successfully: $url" $global:NOW_RUN_LOG_FILE
       return @{
         Url = $url
         Platform = "android"
       }
   } catch {
-      Log-Line "❌ Upload failed: $($_.Exception.Message)" $global:NOW_RUN_LOG_FILE
+      Log-Error "Upload failed: $($_.Exception.Message)" $global:NOW_RUN_LOG_FILE
       throw
   }
 }
@@ -389,7 +389,7 @@ function Invoke-CustomAppUpload {
     default { throw "Unsupported app file (only .apk/.ipa)" }
   }
 
-  Log-Line "⬆️ Uploading app to BrowserStack..." $global:NOW_RUN_LOG_FILE
+  Log-Line "Uploading app to BrowserStack..." $global:NOW_RUN_LOG_FILE
   
   $boundary = [System.Guid]::NewGuid().ToString()
   $LF = "`r`n"
@@ -421,7 +421,7 @@ function Invoke-CustomAppUpload {
         Platform = $platform
       }
   } catch {
-      Log-Line "❌ Upload failed: $($_.Exception.Message)" $global:NOW_RUN_LOG_FILE
+      Log-Error "Upload failed: $($_.Exception.Message)" $global:NOW_RUN_LOG_FILE
       throw
   }
 }
@@ -431,7 +431,7 @@ function Identify-Run-Status-Java {
     
     $content = Get-Content -Path $LogFile -Raw -ErrorAction SilentlyContinue
     if (-not $content) {
-        Log-Warn "❌ No test summary line found."
+        Log-Warn "No test summary line found."
         return $false
     }
 
@@ -452,7 +452,7 @@ function Identify-Run-Status-Java {
         }
     }
     
-    Log-Warn "❌ No test summary line found."
+    Log-Warn "No test summary line found."
     return $false
 }
 
@@ -472,7 +472,7 @@ function Identify-Run-Status-Python {
         $passedSum += [int]$m.Groups[1].Value
     }
     
-    Write-Host "✅ Total Passed:  $passedSum" -ForegroundColor Green
+    Write-Host "Total Passed:  $passedSum" -ForegroundColor Green
     
     if ($passedSum -gt 0) {
         Log-Success "Success: $passedSum test(s) completed"
@@ -488,7 +488,7 @@ function Identify-Run-Status-NodeJS {
     
     $content = Get-Content -Path $LogFile -Raw -ErrorAction SilentlyContinue
     if (-not $content) {
-        Log-Warn "❌ No test summary line found."
+        Log-Warn "No test summary line found."
         return $false
     }
     

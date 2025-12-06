@@ -16,22 +16,22 @@ function Log-Section {
 
 function Log-Info {
     param([string]$Message)
-    Write-Host "ℹ️  $Message" -ForegroundColor Gray
+    Write-Host "$Message" -ForegroundColor Gray
 }
 
 function Log-Success {
     param([string]$Message)
-    Write-Host "✅  $Message" -ForegroundColor Green
+    Write-Host "$Message" -ForegroundColor Green
 }
 
 function Log-Warn {
     param([string]$Message)
-    Write-Host "⚠️  $Message" -ForegroundColor Yellow
+    Write-Host "$Message" -ForegroundColor Yellow
 }
 
 function Log-Error {
     param([string]$Message)
-    Write-Host "❌  $Message" -ForegroundColor Red
+    Write-Host "$Message" -ForegroundColor Red
 }
 
 function Log-Line {
@@ -40,7 +40,7 @@ function Log-Line {
         [string]$LogFile
     )
     #$ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    $line = "$Message"
+    $line = $Message
     
     # Print to console if debug mode (or always, depending on usage in bash)
     # Bash version: prints to console if RUN_MODE contains --debug

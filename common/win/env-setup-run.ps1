@@ -57,7 +57,7 @@ function Setup-Environment {
         "app_nodejs" { $result = Setup-App-NodeJS -TargetDir $targetDir -Parallels $totalParallels }
     }
 
-    Log-Section "✅ Results"
+    Log-Section "Results"
 
     Log-Info "${SetupType} setup completed with exit code: $result"
     
