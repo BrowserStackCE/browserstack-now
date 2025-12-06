@@ -21,6 +21,7 @@ $script:PSScriptRootResolved = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $PSScriptRootResolved "user-interaction.ps1")
 . (Join-Path $PSScriptRootResolved "env-prequisite-checks.ps1")
 . (Join-Path $PSScriptRootResolved "env-setup-run.ps1")
+. (Join-Path $PSScriptRootResolved "device-machine-allocation.ps1")
 
 
 # ===== Main flow (baseline steps then run) =====
@@ -78,7 +79,6 @@ try {
 
   # NOW handle URL/App upload (requires credentials)
   Perform-NextSteps-BasedOnTestType -TestType $TEST_TYPE -RunMode $RunMode -TestUrl $TestUrl -AppPath $AppPath -AppPlatform $AppPlatform
-
 
 
   Log-Line "Checking proxy in environment" $global:NOW_RUN_LOG_FILE
