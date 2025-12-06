@@ -50,13 +50,16 @@ try {
 
   # Setup log file path AFTER selections
   $logFileName = "{0}_{1}_run_result.log" -f $TEST_TYPE.ToLowerInvariant(), $TECH_STACK.ToLowerInvariant()
+  $errLogFileName = "{0}_{1}_run_result.err" -f $TEST_TYPE.ToLowerInvariant(), $TECH_STACK.ToLowerInvariant()
   $logFile = Join-Path $LOG_DIR $logFileName
+  $errLogFile = Join-Path $env:TEMP $errLogFileName
   if (!(Test-Path $LOG_DIR)) {
     New-Item -ItemType Directory -Path $LOG_DIR -Force | Out-Null
   }
   '' | Out-File -FilePath $logFile -Encoding UTF8
   Set-RunLogFile $logFile
   $script:GLOBAL_LOG = $logFile
+  $script:ERR_LOG = $errLogFile
   $script:WEB_LOG = $logFile
   $script:MOBILE_LOG = $logFile
   Log-Line "ℹ️ Log file path: $logFile" $GLOBAL_LOG
