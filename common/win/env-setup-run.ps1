@@ -109,7 +109,7 @@ function Setup-Web-Java {
     Print-Env-Variables
     
     Log-Section "BrowserStack SDK Test Run Execution"
-    $p = Start-Process -FilePath $mvn -ArgumentList "test","-P","sample-test" -RedirectStandardOutput $global:NOW_RUN_LOG_FILE -RedirectStandardError $global:NOW_RUN_LOG_FILE -PassThru -NoNewWindow
+    $p = Start-Process -FilePath $mvn -ArgumentList "test","-P","sample-test" -RedirectStandardOutput $global:NOW_RUN_LOG_FILE -RedirectStandardError "$global:NOW_RUN_LOG_FILE-err" -PassThru -NoNewWindow
     Show-Spinner -Process $p
     $p.WaitForExit()
     return ($p.ExitCode -eq 0)
