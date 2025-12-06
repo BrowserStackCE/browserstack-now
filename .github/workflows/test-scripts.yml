@@ -294,56 +294,35 @@ jobs:
           )
 
           $overallFailed = $false
+
           $logRoot = Join-Path $env:TEMP "now-tests"
           New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
-          $logPath = Join-Path $logRoot "run_test_app_nodejs.log"
 
-          Write-Host "================================"
-          Write-Host "Testing: $scriptPath --silent app nodejs"
-          Write-Host "================================"
+          foreach ($config in $testConfigs) {
+            $testType  = $config[0]
+            $techStack = $config[1]
 
-          & $scriptPath --silent app nodejs 2>&1 | Tee-Object -FilePath $logPath -Append
-          $exitCode = $LASTEXITCODE
+            Write-Host "================================"
+            Write-Host "Testing: $scriptPath --silent $testType $techStack"
+            Write-Host "================================"
 
-          if ($exitCode -eq 0) {
-            Write-Host "✅ app / nodejs completed (exit code: $exitCode)"
-          } else {
-            Write-Host "⚠️ app / nodejs exited with code: $exitCode"
-            if (Test-Path $logPath) {
-              Write-Host "Log output (last 20 lines):"
-              Get-Content -Path $logPath -Tail 20
+            $logPath = Join-Path $logRoot "run_test_${testType}_${techStack}.log"
+
+            & $scriptPath --silent $testType $techStack 2>&1 | Tee-Object -FilePath $logPath -Append
+            $exitCode = $LASTEXITCODE
+
+            if ($exitCode -eq 0) {
+              Write-Host "✅ $testType / $techStack completed (exit code: $exitCode)"
+            } else {
+              Write-Host "⚠️ $testType / $techStack exited with code: $exitCode"
+              $overallFailed = $true
+
+              if (Test-Path $logPath) {
+                Write-Host "Log output (last 20 lines):"
+                Get-Content -Path $logPath -Tail 20
+              }
             }
-            exit 1
           }
-
-          # $logRoot = Join-Path $env:TEMP "now-tests"
-          # New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
-
-          # foreach ($config in $testConfigs) {
-          #   $testType  = $config[0]
-          #   $techStack = $config[1]
-
-          #   Write-Host "================================"
-          #   Write-Host "Testing: $scriptPath --silent $testType $techStack"
-          #   Write-Host "================================"
-
-          #   $logPath = Join-Path $logRoot "run_test_${testType}_${techStack}.log"
-
-          #   & $scriptPath --silent $testType $techStack 2>&1 | Tee-Object -FilePath $logPath -Append
-          #   $exitCode = $LASTEXITCODE
-
-          #   if ($exitCode -eq 0) {
-          #     Write-Host "✅ $testType / $techStack completed (exit code: $exitCode)"
-          #   } else {
-          #     Write-Host "⚠️ $testType / $techStack exited with code: $exitCode"
-          #     $overallFailed = $true
-
-          #     if (Test-Path $logPath) {
-          #       Write-Host "Log output (last 20 lines):"
-          #       Get-Content -Path $logPath -Tail 20
-          #     }
-          #   }
-          # }
 
           if ($overallFailed) {
             Write-Error "One or more configurations failed."
