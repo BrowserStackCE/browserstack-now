@@ -107,9 +107,9 @@ catch {
   Log-Line "Check logs for details:" $global:NOW_RUN_LOG_FILE
   Log-Line ("  Run Log: {0}" -f $global:NOW_RUN_LOG_FILE) $global:NOW_RUN_LOG_FILE
   Log-Line "========================================" $global:NOW_RUN_LOG_FILE
-  Set-Location -Path $CurrentDir
+  Set-Location -Path $script:CurrentDir
   exit 1
 } finally {
-  Set-Location -Path $CurrentDir
+  Set-Location -Path $script:CurrentDir
 }
 
