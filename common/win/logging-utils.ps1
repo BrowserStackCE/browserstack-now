@@ -39,8 +39,8 @@ function Log-Line {
         [string]$Message,
         [string]$LogFile
     )
-    $ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    $line = "[$ts] $Message"
+    #$ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+    $line = "$Message"
     
     # Print to console if debug mode (or always, depending on usage in bash)
     # Bash version: prints to console if RUN_MODE contains --debug
