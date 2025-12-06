@@ -265,11 +265,11 @@ function Detect-Setup-Python-Env {
 
 function Print-Env-Variables {
     Log-Section "Validate Environment Variables and Platforms"
-    Log-Info "BrowserStack Username: $BROWSERSTACK_USERNAME"
-    Log-Info "BrowserStack Project Name: $BROWSERSTACK_PROJECT_NAME"
-    Log-Info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
-    if ($TEST_TYPE -eq "app") { Log-Info "Native App Endpoint: $BROWSERSTACK_APP" }
-    Log-Info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
-    Log-Info "Parallels per platform: $BSTACK_PARALLELS"
-    Log-Info "Platforms: $BSTACK_PLATFORMS"
+    Log-Info "BrowserStack Username: $env:BROWSERSTACK_USERNAME"
+    Log-Info "BrowserStack Project Name: $env:BROWSERSTACK_PROJECT_NAME"
+    Log-Info "BrowserStack Build: $env:BROWSERSTACK_BUILD_NAME"
+    if ($TEST_TYPE -eq "app") { Log-Info "Native App Endpoint: $env:BROWSERSTACK_APP" }
+    Log-Info "BrowserStack Local Flag: $env:BROWSERSTACK_LOCAL"
+    Log-Info "Parallels per platform: $env:BSTACK_PARALLELS"
+    Log-Info "Platforms: $env:BSTACK_PLATFORMS"
 }

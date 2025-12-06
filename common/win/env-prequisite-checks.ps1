@@ -70,7 +70,8 @@ function Check-Java-Installation {
     Log-Line "Checking if Java runs correctly..." $global:NOW_RUN_LOG_FILE
     try {
         $output = & cmd /c 'java -version 2>&1' | Out-String
-        Log-Success "Java installed and functional. \n$output"
+        Log-Success "Java installed and functional"
+        Log-Success "$output"
         return $true
     } catch {
         Log-Error "Java exists but failed to run." $global:NOW_RUN_LOG_FILE
