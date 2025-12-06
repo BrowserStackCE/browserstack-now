@@ -80,7 +80,7 @@ function Invoke-GitClone {
     if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ }
   }) -join ' '
   $psi.RedirectStandardOutput = $true
-  $psi.RedirectStandardError  = $true
+  $psi.RedirectStandardError  = $false
   $psi.UseShellExecute = $false
   $psi.CreateNoWindow   = $true
   $psi.WorkingDirectory = (Get-Location).Path
@@ -124,7 +124,7 @@ function Invoke-External {
   }
 
   $psi.RedirectStandardOutput = $true
-  $psi.RedirectStandardError  = $true
+  $psi.RedirectStandardError  = $false
   $psi.UseShellExecute = $false
   $psi.CreateNoWindow   = $true
   if ([string]::IsNullOrWhiteSpace($WorkingDirectory)) {
