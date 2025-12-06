@@ -61,13 +61,13 @@ function Set-ProxyInEnv {
 }
 
 function Check-Java-Installation {
-    Log-Line "🔍 Checking if 'java' command exists..." $global:NOW_RUN_LOG_FILE
+    Log-Line "Checking if 'java' command exists..." $global:NOW_RUN_LOG_FILE
     if (-not (Get-Command java -ErrorAction SilentlyContinue)) {
         Log-Error "Java command not found in PATH." $global:NOW_RUN_LOG_FILE
         return $false
     }
 
-    Log-Line "🔍 Checking if Java runs correctly..." $global:NOW_RUN_LOG_FILE
+    Log-Line "Checking if Java runs correctly..." $global:NOW_RUN_LOG_FILE
     try {
         $output = java -version 2>&1 | Out-String
         Log-Success "Java installed and functional`n$output"
@@ -103,15 +103,15 @@ function Check-Python-Installation {
 }
 
 function Check-NodeJS-Installation {
-    Log-Line "🔍 Checking if 'node' command exists..." $global:NOW_RUN_LOG_FILE
+    Log-Line "Checking if 'node' command exists..." $global:NOW_RUN_LOG_FILE
     if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-        Log-Warn "Node.js command not found in PATH." $global:NOW_RUN_LOG_FILE
+        Log-Error "Node.js command not found in PATH." $global:NOW_RUN_LOG_FILE
         return $false
     }
 
     Log-Line "Checking if 'npm' command exists..." $global:NOW_RUN_LOG_FILE
     if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
-        Log-Warn "npm command not found in PATH." $global:NOW_RUN_LOG_FILE
+        Log-Error "npm command not found in PATH." $global:NOW_RUN_LOG_FILE
         return $false
     }
 
@@ -123,7 +123,7 @@ function Check-NodeJS-Installation {
         Log-Success "npm installed: $npmVer"
         return $true
     } catch {
-        Log-Warn "Node.js/npm exists but failed to run." $global:NOW_RUN_LOG_FILE
+        Log-Error "Node.js/npm exists but failed to run." $global:NOW_RUN_LOG_FILE
         return $false
     }
 }
