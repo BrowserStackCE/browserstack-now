@@ -200,7 +200,7 @@ jobs:
       - name: Check PowerShell version
         run: |
           $PSVersionTable.PSVersion
-          Write-Host "✅ PowerShell version check complete"
+          Write-Host "PowerShell version check complete"
 
       - name: Validate PowerShell script syntax
         run: |
@@ -209,7 +209,7 @@ jobs:
           $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content -Raw $ScriptPath), [ref]$null)
           $CommonScriptPath = "common/win/run.ps1"
           $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content -Raw $CommonScriptPath), [ref]$null)
-          Write-Host "✅ win/run.ps1 syntax is valid"
+          Write-Host "win/run.ps1 syntax is valid"
 
       - name: Validate supporting PowerShell scripts syntax
         run: |
@@ -224,7 +224,7 @@ jobs:
           )
           foreach ($Script in $Scripts) {
             $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content -Raw $Script), [ref]$null)
-            Write-Host "✅ $Script syntax is valid"
+            Write-Host "$Script syntax is valid"
           }
 
       - name: Run PSScriptAnalyzer
@@ -236,7 +236,7 @@ jobs:
 
           Write-Host "Running PSScriptAnalyzer..."
           Invoke-ScriptAnalyzer -Path "win" -Recurse -ReportSummary -ErrorAction Continue
-          Write-Host "✅ PSScriptAnalyzer analysis complete (continuing even if issues are found)"
+          Write-Host "PSScriptAnalyzer analysis complete (continuing even if issues are found)"
 
       - name: Check script file encoding
         run: |
@@ -254,14 +254,14 @@ jobs:
           }
 
           Write-Host "Detected encoding (heuristic): $encoding"
-          Write-Host "✅ Encoding check complete"
+          Write-Host "Encoding check complete"
 
       - name: Verify required dependencies
         run: |
           Write-Host "Checking required dependencies..."
-          if (Get-Command curl.exe -ErrorAction SilentlyContinue) { Write-Host "✅ curl found" } else { Write-Host "⚠️ curl not found" }
-          if (Get-Command git.exe -ErrorAction SilentlyContinue) { Write-Host "✅ git found" } else { Write-Host "⚠️ git not found" }
-          Write-Host "✅ PowerShell dependencies verified"
+          if (Get-Command curl.exe -ErrorAction SilentlyContinue) { Write-Host "curl found" } else { Write-Host "⚠️ curl not found" }
+          if (Get-Command git.exe -ErrorAction SilentlyContinue) { Write-Host "git found" } else { Write-Host "⚠️ git not found" }
+          Write-Host "PowerShell dependencies verified"
 
       - name: Integration Test - Silent Mode Execution
         if: success()
@@ -283,6 +283,28 @@ jobs:
 
           # Absolute path is safer in CI
           $scriptPath = Join-Path $env:GITHUB_WORKSPACE "win\run.ps1"
+
+          $logRoot = Join-Path $env:TEMP "now-tests"
+          New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
+          $logPath = Join-Path $logRoot "run_test_web_python.log"
+
+          Write-Host "================================"
+          Write-Host "Testing: $scriptPath --silent web python"
+          Write-Host "================================"
+
+          & $scriptPath --silent web python 2>&1 | Tee-Object -FilePath $logPath -Append
+          $exitCode = $LASTEXITCODE
+
+          if ($exitCode -eq 0) {
+            Write-Host "web / python completed (exit code: $exitCode)"
+          } else {
+            Write-Host "web / python exited with code: $exitCode"
+            if (Test-Path $logPath) {
+              Write-Host "Log output (last 20 lines):"
+              Get-Content -Path $logPath -Tail 20
+            }
+            exit 1
+          }
 
           $testConfigs = @(
             @("web",  "python"),
@@ -314,7 +336,7 @@ jobs:
             $exited = $p.WaitForExit(600000)
 
             if (-not $exited) {
-              Write-Host "⚠️ $testType / $techStack timed out after 600 seconds"
+              Write-Host "$testType / $techStack timed out after 600 seconds"
               $p.Kill()
               $exitCode = 124
             } else {
@@ -322,9 +344,9 @@ jobs:
             }
 
             if ($exitCode -eq 0) {
-              Write-Host "✅ $testType / $techStack completed (exit code: $exitCode)"
+              Write-Host "$testType / $techStack completed (exit code: $exitCode)"
             } else {
-              Write-Host "⚠️ $testType / $techStack exited with code: $exitCode"
+              Write-Host "$testType / $techStack exited with code: $exitCode"
               $overallFailed = $true
 
               if (Test-Path $logPath) {
@@ -344,7 +366,7 @@ jobs:
             exit 1
           }
 
-          Write-Host "✅ All integration tests completed successfully"
+          Write-Host "All integration tests completed successfully"
 
       - name: Sync BrowserStack logs to workspace (Windows)
         if: always()
@@ -399,7 +421,7 @@ jobs:
           echo "Validating mac/run.sh syntax..."
           bash -n mac/run.sh
           bash -n common/mac/run.sh
-          echo "✅ mac/run.sh syntax is valid"
+          echo "mac/run.sh syntax is valid"
 
       - name: Validate supporting scripts syntax
         run: |
@@ -409,7 +431,7 @@ jobs:
           bash -n common/mac/env-setup-run.sh
           bash -n common/mac/user-interaction.sh
           bash -n common/mac/env-prequisite-checks.sh
-          echo "✅ All supporting scripts are valid"
+          echo "All supporting scripts are valid"
 
       - name: Check if scripts are executable
         run: |
@@ -419,7 +441,7 @@ jobs:
           chmod +x common/mac/env-setup-run.sh
           chmod +x common/mac/user-interaction.sh
           chmod +x common/mac/env-prequisite-checks.sh
-          echo "✅ All scripts are executable"
+          echo "All scripts are executable"
 
       - name: Install ShellCheck
         run: |
@@ -438,23 +460,23 @@ jobs:
           shellcheck -x common/mac/env-setup-run.sh || true
           shellcheck -x common/mac/user-interaction.sh || true
           shellcheck -x common/mac/env-prequisite-checks.sh || true
-          echo "✅ ShellCheck analysis complete"
+          echo "ShellCheck analysis complete"
 
       - name: Verify required dependencies
         run: |
           echo "Checking required dependencies..."
-          command -v bash && echo "✅ bash found"
-          command -v curl && echo "✅ curl found"
-          command -v git && echo "✅ git found"
-          command -v bc && echo "✅ bc found"
+          command -v bash && echo "bash found"
+          command -v curl && echo "curl found"
+          command -v git && echo "git found"
+          command -v bc && echo "bc found"
           echo "All required dependencies are available"
 
       - name: Test script sourcing (dry run)
         run: |
           set -e
           echo "Testing script sourcing..."
-          bash -c "source common/mac/common-utils.sh && echo '✅ common-utils.sh sourced successfully'"
-          echo "✅ Script sourcing successful"
+          bash -c "source common/mac/common-utils.sh && echo 'common-utils.sh sourced successfully'"
+          echo "Script sourcing successful"
 
       - name: Integration Test - Silent Mode Execution
         if: success()
