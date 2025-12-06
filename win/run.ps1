@@ -1,5 +1,4 @@
-﻿#requires -version 5.0
-param(
+﻿param(
   [string]$RunMode = "--interactive",
   [string]$TT,
   [string]$TSTACK,
