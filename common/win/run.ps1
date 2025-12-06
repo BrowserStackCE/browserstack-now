@@ -94,8 +94,6 @@ try {
   Log-Line "Detected Operating system: Windows" $global:NOW_RUN_LOG_FILE
   Log-Line "Clearing old logs from NOW Home Directory inside .browserstack" $global:NOW_RUN_LOG_FILE
   Clear-OldLogs
-
-  Log-Line "Starting $TEST_TYPE setup for $TECH_STACK" $global:NOW_RUN_LOG_FILE
   
   # Run the setup
   Setup-Environment -SetupType $TEST_TYPE.ToLower() -TechStack $TECH_STACK.ToLower()
