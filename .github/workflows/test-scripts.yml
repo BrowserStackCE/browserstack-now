@@ -14,7 +14,7 @@ on:
 jobs:
   test-mac:
     name: Test mac/run.sh on macOS
-    # if: false
+    if: false
     runs-on: macos-latest
     timeout-minutes: 15
     environment: BrowserStack

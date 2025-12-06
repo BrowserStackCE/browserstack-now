@@ -63,10 +63,10 @@ try {
 
   # Setup Summary Header
   Log-Section "🧭 Setup Summary – BrowserStack NOW"
-  Log-Line "ℹ️ Timestamp: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))" $global:NOW_RUN_LOG_FILE
-  Log-Line "ℹ️ Run Mode: $RunMode" $global:NOW_RUN_LOG_FILE
-  Log-Line "ℹ️ Selected Testing Type: $TEST_TYPE" $global:NOW_RUN_LOG_FILE
-  Log-Line "ℹ️ Selected Tech Stack: $TECH_STACK" $global:NOW_RUN_LOG_FILE
+  Log-Line "Timestamp: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))" $global:NOW_RUN_LOG_FILE
+  Log-Line "Run Mode: $RunMode" $global:NOW_RUN_LOG_FILE
+  Log-Line "Selected Testing Type: $TEST_TYPE" $global:NOW_RUN_LOG_FILE
+  Log-Line "Selected Tech Stack: $TECH_STACK" $global:NOW_RUN_LOG_FILE
 
   # Setup workspace and get credentials BEFORE app upload
   Setup-Workspace
@@ -80,8 +80,8 @@ try {
 
   # Platform & Tech Stack section
   Log-Section "⚙️ Platform & Tech Stack"
-  Log-Line "ℹ️ Platform: $TEST_TYPE" $global:NOW_RUN_LOG_FILE
-  Log-Line "ℹ️ Tech Stack: $TECH_STACK" $global:NOW_RUN_LOG_FILE
+  Log-Line "Platform: $TEST_TYPE" $global:NOW_RUN_LOG_FILE
+  Log-Line "Tech Stack: $TECH_STACK" $global:NOW_RUN_LOG_FILE
 
   # System Prerequisites Check
   Validate-Tech-Stack -TechStack $TECH_STACK
@@ -94,19 +94,19 @@ try {
 
   # Getting Ready section
   Log-Section "🧹 Getting Ready"
-  Log-Line "ℹ️ Detected Operating system: Windows" $global:NOW_RUN_LOG_FILE
-  Log-Line "ℹ️ Clearing old logs from NOW Home Directory inside .browserstack" $global:NOW_RUN_LOG_FILE
+  Log-Line "Detected Operating system: Windows" $global:NOW_RUN_LOG_FILE
+  Log-Line "Clearing old logs from NOW Home Directory inside .browserstack" $global:NOW_RUN_LOG_FILE
   Clear-OldLogs
 
-  Log-Line "ℹ️ Starting $TEST_TYPE setup for $TECH_STACK" $global:NOW_RUN_LOG_FILE
+  Log-Line "Starting $TEST_TYPE setup for $TECH_STACK" $global:NOW_RUN_LOG_FILE
   
   # Run the setup
   Setup-Environment -SetupType $TEST_TYPE.ToLower() -TechStack $TECH_STACK.ToLower()
-
-} catch {
+} 
+catch {
   Log-Line " " $global:NOW_RUN_LOG_FILE
   Log-Line "========================================" $global:NOW_RUN_LOG_FILE
-  Log-Line "❌ EXECUTION FAILED" $global:NOW_RUN_LOG_FILE
+  Log-Line "EXECUTION FAILED" $global:NOW_RUN_LOG_FILE
   Log-Line "========================================" $global:NOW_RUN_LOG_FILE
   Log-Line "Error: $($_.Exception.Message)" $global:NOW_RUN_LOG_FILE
   Log-Line "Check logs for details:" $global:NOW_RUN_LOG_FILE
