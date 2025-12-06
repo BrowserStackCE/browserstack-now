@@ -30,9 +30,11 @@ function Setup-Web-Java {
     $platforms = Generate-Web-Platforms-Yaml -MaxTotalParallels $ParallelsPerPlatform
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
-    Set-BrowserStackPlatformsSection -RepoRoot $TARGET -RelativeConfigPath "browserstack.yml" -PlatformsYaml $platforms
+    Set-BrowserStackPlatformsSection -RepoRoot $TARGET -RelativeConfigPath "browserstack.yml" -PlatformsYaml $platforms -IsWebTest
     $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
+    # Explicitly clear BROWSERSTACK_APP for web tests to prevent SDK from treating this as App Automate
+    Remove-Item Env:BROWSERSTACK_APP -ErrorAction SilentlyContinue
     $env:BSTACK_PARALLELS = $ParallelsPerPlatform
     $env:BROWSERSTACK_LOCAL = $localFlag
     $env:BSTACK_PLATFORMS = $platforms
@@ -108,6 +110,8 @@ function Setup-Web-Python {
     $env:PATH = (Join-Path $venv 'Scripts') + ";" + $env:PATH
     $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
+    # Explicitly clear BROWSERSTACK_APP for web tests to prevent SDK from treating this as App Automate
+    Remove-Item Env:BROWSERSTACK_APP -ErrorAction SilentlyContinue
 
     if (Test-DomainPrivate) {
       $UseLocal = $true
@@ -119,7 +123,7 @@ function Setup-Web-Python {
     $platforms = Generate-Web-Platforms-Yaml -MaxTotalParallels $ParallelsPerPlatform
     $localFlag = if ($UseLocal) { "true" } else { "false" }
 
-    Set-BrowserStackPlatformsSection -RepoRoot $TARGET -RelativeConfigPath "browserstack.yml" -PlatformsYaml $platforms
+    Set-BrowserStackPlatformsSection -RepoRoot $TARGET -RelativeConfigPath "browserstack.yml" -PlatformsYaml $platforms -IsWebTest
     $env:BSTACK_PARALLELS = $ParallelsPerPlatform
     $env:BSTACK_PLATFORMS = $platforms
     $env:BROWSERSTACK_LOCAL = $localFlag
@@ -242,6 +246,8 @@ function Setup-Web-NodeJS {
 
     $env:BROWSERSTACK_USERNAME = $BROWSERSTACK_USERNAME
     $env:BROWSERSTACK_ACCESS_KEY = $BROWSERSTACK_ACCESS_KEY
+    # Explicitly clear BROWSERSTACK_APP for web tests to prevent SDK from treating this as App Automate
+    Remove-Item Env:BROWSERSTACK_APP -ErrorAction SilentlyContinue
     $localFlagStr = if ($UseLocal) { "true" } else { "false" }
     $env:BROWSERSTACK_LOCAL = $localFlagStr
     $env:BROWSERSTACK_BUILD_NAME = "now-$NOW_OS-web-nodejs-wdio"

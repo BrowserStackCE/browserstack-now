@@ -130,7 +130,8 @@ function Set-BrowserStackPlatformsSection {
   param(
     [Parameter(Mandatory)][string]$RepoRoot,
     [Parameter(Mandatory)][string]$RelativeConfigPath,
-    [Parameter(Mandatory)][string]$PlatformsYaml
+    [Parameter(Mandatory)][string]$PlatformsYaml,
+    [switch]$IsWebTest  # Flag to indicate if this is a web test (to remove app field)
   )
 
   $configPath = Join-Path $RepoRoot $RelativeConfigPath
@@ -139,6 +140,33 @@ function Set-BrowserStackPlatformsSection {
   }
 
   Reset-BrowserStackConfigFile -RepoRoot $RepoRoot -RelativePath $RelativeConfigPath
+
+  # For web tests, remove any app field that might cause SDK to treat it as App Automate
+  if ($IsWebTest) {
+    $content = Get-Content -Path $configPath -Raw
+    if ($content) {
+      # Remove app: lines (with various indentation levels)
+      $lines = $content -split "`r?`n"
+      $filteredLines = @()
+      $skipNext = $false
+      foreach ($line in $lines) {
+        # Skip lines that are app: or app: <value>
+        if ($line -match '^\s*app\s*:') {
+          $skipNext = $true
+          continue
+        }
+        # Skip continuation lines if we just skipped an app line
+        if ($skipNext -and ($line -match '^\s+[^-]' -or [string]::IsNullOrWhiteSpace($line))) {
+          continue
+        }
+        $skipNext = $false
+        $filteredLines += $line
+      }
+      $cleanedContent = $filteredLines -join "`r`n"
+      Set-ContentNoBom -Path $configPath -Value $cleanedContent
+      Log-Line "ℹ️ Removed any app field from $RelativeConfigPath for web test" $GLOBAL_LOG
+    }
+  }
 
   $normalizedPlatforms = ($PlatformsYaml -replace "`r","").TrimEnd("`n")
   $blockBuilder = New-Object System.Text.StringBuilder

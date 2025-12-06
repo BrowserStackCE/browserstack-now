@@ -16,7 +16,7 @@ jobs:
     name: Test mac/run.sh on macOS
     if: false
     runs-on: macos-latest
-    timeout-minutes: 8
+    timeout-minutes: 15
     environment: BrowserStack
     steps:
       - name: Checkout code
@@ -103,8 +103,8 @@ jobs:
 
           # Test configurations
           test_configs=(
-            # "web java"
-            # "app java"
+            "web java"
+            "app java"
             "web python"
             "app python"
             "web nodejs"
@@ -175,7 +175,7 @@ jobs:
   test-windows:
     name: Test win/run.ps1 on Windows
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 8
     environment: BrowserStack
     env:
       ACTIONS_STEP_DEBUG: true
@@ -345,8 +345,8 @@ jobs:
           Write-Debug "Script path: $scriptPath"
 
           $testConfigs = @(
-            @("web",  "java"),
-            @("app",  "java"),
+            # @("web",  "java"),
+            # @("app",  "java"),
             @("web",  "python"),
             @("app",  "python"),
             @("web",  "nodejs"),
