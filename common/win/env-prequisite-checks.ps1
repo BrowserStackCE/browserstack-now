@@ -18,7 +18,7 @@ function Parse-Proxy {
 }
 
 function Set-ProxyInEnv {
-    Log-Section "🌐 Network & Proxy Validation"
+    Log-Section "Network & Proxy Validation"
     
     # Detect proxy from env
     $proxy = $env:http_proxy
@@ -63,7 +63,7 @@ function Set-ProxyInEnv {
 function Check-Java-Installation {
     Log-Line "🔍 Checking if 'java' command exists..." $global:NOW_RUN_LOG_FILE
     if (-not (Get-Command java -ErrorAction SilentlyContinue)) {
-        Log-Line "❌ Java command not found in PATH." $global:NOW_RUN_LOG_FILE
+        Log-Error "Java command not found in PATH." $global:NOW_RUN_LOG_FILE
         return $false
     }
 
@@ -73,13 +73,13 @@ function Check-Java-Installation {
         Log-Success "Java installed and functional`n$output"
         return $true
     } catch {
-        Log-Line "❌ Java exists but failed to run." $global:NOW_RUN_LOG_FILE
+        Log-Error "Java exists but failed to run." $global:NOW_RUN_LOG_FILE
         return $false
     }
 }
 
 function Check-Python-Installation {
-    Log-Line "🔍 Checking if 'python' command exists..." $global:NOW_RUN_LOG_FILE
+    Log-Line "Checking if 'python' command exists..." $global:NOW_RUN_LOG_FILE
     # Windows usually uses 'python', not 'python3'
     $pyCmd = Get-Command python -ErrorAction SilentlyContinue
     if (-not $pyCmd) { 
@@ -87,17 +87,17 @@ function Check-Python-Installation {
     }
     
     if (-not $pyCmd) {
-        Log-Line "❌ Python command not found in PATH." $global:NOW_RUN_LOG_FILE
+        Log-Error "Python command not found in PATH." $global:NOW_RUN_LOG_FILE
         return $false
     }
 
-    Log-Line "🔍 Checking if Python runs correctly..." $global:NOW_RUN_LOG_FILE
+    Log-Line "Checking if Python runs correctly..." $global:NOW_RUN_LOG_FILE
     try {
         $output = & $pyCmd.Name --version 2>&1 | Out-String
         Log-Success "Python default installation: $output"
         return $true
     } catch {
-        Log-Line "❌ Python exists but failed to run." $global:NOW_RUN_LOG_FILE
+        Log-Error "Python exists but failed to run." $global:NOW_RUN_LOG_FILE
         return $false
     }
 }
@@ -140,7 +140,7 @@ function Validate-Tech-Stack {
         "python" { $valid = Check-Python-Installation }
         "nodejs" { $valid = Check-NodeJS-Installation }
         default {
-            Log-Line "❌ Unknown tech stack selected: $TechStack" $global:NOW_RUN_LOG_FILE
+            Log-Error "Unknown tech stack selected: $TechStack" $global:NOW_RUN_LOG_FILE
             return $false
         }
     }

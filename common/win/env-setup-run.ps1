@@ -262,6 +262,7 @@ function Detect-Setup-Python-Env {
     Invoke-External -Exe $pyExe -Arguments @("-m","venv",".venv") -LogFile $global:NOW_RUN_LOG_FILE
 }
 
+
 function Print-Env-Variables {
     Log-Section "Validate Environment Variables and Platforms"
     Log-Info "BrowserStack Username: $BROWSERSTACK_USERNAME"

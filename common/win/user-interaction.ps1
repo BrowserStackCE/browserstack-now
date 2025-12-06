@@ -1,5 +1,3 @@
-# User Interaction Helpers for PowerShell
-
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
@@ -228,7 +226,6 @@ function Resolve-Tech-Stack {
     $textInfo = (Get-Culture).TextInfo
     $candidate = $textInfo.ToTitleCase($CliValue.ToLowerInvariant())
     if ($candidate -notin @("Java","Python","NodeJS")) {
-       # Normalize
        if ($candidate -eq "Java") { }
        elseif ($candidate -eq "Python") { }
        elseif ($candidate -match "Node") { $candidate = "NodeJS" }
@@ -349,4 +346,3 @@ function Perform-NextSteps-BasedOnTestType {
       throw "Unsupported TEST_TYPE: $TestType. Allowed values: Web, App."
     }
   }
-}

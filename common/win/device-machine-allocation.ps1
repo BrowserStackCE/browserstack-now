@@ -1,5 +1,3 @@
-# Device Machine Allocation for PowerShell
-
 $script:CONFIG_FILE = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "..\config\devices.txt"
 
 function Get-Matching-Devices {

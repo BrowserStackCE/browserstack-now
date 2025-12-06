@@ -35,9 +35,9 @@ $script:PY_CMD = @()
 function Ensure-Workspace {
   if (!(Test-Path $script:GLOBAL_DIR)) {
     New-Item -ItemType Directory -Path $script:GLOBAL_DIR | Out-Null
-    Log-Line "✅ Created Onboarding workspace: $script:GLOBAL_DIR" $global:NOW_RUN_LOG_FILE
+    Log-Line "Onboarding workspace created: $script:GLOBAL_DIR" $global:NOW_RUN_LOG_FILE
   } else {
-    Log-Line "✅ Onboarding workspace found at: $script:GLOBAL_DIR" $global:NOW_RUN_LOG_FILE
+    Log-Line "Onboarding workspace found at: $script:GLOBAL_DIR" $global:NOW_RUN_LOG_FILE
   }
 }
 
@@ -59,7 +59,7 @@ function Clear-OldLogs {
     }
   }
 
-  Log-Line "✅ Logs directory cleaned. Legacy files removed." $global:NOW_RUN_LOG_FILE
+  Log-Line "Logs directory cleaned. Legacy files removed." $global:NOW_RUN_LOG_FILE
 }
 
 # ===== Git Clone =====
@@ -266,15 +266,15 @@ function Test-DomainPrivate {
         $IP_ADDRESS = $matches[1]
       }
     } catch {
-      Log-Line "⚠️ Failed to resolve domain: $domain (assuming public domain)" $global:NOW_RUN_LOG_FILE
+      Log-Error "Failed to resolve domain: $domain (assuming public domain)" $global:NOW_RUN_LOG_FILE
       $IP_ADDRESS = ""
     }
   }
 
   if ([string]::IsNullOrWhiteSpace($IP_ADDRESS)) {
-    Log-Line "⚠️ DNS resolution failed for: $domain (treating as public domain, BrowserStack Local will be DISABLED)" $global:NOW_RUN_LOG_FILE
+    Log-Warn "DNS resolution failed for: $domain (treating as public domain, BrowserStack Local will be DISABLED)" $global:NOW_RUN_LOG_FILE
   } else {
-    Log-Line "✅ Resolved IP: $IP_ADDRESS" $global:NOW_RUN_LOG_FILE
+    Log-Info "Resolved IP: $IP_ADDRESS" $global:NOW_RUN_LOG_FILE
   }
 
   return (Test-PrivateIP -IP $IP_ADDRESS)
@@ -304,7 +304,7 @@ function Fetch-Plan-Details {
   }
 
   $normalized = $TestType.ToLowerInvariant()
-  Log-Section "☁️ Account & Plan Details"
+  Log-Section "Account & Plan Details"
   Log-Info "Fetching BrowserStack plan for $normalized"
 
   $auth = Get-BasicAuthHeader -User $script:BROWSERSTACK_USERNAME -Key $script:BROWSERSTACK_ACCESS_KEY
@@ -316,9 +316,9 @@ function Fetch-Plan-Details {
         $resp = Invoke-RestMethod -Method Get -Uri "https://api.browserstack.com/automate/plan.json" -Headers $headers
         $script:WEB_PLAN_FETCHED = $true
         $script:TEAM_PARALLELS_MAX_ALLOWED_WEB = [int]$resp.parallel_sessions_max_allowed
-        Log-Line "Web Testing Plan fetched: Team max parallel sessions = $script:TEAM_PARALLELS_MAX_ALLOWED_WEB" $global:NOW_RUN_LOG_FILE
+        Log-Success "Web Testing Plan fetched: Team max parallel sessions = $script:TEAM_PARALLELS_MAX_ALLOWED_WEB" $global:NOW_RUN_LOG_FILE
       } catch {
-        Log-Line "Web Testing Plan fetch failed ($($_.Exception.Message))" $global:NOW_RUN_LOG_FILE
+        Log-Error "Web Testing Plan fetch failed ($($_.Exception.Message))" $global:NOW_RUN_LOG_FILE
       }
       if (-not $script:WEB_PLAN_FETCHED) {
         throw "Unable to fetch Web Testing plan details."
@@ -415,7 +415,7 @@ function Invoke-CustomAppUpload {
       if ([string]::IsNullOrWhiteSpace($url)) {
         throw "Upload failed (empty URL)"
       }
-      Log-Line "✅ App uploaded successfully: $url" $global:NOW_RUN_LOG_FILE
+      Log-Line "App uploaded successfully: $url" $global:NOW_RUN_LOG_FILE
       return @{
         Url = $url
         Platform = $platform

@@ -53,3 +53,4 @@ function Log-Line {
         Add-Content -Path $LogFile -Value $line -Encoding UTF8
     }
 }
+
