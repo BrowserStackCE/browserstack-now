@@ -20,7 +20,7 @@ function Setup-Environment {
         [string]$TechStack
     )
 
-    Log-Section "📦 Project Setup"
+    Log-Section "Project Setup"
 
     $maxParallels = 0
     if ($SetupType -eq "web") {
@@ -72,7 +72,7 @@ function Setup-Environment {
     if ($status -and $result) {
         Log-Success "${SetupType} setup succeeded."
     } else {
-        Log-Error "❌ ${SetupType} setup failed. Check logs for details."
+        Log-Error "${SetupType} setup failed. Check logs for details."
         exit 1
     }
 }
@@ -271,5 +271,5 @@ function Print-Env-Variables {
     if ($TEST_TYPE -eq "app") { Log-Info "Native App Endpoint: $BROWSERSTACK_APP" }
     Log-Info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
     Log-Info "Parallels per platform: $BSTACK_PARALLELS"
-    Log-Info "Platforms: \n$BSTACK_PLATFORMS"
+    Log-Info "Platforms: $BSTACK_PLATFORMS"
 }
