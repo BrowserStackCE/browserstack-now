@@ -47,13 +47,17 @@ try {
 
   # Setup log file path AFTER selections
   $logFileName = "{0}_{1}_run_result.log" -f $TEST_TYPE.ToLowerInvariant(), $TECH_STACK.ToLowerInvariant()
+  $errLogFileName = "{0}_{1}_run_result_err.log" -f $TEST_TYPE.ToLowerInvariant(), $TECH_STACK.ToLowerInvariant()
   $logFile = Join-Path $script:LOG_DIR $logFileName
+  $errLogFile = Join-Path $script:LOG_DIR $errLogFileName
   if (!(Test-Path $script:LOG_DIR)) {
     New-Item -ItemType Directory -Path $script:LOG_DIR -Force | Out-Null
   }
   '' | Out-File -FilePath $logFile -Encoding UTF8
+  '' | Out-File -FilePath $errLogFile -Encoding UTF8
   $script:GLOBAL_LOG = $logFile
   $global:NOW_RUN_LOG_FILE = $logFile
+  $global:NOW_RUN_LOG_FILE_ERR = $errLogFile
   
   Log-Line "Log file path: $logFile" $global:NOW_RUN_LOG_FILE
 
@@ -62,6 +66,7 @@ try {
   Log-Line "Timestamp: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))" $global:NOW_RUN_LOG_FILE
   Log-Line "Run Mode: $RunMode" $global:NOW_RUN_LOG_FILE
   Log-Line "Log file path: $logFile" $global:NOW_RUN_LOG_FILE
+  Log-Line "Error log file path: $errLogFile" $global:NOW_RUN_LOG_FILE
 
   # Setup workspace and get credentials BEFORE app upload
   Setup-Workspace

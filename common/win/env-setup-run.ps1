@@ -109,7 +109,7 @@ function Setup-Web-Java {
     Print-Env-Variables
     
     Log-Section "BrowserStack SDK Test Run Execution"
-    $p = Start-Process -FilePath $mvn -ArgumentList "test","-P","sample-test" -RedirectStandardOutput $global:NOW_RUN_LOG_FILE -RedirectStandardError "$global:NOW_RUN_LOG_FILE-err" -PassThru -NoNewWindow
+    $p = Start-Process -FilePath $mvn -ArgumentList "test","-P","sample-test" -RedirectStandardOutput $global:NOW_RUN_LOG_FILE -RedirectStandardError "$global:NOW_RUN_LOG_FILE_ERR" -PassThru -NoNewWindow
     Show-Spinner -Process $p
     $p.WaitForExit()
     return ($p.ExitCode -eq 0)
@@ -141,7 +141,7 @@ function Setup-App-Java {
     Invoke-External -Exe $mvn -Arguments @("clean") -LogFile $global:NOW_RUN_LOG_FILE
     
     Log-Section "BrowserStack SDK Test Run Execution"
-    $p = Start-Process -FilePath $mvn -ArgumentList "test","-P","sample-test" -RedirectStandardOutput $global:NOW_RUN_LOG_FILE -RedirectStandardError $global:NOW_RUN_LOG_FILE -PassThru -NoNewWindow
+    $p = Start-Process -FilePath $mvn -ArgumentList "test","-P","sample-test" -RedirectStandardOutput $global:NOW_RUN_LOG_FILE -RedirectStandardError "$global:NOW_RUN_LOG_FILE_ERR" -PassThru -NoNewWindow
     Show-Spinner -Process $p
     $p.WaitForExit()
     return ($p.ExitCode -eq 0)
@@ -168,7 +168,7 @@ function Setup-Web-Python {
 
     Log-Section "BrowserStack SDK Test Run Execution"
     $sdkExe = Join-Path $TargetDir ".venv\Scripts\browserstack-sdk.exe"
-    $p = Start-Process -FilePath $sdkExe -ArgumentList "pytest","-s","tests/" -RedirectStandardOutput $global:NOW_RUN_LOG_FILE -RedirectStandardError $global:NOW_RUN_LOG_FILE -PassThru -NoNewWindow
+    $p = Start-Process -FilePath $sdkExe -ArgumentList "pytest","-s","tests/" -RedirectStandardOutput $global:NOW_RUN_LOG_FILE -RedirectStandardError "$global:NOW_RUN_LOG_FILE_ERR" -PassThru -NoNewWindow
     Show-Spinner -Process $p
     $p.WaitForExit()
     return ($p.ExitCode -eq 0)
@@ -198,7 +198,7 @@ function Setup-App-Python {
     Log-Section "BrowserStack SDK Test Run Execution"
     Set-Location $runDir
     $sdkExe = Join-Path $TargetDir ".venv\Scripts\browserstack-sdk.exe"
-    $p = Start-Process -FilePath $sdkExe -ArgumentList "pytest","-s","bstack_sample.py" -RedirectStandardOutput $global:NOW_RUN_LOG_FILE -RedirectStandardError $global:NOW_RUN_LOG_FILE -PassThru -NoNewWindow
+    $p = Start-Process -FilePath $sdkExe -ArgumentList "pytest","-s","bstack_sample.py" -RedirectStandardOutput $global:NOW_RUN_LOG_FILE -RedirectStandardError "$global:NOW_RUN_LOG_FILE_ERR" -PassThru -NoNewWindow
     Show-Spinner -Process $p
     $p.WaitForExit()
     return ($p.ExitCode -eq 0)
@@ -223,7 +223,7 @@ function Setup-Web-NodeJS {
     Log-Section "BrowserStack SDK Test Run Execution"
     $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
     if ($npmCmd.Source.EndsWith(".cmd")) { $exe = "cmd.exe"; $args = @("/c", "npm", "run", "test") } else { $exe = "npm"; $args = @("run", "test") }
-    $p = Start-Process -FilePath $exe -ArgumentList $args -RedirectStandardOutput $global:NOW_RUN_LOG_FILE -RedirectStandardError $global:NOW_RUN_LOG_FILE -PassThru -NoNewWindow
+    $p = Start-Process -FilePath $exe -ArgumentList $args -RedirectStandardOutput $global:NOW_RUN_LOG_FILE -RedirectStandardError "$global:NOW_RUN_LOG_FILE_ERR" -PassThru -NoNewWindow
     Show-Spinner -Process $p
     $p.WaitForExit()
     return ($p.ExitCode -eq 0)
@@ -249,7 +249,7 @@ function Setup-App-NodeJS {
     Log-Section "BrowserStack SDK Test Run Execution"
     $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
     if ($npmCmd.Source.EndsWith(".cmd")) { $exe = "cmd.exe"; $args = @("/c", "npm", "run", "test") } else { $exe = "npm"; $args = @("run", "test") }
-    $p = Start-Process -FilePath $exe -ArgumentList $args -RedirectStandardOutput $global:NOW_RUN_LOG_FILE -RedirectStandardError $global:NOW_RUN_LOG_FILE -PassThru -NoNewWindow
+    $p = Start-Process -FilePath $exe -ArgumentList $args -RedirectStandardOutput $global:NOW_RUN_LOG_FILE -RedirectStandardError "$global:NOW_RUN_LOG_FILE_ERR" -PassThru -NoNewWindow
     Show-Spinner -Process $p
     $p.WaitForExit()
     return ($p.ExitCode -eq 0)
