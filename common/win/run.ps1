@@ -27,7 +27,7 @@ $script:PSScriptRootResolved = Split-Path -Parent $MyInvocation.MyCommand.Path
 try {
 
   $script:CurrentDir = (Get-Location).Path
-  
+
   # Get test type and tech stack before logging
   if ($RunMode -match "--silent|--debug") {
     $textInfo = (Get-Culture).TextInfo
@@ -59,22 +59,13 @@ try {
   # Setup Summary Header
   Log-Section "Setup Summary - BrowserStack NOW"
   Log-Line "Timestamp: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))" $global:NOW_RUN_LOG_FILE
-  
   Log-Line "Run Mode: $RunMode" $global:NOW_RUN_LOG_FILE
-  Log-Line "Selected Testing Type: $TEST_TYPE" $global:NOW_RUN_LOG_FILE
-  Log-Line "Selected Tech Stack: $TECH_STACK" $global:NOW_RUN_LOG_FILE
+  Log-Line "Log file path: $logFile" $global:NOW_RUN_LOG_FILE
 
   # Setup workspace and get credentials BEFORE app upload
   Setup-Workspace
   Ask-BrowserStack-Credentials -RunMode $RunMode -UsernameFromEnv $env:BROWSERSTACK_USERNAME -AccessKeyFromEnv $env:BROWSERSTACK_ACCESS_KEY
 
-  # NOW handle URL/App upload (requires credentials)
-  Perform-NextSteps-BasedOnTestType -TestType $TEST_TYPE -RunMode $RunMode -TestUrl $TestUrl -AppPath $AppPath -AppPlatform $AppPlatform
-
-  # Run the setup
-  Setup-Environment -SetupType $TEST_TYPE.ToLower() -TechStack $TECH_STACK.ToLower()
-
-  # Platform & Tech Stack section
   Log-Section "Platform & Tech Stack"
   Log-Line "Platform: $TEST_TYPE" $global:NOW_RUN_LOG_FILE
   Log-Line "Tech Stack: $TECH_STACK" $global:NOW_RUN_LOG_FILE
@@ -84,6 +75,11 @@ try {
 
   # Account & Plan Details
   Fetch-Plan-Details -TestType $TEST_TYPE
+
+  # NOW handle URL/App upload (requires credentials)
+  Perform-NextSteps-BasedOnTestType -TestType $TEST_TYPE -RunMode $RunMode -TestUrl $TestUrl -AppPath $AppPath -AppPlatform $AppPlatform
+
+
 
   Log-Line "Checking proxy in environment" $global:NOW_RUN_LOG_FILE
   Set-ProxyInEnv
