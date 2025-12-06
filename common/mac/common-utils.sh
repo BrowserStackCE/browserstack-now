@@ -59,18 +59,18 @@ show_spinner() {
     ts="$(date +"%Y-%m-%d %H:%M:%S")"
     while kill -0 "$pid" 2>/dev/null; do
         i=$(( (i+1) %4 ))
-        printf "\r⏳ Processing... %s" "${spin:$i:1}"
+        printf "\rProcessing... %s" "${spin:$i:1}"
         sleep 0.1
     done
     echo ""
     log_info "Run Test command completed."
     sleep 5
-    #log_msg_to "✅ Done!"
+    #log_msg_to "Done!"
 }
 
 # ===== Workspace Management =====
 setup_workspace() {
-    log_section "⚙️ Environment & Credentials"
+    log_section "Environment & Credentials"
     local full_path="$WORKSPACE_DIR/$PROJECT_FOLDER"
     if [ ! -d "$full_path" ]; then
         mkdir -p "$full_path"
@@ -132,7 +132,7 @@ handle_app_upload() {
 }
 
 upload_sample_app() {
-    log_msg_to "⬆️ Uploading sample app to BrowserStack..."
+    log_msg_to "Uploading sample app to BrowserStack..."
     local upload_response
     upload_response=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
         -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
@@ -144,11 +144,11 @@ upload_sample_app() {
     log_info "Uploaded app URL: $app_url"
     
     if [ -z "$app_url" ]; then
-        log_msg_to "❌ Upload failed. Response: $upload_response"
+        log_msg_to "Upload failed. Response: $upload_response"
         return 1
     fi
     
-    log_msg_to "✅ App uploaded successfully: $app_url"
+    log_msg_to "App uploaded successfully: $app_url"
     return 0
 }
 
@@ -178,7 +178,7 @@ upload_custom_app() {
     file_path="${file_path%"${file_path##*[![:space:]]}"}"
     
     if [ -z "$file_path" ]; then
-        log_msg_to "❌ No file selected"
+        log_msg_to "No file selected"
         return 1
     fi
     
@@ -189,11 +189,11 @@ upload_custom_app() {
         elif [[ "$file_path" == *.apk ]]; then
         app_platform="android"
     else
-        log_msg_to "❌ Invalid file type. Must be .apk or .ipa"
+        log_msg_to "Invalid file type. Must be .apk or .ipa"
         return 1
     fi
     
-    log_msg_to "⬆️ Uploading app to BrowserStack..."
+    log_msg_to "Uploading app to BrowserStack..."
     local upload_response
     upload_response=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
         -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
@@ -202,12 +202,12 @@ upload_custom_app() {
     local app_url
     app_url=$(echo "$upload_response" | grep -o '"app_url":"[^"]*' | cut -d'"' -f4)
     if [ -z "$app_url" ]; then
-        log_msg_to "❌ Failed to upload app"
+        log_msg_to "Failed to upload app"
         return 1
     fi
     
     export BROWSERSTACK_APP=$app_url
-    log_msg_to "✅ App uploaded successfully"
+    log_msg_to "App uploaded successfully"
     log_info "Uploaded app URL: $app_url"
     log_msg_to "Exported BROWSERSTACK_APP=$BROWSERSTACK_APP"
     
@@ -240,7 +240,7 @@ generate_mobile_platforms() {
 fetch_plan_details() {
     local test_type=$1
     
-    log_section "☁️ Account & Plan Details"
+    log_section "Account & Plan Details"
     log_info "Fetching BrowserStack plan for $test_type"
     local web_unauthorized=false
     local mobile_unauthorized=false
@@ -253,9 +253,9 @@ fetch_plan_details() {
             WEB_PLAN_FETCHED=true
             TEAM_PARALLELS_MAX_ALLOWED_WEB=$(echo "$RESPONSE_WEB_BODY" | grep -o '"parallel_sessions_max_allowed":[0-9]*' | grep -o '[0-9]*')
             export TEAM_PARALLELS_MAX_ALLOWED_WEB="$TEAM_PARALLELS_MAX_ALLOWED_WEB"
-            log_msg_to "✅ Web Testing Plan fetched: Team max parallel sessions = $TEAM_PARALLELS_MAX_ALLOWED_WEB"
+            log_msg_to "Web Testing Plan fetched: Team max parallel sessions = $TEAM_PARALLELS_MAX_ALLOWED_WEB"
         else
-            log_msg_to "❌ Web Testing Plan fetch failed ($HTTP_CODE_WEB)"
+            log_msg_to "Web Testing Plan fetch failed ($HTTP_CODE_WEB)"
             [ "$HTTP_CODE_WEB" == "401" ] && web_unauthorized=true
         fi
     fi
@@ -268,9 +268,9 @@ fetch_plan_details() {
             MOBILE_PLAN_FETCHED=true
             TEAM_PARALLELS_MAX_ALLOWED_MOBILE=$(echo "$RESPONSE_MOBILE_BODY" | grep -o '"parallel_sessions_max_allowed":[0-9]*' | grep -o '[0-9]*')
             export TEAM_PARALLELS_MAX_ALLOWED_MOBILE="$TEAM_PARALLELS_MAX_ALLOWED_MOBILE"
-            log_msg_to "✅ Mobile App Testing Plan fetched: Team max parallel sessions = $TEAM_PARALLELS_MAX_ALLOWED_MOBILE"
+            log_msg_to "Mobile App Testing Plan fetched: Team max parallel sessions = $TEAM_PARALLELS_MAX_ALLOWED_MOBILE"
         else
-            log_msg_to "❌ Mobile App Testing Plan fetch failed ($HTTP_CODE_MOBILE)"
+            log_msg_to "Mobile App Testing Plan fetch failed ($HTTP_CODE_MOBILE)"
             [ "$HTTP_CODE_MOBILE" == "401" ] && mobile_unauthorized=true
         fi
     fi
@@ -279,7 +279,7 @@ fetch_plan_details() {
     
     if [[ "$test_type" == "web" && "$web_unauthorized" == true ]] || \
     [[ "$test_type" == "app" && "$mobile_unauthorized" == true ]]; then
-        log_msg_to "❌ Unauthorized to fetch required plan(s). Exiting."
+        log_msg_to "Unauthorized to fetch required plan(s). Exiting."
         exit 1
     fi
 
@@ -371,7 +371,7 @@ identify_run_status_java() {
     line=$(grep -m 2 -E "[INFO|ERROR].*Tests run" < "$log_file")
     # If not found, fail
     if [[ -z "$line" ]]; then
-        log_warn "❌ No test summary line found."
+        log_warn "No test summary line found."
         return 1
     fi
     
@@ -403,7 +403,7 @@ identify_run_status_nodejs() {
     line=$(grep -m 1 -E "Spec Files:.*passed.*total" < "$log_file")
     # If not found, fail
     if [[ -z "$line" ]]; then
-        log_warn "❌ No test summary line found."
+        log_warn "No test summary line found."
         return 1
     fi
     
@@ -428,11 +428,11 @@ identify_run_status_python() {
     # Extract numbers and sum them
     passed_sum=$(grep -oE '[0-9]+ passed' "$log_file" | awk '{sum += $1} END {print sum+0}')
     
-    echo "✅ Total Passed:  $passed_sum"
+    echo "Total Passed:  $passed_sum"
     
     # If not found, fail
     if [[ -z "$passed_sum" ]]; then
-        log_warn "❌ No test summary line found."
+        log_warn "No test summary line found."
         return 1
     fi
     
@@ -441,7 +441,7 @@ identify_run_status_python() {
         log_success "Success: $passed_sum test(s) completed"
         return 0
     else
-        log_error "❌ Error: No tests completed"
+        log_error "Error: No tests completed"
         return 1
     fi
 }

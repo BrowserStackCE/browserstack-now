@@ -1,7 +1,7 @@
 # Logging Helpers for PowerShell
 
 # ==============================================
-# 🎨 COLOR & STYLE DEFINITIONS
+# COLOR & STYLE DEFINITIONS
 # ==============================================
 # PowerShell uses Write-Host -ForegroundColor for colors.
 # We will define helper functions instead of raw escape codes for better compatibility.
@@ -9,9 +9,9 @@
 function Log-Section {
     param([string]$Message)
     Write-Host ""
-    Write-Host "───────────────────────────────────────────────" -ForegroundColor Cyan
+    Write-Host "-----------------------------------------------" -ForegroundColor Cyan
     Write-Host $Message -ForegroundColor White
-    Write-Host "───────────────────────────────────────────────" -ForegroundColor Cyan
+    Write-Host "-----------------------------------------------" -ForegroundColor Cyan
 }
 
 function Log-Info {

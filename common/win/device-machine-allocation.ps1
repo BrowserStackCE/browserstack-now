@@ -19,7 +19,6 @@ function Get-Matching-Devices {
             }
         }
     } else {
-        # Web includes WEB and MOBILE
         foreach ($line in $lines) {
             if ($line -match "^WEB\|") {
                 $devices += ($line -replace "^WEB\|", "")

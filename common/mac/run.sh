@@ -40,7 +40,7 @@ export CLI_TEST_URL
 export CLI_APP_PATH
 export CLI_APP_PLATFORM
 
-log_section "🧭 Setup Summary – BrowserStack NOW"
+log_section "Setup Summary - BrowserStack NOW"
 log_info "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
 
 
@@ -62,7 +62,7 @@ export NOW_RUN_LOG_FILE="$log_file"
 setup_workspace
 get_browserstack_credentials "$RUN_MODE"
 
-log_section "⚙️ Platform & Tech Stack"
+log_section "Platform & Tech Stack"
 log_info "Platform: ${TEST_TYPE:-N/A}"
 log_info "Tech Stack: ${TECH_STACK:-N/A}"
 
@@ -80,7 +80,7 @@ log_msg_to "Plan summary: WEB_PLAN_FETCHED=$WEB_PLAN_FETCHED (team max=$TEAM_PAR
 log_msg_to "Checking proxy in environment"
 set_proxy_in_env
 
-log_section "🧹 Getting Ready"
+log_section "Getting Ready"
 log_info "Detected Operating system: $NOW_OS"
 log_info "Clearing old logs fron NOW Home Directory inside .browserstack"
 

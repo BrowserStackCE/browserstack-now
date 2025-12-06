@@ -42,7 +42,7 @@ function Ensure-Workspace {
 }
 
 function Setup-Workspace {
-  Log-Section "⚙️ Environment & Credentials"
+  Log-Section "Environment & Credentials"
   Ensure-Workspace
 }
 
@@ -226,7 +226,7 @@ function Show-Spinner {
   $i = 0
   $ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
   while (!$Process.HasExited) {
-    Write-Host "`r[$ts] ⏳ Processing... $($spin[$i])" -NoNewline -ForegroundColor Cyan
+    Write-Host "`r[$ts] Processing... $($spin[$i])" -NoNewline -ForegroundColor Cyan
     $i = ($i + 1) % 4
     Start-Sleep -Milliseconds 100
   }
@@ -353,7 +353,7 @@ function Fetch-Plan-Details {
 }
 
 function Invoke-SampleAppUpload {
-  Log-Line "⬆️ Uploading sample app to BrowserStack..." $global:NOW_RUN_LOG_FILE
+  Log-Line "Uploading sample app to BrowserStack..." $global:NOW_RUN_LOG_FILE
   $headers = @{
     Authorization = (Get-BasicAuthHeader -User $script:BROWSERSTACK_USERNAME -Key $script:BROWSERSTACK_ACCESS_KEY)
   }
@@ -461,7 +461,7 @@ function Identify-Run-Status-Python {
     
     $content = Get-Content -Path $LogFile -Raw -ErrorAction SilentlyContinue
     if (-not $content) {
-        Log-Warn "❌ No test summary line found."
+        Log-Warn "No test summary line found."
         return $false
     }
     

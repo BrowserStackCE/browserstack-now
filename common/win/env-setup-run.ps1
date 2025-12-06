@@ -72,7 +72,7 @@ function Setup-Environment {
     if ($status -and $result) {
         Log-Success "${SetupType} setup succeeded."
     } else {
-        Log-Error "${SetupType} setup failed. Check logs for details."
+        Log-Error "Setup failed. Check logs for details."
         exit 1
     }
 }

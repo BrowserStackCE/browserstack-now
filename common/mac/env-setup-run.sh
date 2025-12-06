@@ -20,7 +20,7 @@ setup_environment() {
     local tech_stack=$2
     local max_parallels
     
-    log_section "📦 Project Setup"
+    log_section "Project Setup"
     
     if [ "$setup_type" = "web" ]; then
         max_parallels=$TEAM_PARALLELS_MAX_ALLOWED_WEB
@@ -49,7 +49,7 @@ setup_environment() {
     
     local ret=$?
 
-    log_section "✅ Results"
+    log_section "Results"
     log_info "${setup_type} setup completed with exit code: $ret"
     local status=1
     #if [ $ret -eq 0 ]; then

@@ -59,10 +59,10 @@ try {
   $script:GLOBAL_LOG = $logFile
   $global:NOW_RUN_LOG_FILE = $logFile
   
-  Log-Line "ℹ️ Log file path: $logFile" $global:NOW_RUN_LOG_FILE
+  Log-Line "Log file path: $logFile" $global:NOW_RUN_LOG_FILE
 
   # Setup Summary Header
-  Log-Section "🧭 Setup Summary – BrowserStack NOW"
+  Log-Section "Setup Summary - BrowserStack NOW"
   Log-Line "Timestamp: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))" $global:NOW_RUN_LOG_FILE
   Log-Line "Run Mode: $RunMode" $global:NOW_RUN_LOG_FILE
   Log-Line "Selected Testing Type: $TEST_TYPE" $global:NOW_RUN_LOG_FILE
@@ -79,7 +79,7 @@ try {
   Setup-Environment -SetupType $TEST_TYPE.ToLower() -TechStack $TECH_STACK.ToLower()
 
   # Platform & Tech Stack section
-  Log-Section "⚙️ Platform & Tech Stack"
+  Log-Section "Platform & Tech Stack"
   Log-Line "Platform: $TEST_TYPE" $global:NOW_RUN_LOG_FILE
   Log-Line "Tech Stack: $TECH_STACK" $global:NOW_RUN_LOG_FILE
 
@@ -93,7 +93,7 @@ try {
   Set-ProxyInEnv
 
   # Getting Ready section
-  Log-Section "🧹 Getting Ready"
+  Log-Section "Getting Ready"
   Log-Line "Detected Operating system: Windows" $global:NOW_RUN_LOG_FILE
   Log-Line "Clearing old logs from NOW Home Directory inside .browserstack" $global:NOW_RUN_LOG_FILE
   Clear-OldLogs
