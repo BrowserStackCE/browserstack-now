@@ -39,17 +39,13 @@ function Log-Line {
         [string]$Message,
         [string]$LogFile
     )
-    if (-not $LogFile) {
-    $DestFile = Get-RunLogFile
-    }
 
-    $ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
     $line = "$Message"
     Write-Host $line
-    if ($DestFile) {
-        $dir = Split-Path -Parent $DestFile
+    if ($LogFile) {
+        $dir = Split-Path -Parent $LogFile
         if ($dir -and !(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
-        Add-Content -Path $DestFile -Value $line
+        Add-Content -Path $LogFile -Value $line
     }
 }
 
