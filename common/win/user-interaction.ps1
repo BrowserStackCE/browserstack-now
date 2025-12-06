@@ -1,4 +1,7 @@
-﻿# User interaction helpers (GUI + CLI) for Windows BrowserStack NOW.
+# User Interaction Helpers for PowerShell
+
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
 
 function Show-InputBox {
   param(
@@ -162,21 +165,29 @@ function Ask-BrowserStack-Credentials {
     if ([string]::IsNullOrWhiteSpace($script:BROWSERSTACK_USERNAME) -or [string]::IsNullOrWhiteSpace($script:BROWSERSTACK_ACCESS_KEY)) {
       throw "BROWSERSTACK_USERNAME / BROWSERSTACK_ACCESS_KEY must be provided in silent/debug mode."
     }
-    Log-Line "✅ BrowserStack credentials loaded from environment for user: $script:BROWSERSTACK_USERNAME" $GLOBAL_LOG
+    Log-Line "✅ BrowserStack credentials loaded from environment for user: $script:BROWSERSTACK_USERNAME" $global:NOW_RUN_LOG_FILE
+    
+    # Export to process env for child processes
+    $env:BROWSERSTACK_USERNAME = $script:BROWSERSTACK_USERNAME
+    $env:BROWSERSTACK_ACCESS_KEY = $script:BROWSERSTACK_ACCESS_KEY
     return
   }
 
   $script:BROWSERSTACK_USERNAME = Show-InputBox -Title "BrowserStack Setup" -Prompt "Enter your BrowserStack Username:`n`nLocate it on https://www.browserstack.com/accounts/profile/details" -DefaultText ""
   if ([string]::IsNullOrWhiteSpace($script:BROWSERSTACK_USERNAME)) {
-    Log-Line "❌ Username empty" $GLOBAL_LOG
+    Log-Line "❌ Username empty" $global:NOW_RUN_LOG_FILE
     throw "Username is required"
   }
   $script:BROWSERSTACK_ACCESS_KEY = Show-PasswordBox -Title "BrowserStack Setup" -Prompt "Enter your BrowserStack Access Key:`n`nLocate it on https://www.browserstack.com/accounts/profile/details"
   if ([string]::IsNullOrWhiteSpace($script:BROWSERSTACK_ACCESS_KEY)) {
-    Log-Line "❌ Access Key empty" $GLOBAL_LOG
+    Log-Line "❌ Access Key empty" $global:NOW_RUN_LOG_FILE
     throw "Access Key is required"
   }
-  Log-Line "✅ BrowserStack credentials captured (access key hidden)" $GLOBAL_LOG
+  
+  $env:BROWSERSTACK_USERNAME = $script:BROWSERSTACK_USERNAME
+  $env:BROWSERSTACK_ACCESS_KEY = $script:BROWSERSTACK_ACCESS_KEY
+  
+  Log-Line "✅ BrowserStack credentials captured (access key hidden)" $global:NOW_RUN_LOG_FILE
 }
 
 function Resolve-Test-Type {
@@ -189,7 +200,10 @@ function Resolve-Test-Type {
     if ([string]::IsNullOrWhiteSpace($CliValue)) { throw "TEST_TYPE is required in silent/debug mode." }
     $candidate = (Get-Culture).TextInfo.ToTitleCase($CliValue.ToLowerInvariant())
     if ($candidate -notin @("Web","App")) {
-      throw "TEST_TYPE must be either 'Web' or 'App'."
+        # Try to be flexible
+        if ($candidate -eq "Web") { $candidate = "Web" }
+        elseif ($candidate -eq "App") { $candidate = "App" }
+        else { throw "TEST_TYPE must be either 'Web' or 'App'." }
     }
     $script:TEST_TYPE = $candidate
     return
@@ -214,7 +228,11 @@ function Resolve-Tech-Stack {
     $textInfo = (Get-Culture).TextInfo
     $candidate = $textInfo.ToTitleCase($CliValue.ToLowerInvariant())
     if ($candidate -notin @("Java","Python","NodeJS")) {
-      throw "TECH_STACK must be one of: Java, Python, NodeJS."
+       # Normalize
+       if ($candidate -eq "Java") { }
+       elseif ($candidate -eq "Python") { }
+       elseif ($candidate -match "Node") { $candidate = "NodeJS" }
+       else { throw "TECH_STACK must be one of: Java, Python, NodeJS." }
     }
     $script:TECH_STACK = $candidate
     return
@@ -231,16 +249,22 @@ function Resolve-Tech-Stack {
 function Ask-User-TestUrl {
   param([string]$RunMode,[string]$CliValue)
   if ($RunMode -match "--silent" -or $RunMode -match "--debug") {
-    $script:CX_TEST_URL = if ($CliValue) { $CliValue } elseif ($env:CX_TEST_URL) { $env:CX_TEST_URL } else { $DEFAULT_TEST_URL }
+    $script:CX_TEST_URL = if ($CliValue) { $CliValue } elseif ($env:CX_TEST_URL) { $env:CX_TEST_URL } else { $script:DEFAULT_TEST_URL }
     return
   }
+  
+  if (-not [string]::IsNullOrWhiteSpace($CliValue)) {
+      $script:CX_TEST_URL = $CliValue
+      Log-Line "🌐 Using custom test URL from CLI: $CliValue" $global:NOW_RUN_LOG_FILE
+      return
+  }
 
-  $testUrl = Show-InputBox -Title "Test URL Setup" -Prompt "Enter the URL you want to test with BrowserStack:`n(Leave blank for default: $DEFAULT_TEST_URL)" -DefaultText ""
+  $testUrl = Show-InputBox -Title "Test URL Setup" -Prompt "Enter the URL you want to test with BrowserStack:`n(Leave blank for default: $script:DEFAULT_TEST_URL)" -DefaultText ""
   if ([string]::IsNullOrWhiteSpace($testUrl)) {
-    $testUrl = $DEFAULT_TEST_URL
-    Log-Line "⚠️ No URL entered. Falling back to default: $testUrl" $GLOBAL_LOG
+    $testUrl = $script:DEFAULT_TEST_URL
+    Log-Line "⚠️ No URL entered. Falling back to default: $testUrl" $global:NOW_RUN_LOG_FILE
   } else {
-    Log-Line "🌐 Using custom test URL: $testUrl" $GLOBAL_LOG
+    Log-Line "🌐 Using custom test URL: $testUrl" $global:NOW_RUN_LOG_FILE
   }
   $script:CX_TEST_URL = $testUrl
 }
@@ -253,65 +277,6 @@ function Show-OpenOrSampleAppDialog {
   return $appChoice
 }
 
-function Invoke-SampleAppUpload {
-  $headers = @{
-    Authorization = (Get-BasicAuthHeader -User $BROWSERSTACK_USERNAME -Key $BROWSERSTACK_ACCESS_KEY)
-  }
-  $body = @{
-    url = "https://www.browserstack.com/app-automate/sample-apps/android/WikipediaSample.apk"
-  }
-  $resp = Invoke-RestMethod -Method Post -Uri "https://api-cloud.browserstack.com/app-automate/upload" -Headers $headers -ContentType "application/x-www-form-urlencoded" -Body $body
-  $url = $resp.app_url
-  if ([string]::IsNullOrWhiteSpace($url)) {
-    throw "Sample app upload failed"
-  }
-  return @{
-    Url = $url
-    Platform = "android"
-  }
-}
-
-function Invoke-CustomAppUpload {
-  param(
-    [Parameter(Mandatory)][string]$FilePath
-  )
-
-  $ext = [System.IO.Path]::GetExtension($FilePath).ToLowerInvariant()
-  switch ($ext) {
-    ".apk" { $platform = "android" }
-    ".ipa" { $platform = "ios" }
-    default { throw "Unsupported app file (only .apk/.ipa)" }
-  }
-
-  $boundary = [System.Guid]::NewGuid().ToString()
-  $LF = "`r`n"
-  $fileBin = [System.IO.File]::ReadAllBytes($FilePath)
-  $fileName = [System.IO.Path]::GetFileName($FilePath)
-
-  $bodyLines = (
-    "--$boundary",
-    "Content-Disposition: form-data; name=`"file`"; filename=`"$fileName`"",
-    "Content-Type: application/octet-stream$LF",
-    [System.Text.Encoding]::GetEncoding("iso-8859-1").GetString($fileBin),
-    "--$boundary--$LF"
-  ) -join $LF
-
-  $headers = @{
-    Authorization = (Get-BasicAuthHeader -User $BROWSERSTACK_USERNAME -Key $BROWSERSTACK_ACCESS_KEY)
-    "Content-Type" = "multipart/form-data; boundary=$boundary"
-  }
-
-  $resp = Invoke-RestMethod -Method Post -Uri "https://api-cloud.browserstack.com/app-automate/upload" -Headers $headers -Body $bodyLines
-  $url = $resp.app_url
-  if ([string]::IsNullOrWhiteSpace($url)) {
-    throw "Upload failed"
-  }
-  return @{
-    Url = $url
-    Platform = $platform
-  }
-}
-
 function Ask-And-Upload-App {
   param(
     [string]$RunMode,
@@ -322,22 +287,29 @@ function Ask-And-Upload-App {
   if ($RunMode -match "--silent" -or $RunMode -match "--debug") {
     if ($CliPath) {
       $result = Invoke-CustomAppUpload -FilePath $CliPath
-      $script:APP_URL = $result.Url
+      $script:BROWSERSTACK_APP = $result.Url
       $script:APP_PLATFORM = if ($CliPlatform) { $CliPlatform } else { $result.Platform }
       return
     }
     $result = Invoke-SampleAppUpload
-    Log-Line "⚠️ Using auto-uploaded sample app: $($result.Url)" $GLOBAL_LOG
-    $script:APP_URL = $result.Url
+    Log-Line "⚠️ Using auto-uploaded sample app: $($result.Url)" $global:NOW_RUN_LOG_FILE
+    $script:BROWSERSTACK_APP = $result.Url
     $script:APP_PLATFORM = $result.Platform
     return
+  }
+  
+  if (-not [string]::IsNullOrWhiteSpace($CliPath)) {
+      $result = Invoke-CustomAppUpload -FilePath $CliPath
+      $script:BROWSERSTACK_APP = $result.Url
+      $script:APP_PLATFORM = if ($CliPlatform) { $CliPlatform } else { $result.Platform }
+      return
   }
 
   $choice = Show-OpenOrSampleAppDialog
   if ([string]::IsNullOrWhiteSpace($choice) -or $choice -eq "Sample App") {
     $result = Invoke-SampleAppUpload
-    Log-Line "⚠️ Using sample app: $($result.Url)" $GLOBAL_LOG
-    $script:APP_URL = $result.Url
+    Log-Line "⚠️ Using sample app: $($result.Url)" $global:NOW_RUN_LOG_FILE
+    $script:BROWSERSTACK_APP = $result.Url
     $script:APP_PLATFORM = $result.Platform
     return
   }
@@ -345,19 +317,18 @@ function Ask-And-Upload-App {
   $path = Show-OpenFileDialog -Title "📱 Select your .apk or .ipa file" -Filter "App Files (*.apk;*.ipa)|*.apk;*.ipa|All files (*.*)|*.*"
   if ([string]::IsNullOrWhiteSpace($path)) {
     $result = Invoke-SampleAppUpload
-    Log-Line "⚠️ No app selected. Using sample app: $($result.Url)" $GLOBAL_LOG
-    $script:APP_URL = $result.Url
+    Log-Line "⚠️ No app selected. Using sample app: $($result.Url)" $global:NOW_RUN_LOG_FILE
+    $script:BROWSERSTACK_APP = $result.Url
     $script:APP_PLATFORM = $result.Platform
     return
   }
 
   $result = Invoke-CustomAppUpload -FilePath $path
-  $script:APP_URL = $result.Url
+  $script:BROWSERSTACK_APP = $result.Url
   $script:APP_PLATFORM = $result.Platform
-  Log-Line "✅ App uploaded successfully: $($result.Url)" $GLOBAL_LOG
+  Log-Line "✅ App uploaded successfully: $($result.Url)" $global:NOW_RUN_LOG_FILE
 }
 
-# ===== Perform next steps based on test type (like Mac's perform_next_steps_based_on_test_type) =====
 function Perform-NextSteps-BasedOnTestType {
   param(
     [string]$TestType,
@@ -379,4 +350,3 @@ function Perform-NextSteps-BasedOnTestType {
     }
   }
 }
-

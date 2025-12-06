@@ -34,26 +34,27 @@ jobs:
         run: |
           echo "Validating mac/run.sh syntax..."
           bash -n mac/run.sh
+          bash -n common/mac/run.sh
           echo "✅ mac/run.sh syntax is valid"
 
       - name: Validate supporting scripts syntax
         run: |
           echo "Validating supporting scripts..."
-          bash -n mac/common-utils.sh
-          bash -n mac/logging-utils.sh
-          bash -n mac/env-setup-run.sh
-          bash -n mac/user-interaction.sh
-          bash -n mac/env-prequisite-checks.sh
+          bash -n common/mac/common-utils.sh
+          bash -n common/mac/logging-utils.sh
+          bash -n common/mac/env-setup-run.sh
+          bash -n common/mac/user-interaction.sh
+          bash -n common/mac/env-prequisite-checks.sh
           echo "✅ All supporting scripts are valid"
 
       - name: Check if scripts are executable
         run: |
           chmod +x mac/run.sh
-          chmod +x mac/common-utils.sh
-          chmod +x mac/logging-utils.sh
-          chmod +x mac/env-setup-run.sh
-          chmod +x mac/user-interaction.sh
-          chmod +x mac/env-prequisite-checks.sh
+          chmod +x common/mac/common-utils.sh
+          chmod +x common/mac/logging-utils.sh
+          chmod +x common/mac/env-setup-run.sh
+          chmod +x common/mac/user-interaction.sh
+          chmod +x common/mac/env-prequisite-checks.sh
           echo "✅ All scripts are executable"
 
       - name: Run ShellCheck on mac scripts
@@ -61,11 +62,12 @@ jobs:
           brew install shellcheck
           echo "Running ShellCheck on mac scripts..."
           shellcheck -x mac/run.sh || true
-          shellcheck -x mac/common-utils.sh || true
-          shellcheck -x mac/logging-utils.sh || true
-          shellcheck -x mac/env-setup-run.sh || true
-          shellcheck -x mac/user-interaction.sh || true
-          shellcheck -x mac/env-prequisite-checks.sh || true
+          shellcheck -x common/mac/run.sh || true
+          shellcheck -x common/mac/common-utils.sh || true
+          shellcheck -x common/mac/logging-utils.sh || true
+          shellcheck -x common/mac/env-setup-run.sh || true
+          shellcheck -x common/mac/user-interaction.sh || true
+          shellcheck -x common/mac/env-prequisite-checks.sh || true
           echo "✅ ShellCheck analysis complete"
 
       - name: Verify required dependencies
@@ -81,7 +83,7 @@ jobs:
         run: |
           set -e
           echo "Testing script sourcing..."
-          bash -c "source mac/common-utils.sh && echo '✅ common-utils.sh sourced successfully'"
+          bash -c "source common/mac/common-utils.sh && echo '✅ common-utils.sh sourced successfully'"
           echo "✅ Script sourcing successful"
 
       - name: Integration Test - Silent Mode Execution
@@ -205,18 +207,20 @@ jobs:
           Write-Host "Validating win/run.ps1 syntax..."
           $ScriptPath = "win/run.ps1"
           $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content -Raw $ScriptPath), [ref]$null)
+          $CommonScriptPath = "common/win/run.ps1"
+          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content -Raw $CommonScriptPath), [ref]$null)
           Write-Host "✅ win/run.ps1 syntax is valid"
 
       - name: Validate supporting PowerShell scripts syntax
         run: |
           Write-Host "Validating supporting PowerShell scripts..."
           $Scripts = @(
-            "win/common-utils.ps1",
-            "win/logging-utils.ps1",
-            "win/env-prequisite-checks.ps1",
-            "win/user-interaction.ps1",
-            "win/env-setup-run.ps1",
-            "win/device-machine-allocation.ps1"
+            "common/win/common-utils.ps1",
+            "common/win/logging-utils.ps1",
+            "common/win/env-prequisite-checks.ps1",
+            "common/win/user-interaction.ps1",
+            "common/win/env-setup-run.ps1",
+            "common/win/device-machine-allocation.ps1"
           )
           foreach ($Script in $Scripts) {
             $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content -Raw $Script), [ref]$null)
@@ -400,26 +404,27 @@ jobs:
         run: |
           echo "Validating mac/run.sh syntax..."
           bash -n mac/run.sh
+          bash -n common/mac/run.sh
           echo "✅ mac/run.sh syntax is valid"
 
       - name: Validate supporting scripts syntax
         run: |
           echo "Validating supporting scripts..."
-          bash -n mac/common-utils.sh
-          bash -n mac/logging-utils.sh
-          bash -n mac/env-setup-run.sh
-          bash -n mac/user-interaction.sh
-          bash -n mac/env-prequisite-checks.sh
+          bash -n common/mac/common-utils.sh
+          bash -n common/mac/logging-utils.sh
+          bash -n common/mac/env-setup-run.sh
+          bash -n common/mac/user-interaction.sh
+          bash -n common/mac/env-prequisite-checks.sh
           echo "✅ All supporting scripts are valid"
 
       - name: Check if scripts are executable
         run: |
           chmod +x mac/run.sh
-          chmod +x mac/common-utils.sh
-          chmod +x mac/logging-utils.sh
-          chmod +x mac/env-setup-run.sh
-          chmod +x mac/user-interaction.sh
-          chmod +x mac/env-prequisite-checks.sh
+          chmod +x common/mac/common-utils.sh
+          chmod +x common/mac/logging-utils.sh
+          chmod +x common/mac/env-setup-run.sh
+          chmod +x common/mac/user-interaction.sh
+          chmod +x common/mac/env-prequisite-checks.sh
           echo "✅ All scripts are executable"
 
       - name: Install ShellCheck
@@ -433,11 +438,12 @@ jobs:
         run: |
           echo "Running ShellCheck on mac scripts..."
           shellcheck -x mac/run.sh || true
-          shellcheck -x mac/common-utils.sh || true
-          shellcheck -x mac/logging-utils.sh || true
-          shellcheck -x mac/env-setup-run.sh || true
-          shellcheck -x mac/user-interaction.sh || true
-          shellcheck -x mac/env-prequisite-checks.sh || true
+          shellcheck -x common/mac/run.sh || true
+          shellcheck -x common/mac/common-utils.sh || true
+          shellcheck -x common/mac/logging-utils.sh || true
+          shellcheck -x common/mac/env-setup-run.sh || true
+          shellcheck -x common/mac/user-interaction.sh || true
+          shellcheck -x common/mac/env-prequisite-checks.sh || true
           echo "✅ ShellCheck analysis complete"
 
       - name: Verify required dependencies
@@ -453,7 +459,7 @@ jobs:
         run: |
           set -e
           echo "Testing script sourcing..."
-          bash -c "source mac/common-utils.sh && echo '✅ common-utils.sh sourced successfully'"
+          bash -c "source common/mac/common-utils.sh && echo '✅ common-utils.sh sourced successfully'"
           echo "✅ Script sourcing successful"
 
       - name: Integration Test - Silent Mode Execution

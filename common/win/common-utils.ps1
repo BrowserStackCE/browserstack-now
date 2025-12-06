@@ -1,0 +1,520 @@
+# Common Utilities for PowerShell
+
+# ===== Global Variables =====
+$script:WORKSPACE_DIR = Join-Path $env:USERPROFILE ".browserstack"
+$script:PROJECT_FOLDER = "NOW"
+
+$script:GLOBAL_DIR = Join-Path $WORKSPACE_DIR $PROJECT_FOLDER
+$script:LOG_DIR     = Join-Path $GLOBAL_DIR "logs"
+$script:GLOBAL_LOG  = ""
+
+# Script state
+$script:BROWSERSTACK_USERNAME = ""
+$script:BROWSERSTACK_ACCESS_KEY = ""
+$script:TEST_TYPE = ""     # Web / App
+$script:TECH_STACK = ""    # Java / Python / JS
+[double]$script:PARALLEL_PERCENTAGE = 1.00
+
+$script:WEB_PLAN_FETCHED = $false
+$script:MOBILE_PLAN_FETCHED = $false
+[int]$script:TEAM_PARALLELS_MAX_ALLOWED_WEB = 0
+[int]$script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE = 0
+
+# URL handling
+$script:DEFAULT_TEST_URL = "https://bstackdemo.com"
+$script:CX_TEST_URL = $DEFAULT_TEST_URL
+
+# App handling
+$script:BROWSERSTACK_APP = ""
+$script:APP_PLATFORM = ""  # ios | android | all
+
+# Chosen Python command tokens
+$script:PY_CMD = @()
+
+# ===== Workspace Management =====
+function Ensure-Workspace {
+  if (!(Test-Path $script:GLOBAL_DIR)) {
+    New-Item -ItemType Directory -Path $script:GLOBAL_DIR | Out-Null
+    Log-Line "✅ Created Onboarding workspace: $script:GLOBAL_DIR" $global:NOW_RUN_LOG_FILE
+  } else {
+    Log-Line "✅ Onboarding workspace found at: $script:GLOBAL_DIR" $global:NOW_RUN_LOG_FILE
+  }
+}
+
+function Setup-Workspace {
+  Log-Section "⚙️ Environment & Credentials"
+  Ensure-Workspace
+}
+
+function Clear-OldLogs {
+  if (!(Test-Path $script:LOG_DIR)) { 
+    New-Item -ItemType Directory -Path $script:LOG_DIR | Out-Null 
+  }
+
+  $legacyLogs = @("global.log","web_run_result.log","mobile_run_result.log")
+  foreach ($legacy in $legacyLogs) {
+    $legacyPath = Join-Path $script:LOG_DIR $legacy
+    if (Test-Path $legacyPath) {
+      Remove-Item -Path $legacyPath -Force -ErrorAction SilentlyContinue
+    }
+  }
+
+  Log-Line "✅ Logs directory cleaned. Legacy files removed." $global:NOW_RUN_LOG_FILE
+}
+
+# ===== Git Clone =====
+function Invoke-GitClone {
+  param(
+    [Parameter(Mandatory)] [string]$Url,
+    [Parameter(Mandatory)] [string]$Target,
+    [string]$Branch,
+    [string]$LogFile
+  )
+  $argsList = @("clone")
+  if ($Branch) { $argsList += @("-b", $Branch) }
+  $argsList += @($Url, $Target)
+
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $psi.FileName = "git"
+  $psi.Arguments = ($argsList | ForEach-Object {
+    if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ }
+  }) -join ' '
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError  = $true
+  $psi.UseShellExecute = $false
+  $psi.CreateNoWindow   = $true
+  $psi.WorkingDirectory = (Get-Location).Path
+
+  $p = New-Object System.Diagnostics.Process
+  $p.StartInfo = $psi
+  [void]$p.Start()
+  $stdout = $p.StandardOutput.ReadToEnd()
+  $stderr = $p.StandardError.ReadToEnd()
+  $p.WaitForExit()
+
+  if ($LogFile) {
+    if ($stdout) { Add-Content -Path $LogFile -Value $stdout }
+    if ($stderr) { Add-Content -Path $LogFile -Value $stderr }
+  }
+
+  if ($p.ExitCode -ne 0) {
+    throw "git clone failed (exit $($p.ExitCode)): $stderr"
+  }
+}
+
+function Invoke-External {
+  param(
+    [Parameter(Mandatory)][string]$Exe,
+    [Parameter()][string[]]$Arguments = @(),
+    [string]$LogFile,
+    [string]$WorkingDirectory
+  )
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $exeToRun = $Exe
+  $argLine  = ($Arguments | ForEach-Object { if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ } }) -join ' '
+
+  $ext = [System.IO.Path]::GetExtension($Exe)
+  if ($ext -and ($ext.ToLowerInvariant() -in @('.cmd','.bat'))) {
+    if (-not (Test-Path $Exe)) { throw "Command not found: $Exe" }
+    $psi.FileName = "cmd.exe"
+    $psi.Arguments = "/c `"$Exe`" $argLine"
+  } else {
+    $psi.FileName = $exeToRun
+    $psi.Arguments = $argLine
+  }
+
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError  = $true
+  $psi.UseShellExecute = $false
+  $psi.CreateNoWindow   = $true
+  if ([string]::IsNullOrWhiteSpace($WorkingDirectory)) {
+    $psi.WorkingDirectory = (Get-Location).Path
+  } else {
+    $psi.WorkingDirectory = $WorkingDirectory
+  }
+
+  $p = New-Object System.Diagnostics.Process
+  $p.StartInfo = $psi
+
+  if ($LogFile) {
+    $logDir = Split-Path -Parent $LogFile
+    if ($logDir -and !(Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }
+
+    # Synchronous read is safer for simple logging to avoid deadlock if buffer fills, 
+    # but async is better for real-time. We'll use async events.
+    
+    $outputHandler = {
+        if (-not [string]::IsNullOrEmpty($EventArgs.Data)) {
+            Add-Content -Path $Event.MessageData -Value $EventArgs.Data -Encoding UTF8
+        }
+    }
+
+    $stdoutEvent = Register-ObjectEvent -InputObject $p -EventName OutputDataReceived -Action $outputHandler -MessageData $LogFile
+    $stderrEvent = Register-ObjectEvent -InputObject $p -EventName ErrorDataReceived -Action $outputHandler -MessageData $LogFile
+
+    [void]$p.Start()
+    $p.BeginOutputReadLine()
+    $p.BeginErrorReadLine()
+    $p.WaitForExit()
+
+    Unregister-Event -SourceIdentifier $stdoutEvent.Name
+    Unregister-Event -SourceIdentifier $stderrEvent.Name
+    Remove-Job -Id $stdoutEvent.Id -Force
+    Remove-Job -Id $stderrEvent.Id -Force
+  } else {
+    [void]$p.Start()
+    $p.WaitForExit()
+  }
+
+  return $p.ExitCode
+}
+
+function Get-MavenCommand {
+  param([Parameter(Mandatory)][string]$RepoDir)
+  $mvnCmd = Get-Command mvn -ErrorAction SilentlyContinue
+  if ($mvnCmd) { return $mvnCmd.Source }
+  $wrapper = Join-Path $RepoDir "mvnw.cmd"
+  if (Test-Path $wrapper) { return $wrapper }
+  throw "Maven not found in PATH and 'mvnw.cmd' not present under $RepoDir. Install Maven or ensure the wrapper exists."
+}
+
+function Get-VenvPython {
+  param([Parameter(Mandatory)][string]$VenvDir)
+  $py = Join-Path $VenvDir "Scripts\python.exe"
+  if (Test-Path $py) { return $py }
+  throw "Python interpreter not found in venv: $VenvDir"
+}
+
+function Set-PythonCmd {
+  $candidates = @(
+    @("python3"),
+    @("python"),
+    @("py","-3"),
+    @("py")
+  )
+  foreach ($cand in $candidates) {
+    try {
+      $exe = $cand[0]
+      $argsList = @()
+      if ($cand.Length -gt 1) { $argsList = $cand[1..($cand.Length-1)] }
+      $code = Invoke-External -Exe $exe -Arguments ($argsList + @("--version")) -LogFile $null
+      if ($code -eq 0) {
+        $script:PY_CMD = $cand
+        return
+      }
+    } catch {}
+  }
+  throw "Python not found via python3/python/py. Please install Python 3 and ensure it's on PATH."
+}
+
+function Invoke-Py {
+  param(
+    [Parameter(Mandatory)][string[]]$Arguments,
+    [string]$LogFile,
+    [string]$WorkingDirectory
+  )
+  if (-not $script:PY_CMD -or $script:PY_CMD.Count -eq 0) { Set-PythonCmd }
+  $exe = $script:PY_CMD[0]
+  $baseArgs = @()
+  if ($script:PY_CMD.Count -gt 1) { $baseArgs = $script:PY_CMD[1..($script:PY_CMD.Count-1)] }
+  return (Invoke-External -Exe $exe -Arguments ($baseArgs + $Arguments) -LogFile $LogFile -WorkingDirectory $WorkingDirectory)
+}
+
+function Show-Spinner {
+  param([Parameter(Mandatory)][System.Diagnostics.Process]$Process)
+  $spin = @('|','/','-','\')
+  $i = 0
+  $ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+  while (!$Process.HasExited) {
+    Write-Host "`r[$ts] ⏳ Processing... $($spin[$i])" -NoNewline -ForegroundColor Cyan
+    $i = ($i + 1) % 4
+    Start-Sleep -Milliseconds 100
+  }
+  Write-Host ""
+  Log-Info "Run Test command completed."
+  Start-Sleep -Seconds 2
+}
+
+function Test-PrivateIP {
+  param([string]$IP)
+  if ([string]::IsNullOrWhiteSpace($IP)) { return $false }
+  $parts = $IP.Split('.')
+  if ($parts.Count -ne 4) { return $false }
+  $first = [int]$parts[0]
+  $second = [int]$parts[1]
+  if ($first -eq 10) { return $true }
+  if ($first -eq 192 -and $second -eq 168) { return $true }
+  if ($first -eq 172 -and $second -ge 16 -and $second -le 31) { return $true }
+  return $false
+}
+
+function Test-DomainPrivate {
+  $domain = $script:CX_TEST_URL -replace '^https?://', '' -replace '/.*$', ''
+  Log-Line "Website domain: $domain" $global:NOW_RUN_LOG_FILE
+  $env:NOW_WEB_DOMAIN = $script:CX_TEST_URL
+
+  $IP_ADDRESS = ""
+  try {
+    $dnsResult = Resolve-DnsName -Name $domain -Type A -ErrorAction Stop | Where-Object { $_.Type -eq 'A' } | Select-Object -First 1
+    if ($dnsResult) {
+      $IP_ADDRESS = $dnsResult.IPAddress
+    }
+  } catch {
+    try {
+      $nslookupOutput = nslookup $domain 2>&1 | Out-String
+      if ($nslookupOutput -match '(?:Address|Addresses):\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})') {
+        $IP_ADDRESS = $matches[1]
+      }
+    } catch {
+      Log-Line "⚠️ Failed to resolve domain: $domain (assuming public domain)" $global:NOW_RUN_LOG_FILE
+      $IP_ADDRESS = ""
+    }
+  }
+
+  if ([string]::IsNullOrWhiteSpace($IP_ADDRESS)) {
+    Log-Line "⚠️ DNS resolution failed for: $domain (treating as public domain, BrowserStack Local will be DISABLED)" $global:NOW_RUN_LOG_FILE
+  } else {
+    Log-Line "✅ Resolved IP: $IP_ADDRESS" $global:NOW_RUN_LOG_FILE
+  }
+
+  return (Test-PrivateIP -IP $IP_ADDRESS)
+}
+
+function Report-BStack-Local-Status {
+    param([bool]$LocalFlag)
+    if ($LocalFlag) {
+        Log-Info "BrowserStack Local: ENABLED"
+    } else {
+        Log-Info "BrowserStack Local: DISABLED"
+    }
+}
+
+function Get-BasicAuthHeader {
+  param([string]$User, [string]$Key)
+  $pair = "{0}:{1}" -f $User,$Key
+  $bytes = [System.Text.Encoding]::UTF8.GetBytes($pair)
+  "Basic {0}" -f [System.Convert]::ToBase64String($bytes)
+}
+
+function Fetch-Plan-Details {
+  param([string]$TestType)
+  
+  if ([string]::IsNullOrWhiteSpace($TestType)) {
+    throw "Test type is required to fetch plan details."
+  }
+
+  $normalized = $TestType.ToLowerInvariant()
+  Log-Section "☁️ Account & Plan Details"
+  Log-Info "Fetching BrowserStack plan for $normalized"
+
+  $auth = Get-BasicAuthHeader -User $script:BROWSERSTACK_USERNAME -Key $script:BROWSERSTACK_ACCESS_KEY
+  $headers = @{ Authorization = $auth }
+
+  switch ($normalized) {
+    "web" {
+      try {
+        $resp = Invoke-RestMethod -Method Get -Uri "https://api.browserstack.com/automate/plan.json" -Headers $headers
+        $script:WEB_PLAN_FETCHED = $true
+        $script:TEAM_PARALLELS_MAX_ALLOWED_WEB = [int]$resp.parallel_sessions_max_allowed
+        Log-Line "✅ Web Testing Plan fetched: Team max parallel sessions = $script:TEAM_PARALLELS_MAX_ALLOWED_WEB" $global:NOW_RUN_LOG_FILE
+      } catch {
+        Log-Line "❌ Web Testing Plan fetch failed ($($_.Exception.Message))" $global:NOW_RUN_LOG_FILE
+      }
+      if (-not $script:WEB_PLAN_FETCHED) {
+        throw "Unable to fetch Web Testing plan details."
+      }
+    }
+    "app" {
+      try {
+        $resp2 = Invoke-RestMethod -Method Get -Uri "https://api-cloud.browserstack.com/app-automate/plan.json" -Headers $headers
+        $script:MOBILE_PLAN_FETCHED = $true
+        $script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE = [int]$resp2.parallel_sessions_max_allowed
+        Log-Line "✅ Mobile App Testing Plan fetched: Team max parallel sessions = $script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE" $global:NOW_RUN_LOG_FILE
+      } catch {
+        Log-Line "❌ Mobile App Testing Plan fetch failed ($($_.Exception.Message))" $global:NOW_RUN_LOG_FILE
+      }
+      if (-not $script:MOBILE_PLAN_FETCHED) {
+        throw "Unable to fetch Mobile App Testing plan details."
+      }
+    }
+    default {
+      throw "Unsupported TEST_TYPE: $TestType. Allowed values: Web, App."
+    }
+  }
+
+  if ($script:IS_SILENT_MODE) {
+        $script:TEAM_PARALLELS_MAX_ALLOWED_WEB = 5 
+        $script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE = 5
+        Log-Line "Silent mode: Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)" $global:NOW_RUN_LOG_FILE
+    } else {
+    Log-Line "ℹ️ Plan summary: Web fetched=$script:WEB_PLAN_FETCHED (team max=$script:TEAM_PARALLELS_MAX_ALLOWED_WEB), Mobile fetched=$script:MOBILE_PLAN_FETCHED (team max=$script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" $global:NOW_RUN_LOG_FILE
+  }
+
+}
+
+function Invoke-SampleAppUpload {
+  Log-Line "⬆️ Uploading sample app to BrowserStack..." $global:NOW_RUN_LOG_FILE
+  $headers = @{
+    Authorization = (Get-BasicAuthHeader -User $script:BROWSERSTACK_USERNAME -Key $script:BROWSERSTACK_ACCESS_KEY)
+  }
+  $body = @{
+    url = "https://www.browserstack.com/app-automate/sample-apps/android/WikipediaSample.apk"
+  }
+  try {
+      $resp = Invoke-RestMethod -Method Post -Uri "https://api-cloud.browserstack.com/app-automate/upload" -Headers $headers -ContentType "application/x-www-form-urlencoded" -Body $body
+      $url = $resp.app_url
+      if ([string]::IsNullOrWhiteSpace($url)) {
+        throw "Sample app upload failed (empty URL)"
+      }
+      Log-Line "✅ App uploaded successfully: $url" $global:NOW_RUN_LOG_FILE
+      return @{
+        Url = $url
+        Platform = "android"
+      }
+  } catch {
+      Log-Line "❌ Upload failed: $($_.Exception.Message)" $global:NOW_RUN_LOG_FILE
+      throw
+  }
+}
+
+function Invoke-CustomAppUpload {
+  param(
+    [Parameter(Mandatory)][string]$FilePath
+  )
+
+  $ext = [System.IO.Path]::GetExtension($FilePath).ToLowerInvariant()
+  switch ($ext) {
+    ".apk" { $platform = "android" }
+    ".ipa" { $platform = "ios" }
+    default { throw "Unsupported app file (only .apk/.ipa)" }
+  }
+
+  Log-Line "⬆️ Uploading app to BrowserStack..." $global:NOW_RUN_LOG_FILE
+  
+  $boundary = [System.Guid]::NewGuid().ToString()
+  $LF = "`r`n"
+  $fileBin = [System.IO.File]::ReadAllBytes($FilePath)
+  $fileName = [System.IO.Path]::GetFileName($FilePath)
+
+  $bodyLines = (
+    "--$boundary",
+    "Content-Disposition: form-data; name=`"file`"; filename=`"$fileName`"",
+    "Content-Type: application/octet-stream$LF",
+    [System.Text.Encoding]::GetEncoding("iso-8859-1").GetString($fileBin),
+    "--$boundary--$LF"
+  ) -join $LF
+
+  $headers = @{
+    Authorization = (Get-BasicAuthHeader -User $script:BROWSERSTACK_USERNAME -Key $script:BROWSERSTACK_ACCESS_KEY)
+    "Content-Type" = "multipart/form-data; boundary=$boundary"
+  }
+
+  try {
+      $resp = Invoke-RestMethod -Method Post -Uri "https://api-cloud.browserstack.com/app-automate/upload" -Headers $headers -Body $bodyLines
+      $url = $resp.app_url
+      if ([string]::IsNullOrWhiteSpace($url)) {
+        throw "Upload failed (empty URL)"
+      }
+      Log-Line "✅ App uploaded successfully: $url" $global:NOW_RUN_LOG_FILE
+      return @{
+        Url = $url
+        Platform = $platform
+      }
+  } catch {
+      Log-Line "❌ Upload failed: $($_.Exception.Message)" $global:NOW_RUN_LOG_FILE
+      throw
+  }
+}
+
+function Identify-Run-Status-Java {
+    param([string]$LogFile)
+    
+    $content = Get-Content -Path $LogFile -Raw -ErrorAction SilentlyContinue
+    if (-not $content) {
+        Log-Warn "❌ No test summary line found."
+        return $false
+    }
+
+    # Regex for "Tests run: 1, Failures: 0, Errors: 0, Skipped: 0"
+    if ($content -match "Tests run: (\d+), Failures: (\d+), Errors: (\d+), Skipped: (\d+)") {
+        $testsRun = [int]$matches[1]
+        $failures = [int]$matches[2]
+        $errors = [int]$matches[3]
+        $skipped = [int]$matches[4]
+        
+        $passed = $testsRun - ($failures + $errors + $skipped)
+        if ($passed -gt 0) {
+            Log-Success "Success: $passed test(s) passed."
+            return $true
+        } else {
+            Log-Error "Error: No tests passed (Tests run: $testsRun, Failures: $failures, Errors: $errors, Skipped: $skipped)"
+            return $false
+        }
+    }
+    
+    Log-Warn "❌ No test summary line found."
+    return $false
+}
+
+function Identify-Run-Status-Python {
+    param([string]$LogFile)
+    
+    $content = Get-Content -Path $LogFile -Raw -ErrorAction SilentlyContinue
+    if (-not $content) {
+        Log-Warn "❌ No test summary line found."
+        return $false
+    }
+    
+    # Regex for "X passed"
+    $matches = [regex]::Matches($content, '(\d+) passed')
+    $passedSum = 0
+    foreach ($m in $matches) {
+        $passedSum += [int]$m.Groups[1].Value
+    }
+    
+    Write-Host "✅ Total Passed:  $passedSum" -ForegroundColor Green
+    
+    if ($passedSum -gt 0) {
+        Log-Success "Success: $passedSum test(s) completed"
+        return $true
+    } else {
+        Log-Error "Error: No tests completed"
+        return $false
+    }
+}
+
+function Identify-Run-Status-NodeJS {
+    param([string]$LogFile)
+    
+    $content = Get-Content -Path $LogFile -Raw -ErrorAction SilentlyContinue
+    if (-not $content) {
+        Log-Warn "❌ No test summary line found."
+        return $false
+    }
+    
+    # Regex for "Spec Files:.*passed.*total"
+    if ($content -match "Spec Files:.*passed.*total") {
+        # Extract passed count
+        if ($content -match '(\d+) passed') {
+            $passed = [int]$matches[1]
+            if ($passed -gt 0) {
+                Log-Success "Success: $passed test(s) passed"
+                return $true
+            }
+        }
+    }
+    
+    Log-Error "Error: No tests passed"
+    return $false
+}
+
+# ===== Dynamic config generators =====
+function Generate-Web-Platforms {
+    param($MaxTotalParallels, $Format)
+    return Pick-Terminal-Devices -PlatformName "web" -Count $MaxTotalParallels -PlatformsListContentFormat $Format
+}
+
+function Generate-Mobile-Platforms {
+    param($MaxTotalParallels, $Format)
+    return Pick-Terminal-Devices -PlatformName $script:APP_PLATFORM -Count $MaxTotalParallels -PlatformsListContentFormat $Format
+}

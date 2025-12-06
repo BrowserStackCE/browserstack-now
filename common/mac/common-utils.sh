@@ -1,11 +1,14 @@
 #!/bin/bash
 
 # shellcheck source=/dev/null
+# shellcheck source=/dev/null
 source "$(dirname "$0")/device-machine-allocation.sh"
 
 # # ===== Global Variables =====
 WORKSPACE_DIR="$HOME/.browserstack"
 PROJECT_FOLDER="NOW"
+GUI_SCRIPT="$(dirname "${BASH_SOURCE[0]}")/windows-gui.ps1"
+
 
 # URL handling
 DEFAULT_TEST_URL="https://bstackdemo.com"
@@ -81,6 +84,11 @@ setup_workspace() {
 # ===== App Upload Management =====
 handle_app_upload() {
     local app_platform=""
+    if [[ -n "$CLI_APP_PATH" ]]; then
+        upload_custom_app "$CLI_APP_PATH"
+        return
+    fi
+
     if [[ "$RUN_MODE" == *"--silent"* || "$RUN_MODE" == *"--debug"* ]]; then
         upload_sample_app
         app_platform="android"
@@ -96,6 +104,8 @@ handle_app_upload() {
                 buttons {"Use Sample App", "Upload my App (.apk/.ipa)", "Cancel"} ¬
                 default button "Upload my App (.apk/.ipa)"
             ' 2>/dev/null)
+        elif [[ "$NOW_OS" == "windows" ]]; then
+            choice=$(powershell.exe -ExecutionPolicy Bypass -File "$GUI_SCRIPT" -Command "ClickChoice" -Title "BrowserStack App Upload" -Prompt "How would you like to select your app?" -Choices "Use Sample App,Upload my App (.apk/.ipa),Cancel" -DefaultChoice "Upload my App (.apk/.ipa)" | tr -d '\r')
         else
             echo "How would you like to select your app?"
             select opt in "Use Sample App" "Upload my App (.apk/.ipa)" "Cancel"; do
@@ -144,20 +154,24 @@ upload_sample_app() {
 
 upload_custom_app() {
     local app_platform=""
-    local file_path
+    local file_path="$1"
 
-      # Convert to POSIX path
+    if [ -z "$file_path" ]; then
+        # Convert to POSIX path
     # Convert to POSIX path
     if [[ "$NOW_OS" == "macos" ]]; then
         file_path=$(osascript -e \
             'POSIX path of (choose file with prompt "Select your .apk or .ipa file:" of type {"apk", "ipa"})' \
             2>/dev/null)
+    elif [[ "$NOW_OS" == "windows" ]]; then
+        file_path=$(powershell.exe -ExecutionPolicy Bypass -File "$GUI_SCRIPT" -Command "OpenFileDialog" -Title "Select your .apk or .ipa file" -Filter "App Files (*.apk;*.ipa)|*.apk;*.ipa|All files (*.*)|*.*" | tr -d '\r')
     else
         echo "Please enter the full path to your .apk or .ipa file:"
         read -r file_path
         # Remove quotes if user added them
         file_path="${file_path%\"}"
         file_path="${file_path#\"}"
+    fi
     fi
 
     # Trim whitespace
@@ -217,7 +231,7 @@ generate_mobile_platforms() {
     local platformsListContentFormat=$2
     local app_platform="$APP_PLATFORM"
     local platformsList=""
-    platformsList=$(pick_terminal_devices "$app_platform" "$max_total_parallels", "$platformsListContentFormat")
+    platformsList=$(pick_terminal_devices "$app_platform" "$max_total_parallels" "$platformsListContentFormat")
     echo "$platformsList"
 }
 
@@ -277,7 +291,7 @@ fetch_plan_details() {
             TEAM_PARALLELS_MAX_ALLOWED_MOBILE=5
             export TEAM_PARALLELS_MAX_ALLOWED_MOBILE=5
         fi
-        log_info "Resetting Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)"
+        log_info "Silent mode: Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)"
     fi
 }
 
@@ -340,6 +354,15 @@ resolve_ip() {
     echo "$ip"
 }
 
+report_bstack_local_status() {
+    local local_flag=$1
+    if [ "$local_flag" == "true" ]; then
+        log_info "BrowserStack Local: ENABLED"
+    else
+        log_info "BrowserStack Local: DISABLED"
+    fi
+}
+
 
 identify_run_status_java() {
     local log_file=$1
@@ -391,7 +414,7 @@ identify_run_status_nodejs() {
         log_success "Success: $passed test(s) passed"
         return 0
     else
-        log_error "❌ Error: No tests passed"
+        log_error "Error: No tests passed"
         return 1
     fi
 }
