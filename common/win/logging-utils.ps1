@@ -39,7 +39,7 @@ function Log-Line {
         [string]$Message,
         [string]$LogFile
     )
-    if (-not $DestFile) {
+    if (-not $LogFile) {
     $DestFile = Get-RunLogFile
     }
 
