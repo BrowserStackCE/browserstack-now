@@ -1,11 +1,3 @@
-#requires -version 5.0
-<#
-  BrowserStack Onboarding (PowerShell 5.0+, GUI)
-  - Shared logic for Windows
-  - Uses WinForms for GUI prompts
-  - Logs to %USERPROFILE%\.browserstack\NOW\logs
-#>
-
 param(
   [string]$RunMode = "--interactive",
   [string]$TT,
