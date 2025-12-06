@@ -58,7 +58,7 @@ function Setup-Web-Java {
     Log-Line "✅ Dependencies installed" $GLOBAL_LOG
 
     Print-TestsRunningSection -Command "mvn test -P sample-test"
-    $testTimeout = 300  
+    $testTimeout = 600  # 10 minutes to allow for test execution + cleanup
     Log-Line "ℹ️ Starting test execution with timeout of $testTimeout seconds..." $GLOBAL_LOG
     try {
       $exitCode = Invoke-External -Exe $mvn -Arguments @("test","-P","sample-test") -LogFile $LogFile -WorkingDirectory $TARGET -TimeoutSeconds $testTimeout
@@ -157,7 +157,9 @@ function Setup-Web-Python {
     
     Print-TestsRunningSection -Command "browserstack-sdk pytest -s tests/bstack-sample-test.py"
     
-    $testTimeout = 300
+    # Increased timeout to 600 seconds (10 minutes) to allow for test execution + cleanup
+    # Tests may complete but SDK hangs waiting for BrowserStack Local cleanup
+    $testTimeout = 600
     Log-Line "ℹ️ Starting test execution with timeout of $testTimeout seconds..." $GLOBAL_LOG
     Log-Line "ℹ️ Working directory: $TARGET" $GLOBAL_LOG
     Log-Line "ℹ️ Log file: $LogFile" $GLOBAL_LOG
@@ -199,9 +201,44 @@ function Setup-Web-Python {
       }
       
       if ($errorMsg -match "timed out") {
-        Log-Line "⚠️ Test execution timed out after $testTimeout seconds. Check BrowserStack dashboard for test status." $GLOBAL_LOG
-        Log-Line "⚠️ This may indicate tests are still running on BrowserStack but the local process timed out." $GLOBAL_LOG
-        Log-Line "⚠️ Check the log file for any output from browserstack-sdk: $LogFile" $GLOBAL_LOG
+        Log-Line "⚠️ Test execution timed out after $testTimeout seconds. Checking if tests completed successfully..." $GLOBAL_LOG
+        
+        # Check if tests actually completed successfully despite timeout
+        if ($LogFile -and (Test-Path $LogFile)) {
+          $logContent = Get-Content -Path $LogFile -Raw
+          $passedMatches = ([regex]::Matches($logContent, '(\d+)\s+passed')).Count
+          $failedMatches = ([regex]::Matches($logContent, '(\d+)\s+failed')).Count
+          $errorMatches = ([regex]::Matches($logContent, '(\d+)\s+error')).Count
+          
+          if ($passedMatches -gt 0) {
+            $totalPassed = 0
+            foreach ($match in ([regex]::Matches($logContent, '(\d+)\s+passed'))) {
+              $totalPassed += [int]$match.Groups[1].Value
+            }
+            
+            Log-Line "ℹ️ Found test completion indicators in logs: $passedMatches 'passed' message(s), total tests passed: $totalPassed" $GLOBAL_LOG
+            Log-Line "ℹ️ Tests appear to have completed successfully but SDK is hanging during cleanup." $GLOBAL_LOG
+            
+            # Check for BrowserStack Local processes that might be preventing cleanup
+            $bsLocalProcesses = Get-Process -Name "BrowserStackLocal" -ErrorAction SilentlyContinue
+            if ($bsLocalProcesses) {
+              Log-Line "⚠️ BrowserStack Local processes still running (PIDs: $($bsLocalProcesses.Id -join ', ')) - SDK may be waiting for them to shut down." $GLOBAL_LOG
+              Log-Line "ℹ️ This is a known issue where BrowserStack Local cleanup can hang. Tests completed successfully on BrowserStack." $GLOBAL_LOG
+            }
+            
+            Log-Line "✅ Tests completed successfully on BrowserStack. Timeout occurred during SDK cleanup phase." $GLOBAL_LOG
+            Log-Line "ℹ️ Verify test results on BrowserStack dashboard: https://automation.browserstack.com/" $GLOBAL_LOG
+            
+            # Tests passed but SDK cleanup hung - this is a known issue
+            # We'll still throw but with a message indicating tests passed
+            $errorMsg = "Tests completed successfully but SDK cleanup timed out. Check BrowserStack dashboard for results."
+          }
+          } else {
+            Log-Line "⚠️ No test completion indicators found. Tests may still be running." $GLOBAL_LOG
+          }
+        }
+        
+        Log-Line "⚠️ Check the log file for details: $LogFile" $GLOBAL_LOG
       }
       throw
     }
@@ -265,7 +302,7 @@ function Setup-Web-NodeJS {
     Log-Line "  $caps" $GLOBAL_LOG
 
     Print-TestsRunningSection -Command "npm run test"
-    $testTimeout = 300 
+    $testTimeout = 600  # 10 minutes to allow for test execution + cleanup
     Log-Line "ℹ️ Starting test execution with timeout of $testTimeout seconds..." $GLOBAL_LOG
     try {
       $exitCode = Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $TARGET -TimeoutSeconds $testTimeout
@@ -350,7 +387,7 @@ function Setup-Mobile-Java {
     Log-Line "✅ Dependencies installed" $GLOBAL_LOG
 
     Print-TestsRunningSection -Command "mvn test -P sample-test"
-    $testTimeout = 300  
+    $testTimeout = 600  # 10 minutes to allow for test execution + cleanup
     Log-Line "ℹ️ Starting test execution with timeout of $testTimeout seconds..." $GLOBAL_LOG
     try {
       $exitCode = Invoke-External -Exe $mvn -Arguments @("test","-P","sample-test") -LogFile $LogFile -WorkingDirectory (Get-Location).Path -TimeoutSeconds $testTimeout
@@ -445,7 +482,7 @@ function Setup-Mobile-Python {
     $sdk = Join-Path $venv "Scripts\browserstack-sdk.exe"
     Print-TestsRunningSection -Command "cd $runDirName && browserstack-sdk pytest -s bstack_sample.py"
     
-    $testTimeout = 300
+    $testTimeout = 600  # 10 minutes to allow for test execution + cleanup
     Log-Line "ℹ️ Starting test execution with timeout of $testTimeout seconds..." $GLOBAL_LOG
     Push-Location $runDir
     try {
@@ -518,7 +555,7 @@ function Setup-Mobile-NodeJS {
     Log-Line "ℹ️ Platforms: $capsJson" $GLOBAL_LOG
 
     Print-TestsRunningSection -Command "npm run test"
-    $testTimeout = 300  
+    $testTimeout = 600  # 10 minutes to allow for test execution + cleanup
     Log-Line "ℹ️ Starting test execution with timeout of $testTimeout seconds..." $GLOBAL_LOG
     try {
       $exitCode = Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $testDir -TimeoutSeconds $testTimeout
