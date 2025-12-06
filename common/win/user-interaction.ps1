@@ -346,3 +346,4 @@ function Perform-NextSteps-BasedOnTestType {
       throw "Unsupported TEST_TYPE: $TestType. Allowed values: Web, App."
     }
   }
+}
