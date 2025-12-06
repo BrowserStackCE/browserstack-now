@@ -165,7 +165,7 @@ function Ask-BrowserStack-Credentials {
     if ([string]::IsNullOrWhiteSpace($script:BROWSERSTACK_USERNAME) -or [string]::IsNullOrWhiteSpace($script:BROWSERSTACK_ACCESS_KEY)) {
       throw "BROWSERSTACK_USERNAME / BROWSERSTACK_ACCESS_KEY must be provided in silent/debug mode."
     }
-    Log-Line "✅ BrowserStack credentials loaded from environment for user: $script:BROWSERSTACK_USERNAME" $global:NOW_RUN_LOG_FILE
+    Log-Line "BrowserStack credentials loaded from environment for user: $script:BROWSERSTACK_USERNAME" $global:NOW_RUN_LOG_FILE
     
     # Export to process env for child processes
     $env:BROWSERSTACK_USERNAME = $script:BROWSERSTACK_USERNAME
@@ -180,14 +180,14 @@ function Ask-BrowserStack-Credentials {
   }
   $script:BROWSERSTACK_ACCESS_KEY = Show-PasswordBox -Title "BrowserStack Setup" -Prompt "Enter your BrowserStack Access Key:`n`nLocate it on https://www.browserstack.com/accounts/profile/details"
   if ([string]::IsNullOrWhiteSpace($script:BROWSERSTACK_ACCESS_KEY)) {
-    Log-Error "❌ Access Key empty" $global:NOW_RUN_LOG_FILE
+    Log-Error "Access Key empty" $global:NOW_RUN_LOG_FILE
     throw "Access Key is required"
   }
   
   $env:BROWSERSTACK_USERNAME = $script:BROWSERSTACK_USERNAME
   $env:BROWSERSTACK_ACCESS_KEY = $script:BROWSERSTACK_ACCESS_KEY
   
-  Log-Line "✅ BrowserStack credentials captured (access key hidden)" $global:NOW_RUN_LOG_FILE
+  Log-Line "BrowserStack credentials captured (access key hidden)" $global:NOW_RUN_LOG_FILE
 }
 
 function Resolve-Test-Type {
@@ -314,10 +314,10 @@ function Ask-And-Upload-App {
     return
   }
 
-  $path = Show-OpenFileDialog -Title "📱 Select your .apk or .ipa file" -Filter "App Files (*.apk;*.ipa)|*.apk;*.ipa|All files (*.*)|*.*"
+  $path = Show-OpenFileDialog -Title "Select your .apk or .ipa file" -Filter "App Files (*.apk;*.ipa)|*.apk;*.ipa|All files (*.*)|*.*"
   if ([string]::IsNullOrWhiteSpace($path)) {
     $result = Invoke-SampleAppUpload
-    Log-Line "⚠️ No app selected. Using sample app: $($result.Url)" $global:NOW_RUN_LOG_FILE
+    Log-Line "No app selected. Using sample app: $($result.Url)" $global:NOW_RUN_LOG_FILE
     $script:BROWSERSTACK_APP = $result.Url
     $script:APP_PLATFORM = $result.Platform
     return
