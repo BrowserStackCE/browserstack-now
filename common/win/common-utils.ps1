@@ -342,11 +342,11 @@ function Fetch-Plan-Details {
     }
   }
 
-  if ($script:IS_SILENT_MODE) {
-        $script:TEAM_PARALLELS_MAX_ALLOWED_WEB = 5 
-        $script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE = 5
-        Log-Line "Silent mode: Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)" $global:NOW_RUN_LOG_FILE
-    } else {
+  if ($RunMode -match "--silent|--debug") {
+    $script:TEAM_PARALLELS_MAX_ALLOWED_WEB = 5 
+    $script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE = 5
+    Log-Line "Silent mode: Plan summary: Web $WEB_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_WEB max), Mobile $MOBILE_PLAN_FETCHED ($TEAM_PARALLELS_MAX_ALLOWED_MOBILE max)" $global:NOW_RUN_LOG_FILE
+  } else {
     Log-Line "Plan summary: Web fetched=$script:WEB_PLAN_FETCHED (team max=$script:TEAM_PARALLELS_MAX_ALLOWED_WEB), Mobile fetched=$script:MOBILE_PLAN_FETCHED (team max=$script:TEAM_PARALLELS_MAX_ALLOWED_MOBILE)" $global:NOW_RUN_LOG_FILE
   }
 
