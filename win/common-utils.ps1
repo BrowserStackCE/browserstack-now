@@ -169,7 +169,8 @@ function Invoke-External {
     [Parameter(Mandatory)][string]$Exe,
     [Parameter()][string[]]$Arguments = @(),
     [string]$LogFile,
-    [string]$WorkingDirectory
+    [string]$WorkingDirectory,
+    [int]$TimeoutSeconds = 0  # 0 means no timeout
   )
   $psi = New-Object System.Diagnostics.ProcessStartInfo
   $exeToRun = $Exe
@@ -202,14 +203,24 @@ function Invoke-External {
     $logDir = Split-Path -Parent $LogFile
     if ($logDir -and !(Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }
 
+    # Simplified event handlers - write directly to reduce CPU overhead
+    # Batching adds complexity and may not help if output is sparse
     $stdoutAction = {
       if (-not [string]::IsNullOrEmpty($EventArgs.Data)) {
-        Add-Content -Path $Event.MessageData -Value $EventArgs.Data
+        try {
+          Add-Content -Path $Event.MessageData -Value $EventArgs.Data -ErrorAction SilentlyContinue
+        } catch {
+          # Silently ignore write errors to prevent event handler from blocking
+        }
       }
     }
     $stderrAction = {
       if (-not [string]::IsNullOrEmpty($EventArgs.Data)) {
-        Add-Content -Path $Event.MessageData -Value $EventArgs.Data
+        try {
+          Add-Content -Path $Event.MessageData -Value $EventArgs.Data -ErrorAction SilentlyContinue
+        } catch {
+          # Silently ignore write errors to prevent event handler from blocking
+        }
       }
     }
 
@@ -217,19 +228,210 @@ function Invoke-External {
     $stderrEvent = Register-ObjectEvent -InputObject $p -EventName ErrorDataReceived -Action $stderrAction -MessageData $LogFile
 
     [void]$p.Start()
+    $startTime = Get-Date
     $p.BeginOutputReadLine()
     $p.BeginErrorReadLine()
-    $p.WaitForExit()
+    
+    # Log process start
+    if ($LogFile) {
+      Add-Content -Path $LogFile -Value "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Process started: PID=$($p.Id), Command=$exeToRun $argLine"
+    }
+    
+    # Wait with timeout support and periodic status checks
+    if ($TimeoutSeconds -gt 0) {
+      $checkInterval = 30  # Check every 30 seconds
+      $lastOutputTime = Get-Date
+      $lastLogCheck = Get-Date
+      $lastResourceCheck = Get-Date
+      $highCpuCount = 0
+      $highCpuThreshold = 90  # Warn if CPU > 90%
+      $consecutiveHighCpuLimit = 3  # Warn after 3 consecutive high CPU checks
+      
+      # Use WaitForExit with timeout, but check periodically for status
+      $timeoutMs = $TimeoutSeconds * 1000
+      $remainingMs = $timeoutMs
+      
+      while (-not $p.HasExited -and $remainingMs -gt 0) {
+        $checkMs = [Math]::Min($checkInterval * 1000, $remainingMs)
+        if (-not $p.WaitForExit($checkMs)) {
+          $remainingMs -= $checkMs
+          $elapsed = ((Get-Date) - $startTime).TotalSeconds
+          
+          # Monitor CPU and memory usage every 30 seconds
+          if (((Get-Date) - $lastResourceCheck).TotalSeconds -ge 30) {
+            try {
+              # Get process CPU usage
+              $proc = Get-Process -Id $p.Id -ErrorAction SilentlyContinue
+              if ($proc) {
+                $procCpu = [math]::Round($proc.CPU, 2)
+                $procMemoryMB = [math]::Round($proc.WorkingSet64 / 1MB, 2)
+                
+                # Get system CPU usage
+                $sysCpu = (Get-Counter '\Processor(_Total)\% Processor Time' -ErrorAction SilentlyContinue).CounterSamples[0].CookedValue
+                $sysCpuPercent = [math]::Round($sysCpu, 2)
+                
+                # Get system memory
+                $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
+                if ($os) {
+                  $usedMemoryGB = [math]::Round(($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / 1MB, 2)
+                  $totalMemoryGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
+                  $memoryPercent = [math]::Round(($usedMemoryGB / $totalMemoryGB) * 100, 2)
+                  
+                  # Log resource usage
+                  if ($LogFile) {
+                    Add-Content -Path $LogFile -Value "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Resource check - Process CPU: ${procCpu}s, Process Memory: ${procMemoryMB}MB, System CPU: ${sysCpuPercent}%, System Memory: ${usedMemoryGB}GB/${totalMemoryGB}GB ($memoryPercent%)"
+                  }
+                  
+                  # Warn if CPU is consistently high
+                  if ($sysCpuPercent -gt $highCpuThreshold) {
+                    $highCpuCount++
+                    if ($highCpuCount -ge $consecutiveHighCpuLimit) {
+                      $warningMsg = "⚠️ High CPU usage detected: ${sysCpuPercent}% (threshold: ${highCpuThreshold}%). This may cause performance issues or apparent hangs."
+                      if ($LogFile) {
+                        Add-Content -Path $LogFile -Value "[WARNING] $warningMsg"
+                      }
+                      Log-Line $warningMsg $GLOBAL_LOG
+                      $highCpuCount = 0  # Reset counter after warning
+                    }
+                  } else {
+                    $highCpuCount = 0  # Reset counter if CPU drops
+                  }
+                  
+                  # Warn if memory is high (>85%)
+                  if ($memoryPercent -gt 85) {
+                    $memWarningMsg = "⚠️ High memory usage detected: ${memoryPercent}%. System may be under memory pressure."
+                    if ($LogFile) {
+                      Add-Content -Path $LogFile -Value "[WARNING] $memWarningMsg"
+                    }
+                    Log-Line $memWarningMsg $GLOBAL_LOG
+                  }
+                }
+              }
+            } catch {
+              # Silently continue if resource monitoring fails
+            }
+            $lastResourceCheck = Get-Date
+          }
+          
+          # Check if log file has been updated recently (indicates process is producing output)
+          if ($LogFile -and (Test-Path $LogFile)) {
+            $logLastWrite = (Get-Item $LogFile).LastWriteTime
+            if ($logLastWrite -gt $lastOutputTime) {
+              $lastOutputTime = $logLastWrite
+            }
+            
+            # Log status every minute
+            if (((Get-Date) - $lastLogCheck).TotalSeconds -ge 60) {
+              Add-Content -Path $LogFile -Value "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Process still running... Elapsed: $([math]::Round($elapsed, 0))s, Remaining: $([math]::Round($remainingMs/1000, 0))s"
+              $lastLogCheck = Get-Date
+            }
+          }
+        } else {
+          break  # Process exited
+        }
+      }
+      
+      # Check if we timed out
+      if (-not $p.HasExited) {
+        # Log final resource state before timeout
+        try {
+          $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
+          if ($os) {
+            $usedMemoryGB = [math]::Round(($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / 1MB, 2)
+            $totalMemoryGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
+            $memoryPercent = [math]::Round(($usedMemoryGB / $totalMemoryGB) * 100, 2)
+            $sysCpu = (Get-Counter '\Processor(_Total)\% Processor Time' -ErrorAction SilentlyContinue).CounterSamples[0].CookedValue
+            $sysCpuPercent = [math]::Round($sysCpu, 2)
+            
+            if ($LogFile) {
+              Add-Content -Path $LogFile -Value "[TIMEOUT] Final resource state - System CPU: ${sysCpuPercent}%, System Memory: ${usedMemoryGB}GB/${totalMemoryGB}GB ($memoryPercent%)"
+            }
+            
+            # Check if high CPU might have contributed to timeout
+            if ($sysCpuPercent -gt $highCpuThreshold) {
+              $cpuWarning = "⚠️ High CPU usage (${sysCpuPercent}%) detected at timeout. This may have contributed to the timeout."
+              if ($LogFile) {
+                Add-Content -Path $LogFile -Value "[TIMEOUT] $cpuWarning"
+              }
+              Log-Line $cpuWarning $GLOBAL_LOG
+            }
+          }
+        } catch {
+          # Ignore resource check errors during timeout
+        }
+        
+        $errorMsg = "Command timed out after $TimeoutSeconds seconds: $exeToRun $argLine"
+        Add-Content -Path $LogFile -Value "[TIMEOUT] $errorMsg"
+        Log-Line "❌ $errorMsg" $GLOBAL_LOG
+        try {
+          if (-not $p.HasExited) {
+            $p.Kill()
+            Start-Sleep -Milliseconds 500
+            if (-not $p.HasExited) {
+              Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+            }
+          }
+        } catch {
+          Log-Line "⚠️ Error killing timed-out process: $($_.Exception.Message)" $GLOBAL_LOG
+        }
+        Unregister-Event -SourceIdentifier $stdoutEvent.Name -ErrorAction SilentlyContinue
+        Unregister-Event -SourceIdentifier $stderrEvent.Name -ErrorAction SilentlyContinue
+        Remove-Job -Id $stdoutEvent.Id -Force -ErrorAction SilentlyContinue
+        Remove-Job -Id $stderrEvent.Id -Force -ErrorAction SilentlyContinue
+        throw $errorMsg
+      }
+    } else {
+      $p.WaitForExit()
+    }
+    
+    # Log process completion with final resource state
+    if ($LogFile) {
+      $endTime = Get-Date
+      $duration = ($endTime - $startTime).TotalSeconds
+      
+      # Log final resource state
+      try {
+        $proc = Get-Process -Id $p.Id -ErrorAction SilentlyContinue
+        $procCpu = if ($proc) { [math]::Round($proc.CPU, 2) } else { "N/A" }
+        $procMemoryMB = if ($proc) { [math]::Round($proc.WorkingSet64 / 1MB, 2) } else { "N/A" }
+        
+        $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
+        if ($os) {
+          $usedMemoryGB = [math]::Round(($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / 1MB, 2)
+          $totalMemoryGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
+          $memoryPercent = [math]::Round(($usedMemoryGB / $totalMemoryGB) * 100, 2)
+          $sysCpu = (Get-Counter '\Processor(_Total)\% Processor Time' -ErrorAction SilentlyContinue).CounterSamples[0].CookedValue
+          $sysCpuPercent = [math]::Round($sysCpu, 2)
+          
+          Add-Content -Path $LogFile -Value "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Process completed: ExitCode=$($p.ExitCode), Duration=$([math]::Round($duration, 2))s"
+          Add-Content -Path $LogFile -Value "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Final resources - Process CPU: ${procCpu}s, Process Memory: ${procMemoryMB}MB, System CPU: ${sysCpuPercent}%, System Memory: ${usedMemoryGB}GB/${totalMemoryGB}GB ($memoryPercent%)"
+        } else {
+          Add-Content -Path $LogFile -Value "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Process completed: ExitCode=$($p.ExitCode), Duration=$([math]::Round($duration, 2))s"
+        }
+      } catch {
+        Add-Content -Path $LogFile -Value "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Process completed: ExitCode=$($p.ExitCode), Duration=$([math]::Round($duration, 2))s"
+      }
+    }
 
-    Unregister-Event -SourceIdentifier $stdoutEvent.Name
-    Unregister-Event -SourceIdentifier $stderrEvent.Name
-    Remove-Job -Id $stdoutEvent.Id -Force
-    Remove-Job -Id $stderrEvent.Id -Force
+    Unregister-Event -SourceIdentifier $stdoutEvent.Name -ErrorAction SilentlyContinue
+    Unregister-Event -SourceIdentifier $stderrEvent.Name -ErrorAction SilentlyContinue
+    Remove-Job -Id $stdoutEvent.Id -Force -ErrorAction SilentlyContinue
+    Remove-Job -Id $stderrEvent.Id -Force -ErrorAction SilentlyContinue
   } else {
     [void]$p.Start()
-    $stdout = $p.StandardOutput.ReadToEnd()
-    $stderr = $p.StandardError.ReadToEnd()
-    $p.WaitForExit()
+    
+    if ($TimeoutSeconds -gt 0) {
+      if (-not $p.WaitForExit($TimeoutSeconds * 1000)) {
+        $p.Kill()
+        throw "Command timed out after $TimeoutSeconds seconds: $exeToRun $argLine"
+      }
+      $stdout = $p.StandardOutput.ReadToEnd()
+      $stderr = $p.StandardError.ReadToEnd()
+    } else {
+      $stdout = $p.StandardOutput.ReadToEnd()
+      $stderr = $p.StandardError.ReadToEnd()
+      $p.WaitForExit()
+    }
   }
 
   return $p.ExitCode

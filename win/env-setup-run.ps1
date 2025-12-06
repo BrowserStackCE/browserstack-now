@@ -56,8 +56,19 @@ function Setup-Web-Java {
     Log-Line "✅ Dependencies installed" $GLOBAL_LOG
 
     Print-TestsRunningSection -Command "mvn test -P sample-test"
-    [void](Invoke-External -Exe $mvn -Arguments @("test","-P","sample-test") -LogFile $LogFile -WorkingDirectory $TARGET)
-    Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
+    $testTimeout = 300  
+    Log-Line "ℹ️ Starting test execution with timeout of $testTimeout seconds..." $GLOBAL_LOG
+    try {
+      $exitCode = Invoke-External -Exe $mvn -Arguments @("test","-P","sample-test") -LogFile $LogFile -WorkingDirectory $TARGET -TimeoutSeconds $testTimeout
+      Log-Line "ℹ️ Run Test command completed with exit code: $exitCode" $GLOBAL_LOG
+    } catch {
+      $errorMsg = $_.Exception.Message
+      Log-Line "❌ Test execution failed: $errorMsg" $GLOBAL_LOG
+      if ($errorMsg -match "timed out") {
+        Log-Line "⚠️ Test execution timed out after $testTimeout seconds. Check BrowserStack dashboard for test status." $GLOBAL_LOG
+      }
+      throw
+    }
 
   } finally {
     Pop-Location
@@ -127,8 +138,21 @@ function Setup-Web-Python {
 
     $sdk = Join-Path $venv "Scripts\browserstack-sdk.exe"
     Print-TestsRunningSection -Command "browserstack-sdk pytest -s tests/bstack-sample-test.py"
-    [void](Invoke-External -Exe $sdk -Arguments @('pytest','-s','tests/bstack-sample-test.py') -LogFile $LogFile -WorkingDirectory $TARGET)
-    Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
+    
+    $testTimeout = 300
+    Log-Line "ℹ️ Starting test execution with timeout of $testTimeout seconds..." $GLOBAL_LOG
+    try {
+      $exitCode = Invoke-External -Exe $sdk -Arguments @('pytest','-s','tests/bstack-sample-test.py') -LogFile $LogFile -WorkingDirectory $TARGET -TimeoutSeconds $testTimeout
+      Log-Line "ℹ️ Run Test command completed with exit code: $exitCode" $GLOBAL_LOG
+    } catch {
+      $errorMsg = $_.Exception.Message
+      Log-Line "❌ Test execution failed: $errorMsg" $GLOBAL_LOG
+      if ($errorMsg -match "timed out") {
+        Log-Line "⚠️ Test execution timed out after $testTimeout seconds. Check BrowserStack dashboard for test status." $GLOBAL_LOG
+        Log-Line "⚠️ This may indicate tests are still running on BrowserStack but the local process timed out." $GLOBAL_LOG
+      }
+      throw
+    }
 
   } finally {
     Pop-Location
@@ -187,8 +211,19 @@ function Setup-Web-NodeJS {
     Log-Line "  $caps" $GLOBAL_LOG
 
     Print-TestsRunningSection -Command "npm run test"
-    [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $TARGET)
-    Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
+    $testTimeout = 300 
+    Log-Line "ℹ️ Starting test execution with timeout of $testTimeout seconds..." $GLOBAL_LOG
+    try {
+      $exitCode = Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $TARGET -TimeoutSeconds $testTimeout
+      Log-Line "ℹ️ Run Test command completed with exit code: $exitCode" $GLOBAL_LOG
+    } catch {
+      $errorMsg = $_.Exception.Message
+      Log-Line "❌ Test execution failed: $errorMsg" $GLOBAL_LOG
+      if ($errorMsg -match "timed out") {
+        Log-Line "⚠️ Test execution timed out after $testTimeout seconds. Check BrowserStack dashboard for test status." $GLOBAL_LOG
+      }
+      throw
+    }
 
   } finally {
     Pop-Location
@@ -261,8 +296,19 @@ function Setup-Mobile-Java {
     Log-Line "✅ Dependencies installed" $GLOBAL_LOG
 
     Print-TestsRunningSection -Command "mvn test -P sample-test"
-    [void](Invoke-External -Exe $mvn -Arguments @("test","-P","sample-test") -LogFile $LogFile -WorkingDirectory (Get-Location).Path)
-    Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
+    $testTimeout = 300  
+    Log-Line "ℹ️ Starting test execution with timeout of $testTimeout seconds..." $GLOBAL_LOG
+    try {
+      $exitCode = Invoke-External -Exe $mvn -Arguments @("test","-P","sample-test") -LogFile $LogFile -WorkingDirectory (Get-Location).Path -TimeoutSeconds $testTimeout
+      Log-Line "ℹ️ Run Test command completed with exit code: $exitCode" $GLOBAL_LOG
+    } catch {
+      $errorMsg = $_.Exception.Message
+      Log-Line "❌ Test execution failed: $errorMsg" $GLOBAL_LOG
+      if ($errorMsg -match "timed out") {
+        Log-Line "⚠️ Test execution timed out after $testTimeout seconds. Check BrowserStack dashboard for test status." $GLOBAL_LOG
+      }
+      throw
+    }
 
   } finally {
     Pop-Location
@@ -345,13 +391,23 @@ function Setup-Mobile-Python {
     $sdk = Join-Path $venv "Scripts\browserstack-sdk.exe"
     Print-TestsRunningSection -Command "cd $runDirName && browserstack-sdk pytest -s bstack_sample.py"
     
+    $testTimeout = 300
+    Log-Line "ℹ️ Starting test execution with timeout of $testTimeout seconds..." $GLOBAL_LOG
     Push-Location $runDir
     try {
-      [void](Invoke-External -Exe $sdk -Arguments @('pytest','-s','bstack_sample.py') -LogFile $LogFile -WorkingDirectory (Get-Location).Path)
+      $exitCode = Invoke-External -Exe $sdk -Arguments @('pytest','-s','bstack_sample.py') -LogFile $LogFile -WorkingDirectory (Get-Location).Path -TimeoutSeconds $testTimeout
+      Log-Line "ℹ️ Run Test command completed with exit code: $exitCode" $GLOBAL_LOG
+    } catch {
+      $errorMsg = $_.Exception.Message
+      Log-Line "❌ Test execution failed: $errorMsg" $GLOBAL_LOG
+      if ($errorMsg -match "timed out") {
+        Log-Line "⚠️ Test execution timed out after $testTimeout seconds. Check BrowserStack dashboard for test status." $GLOBAL_LOG
+        Log-Line "⚠️ This may indicate tests are still running on BrowserStack but the local process timed out." $GLOBAL_LOG
+      }
+      throw
     } finally {
       Pop-Location
     }
-    Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
 
   } finally {
     Pop-Location
@@ -408,8 +464,19 @@ function Setup-Mobile-NodeJS {
     Log-Line "ℹ️ Platforms: $capsJson" $GLOBAL_LOG
 
     Print-TestsRunningSection -Command "npm run test"
-    [void](Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $testDir)
-    Log-Line "ℹ️ Run Test command completed." $GLOBAL_LOG
+    $testTimeout = 300  
+    Log-Line "ℹ️ Starting test execution with timeout of $testTimeout seconds..." $GLOBAL_LOG
+    try {
+      $exitCode = Invoke-External -Exe "cmd.exe" -Arguments @("/c","npm","run","test") -LogFile $LogFile -WorkingDirectory $testDir -TimeoutSeconds $testTimeout
+      Log-Line "ℹ️ Run Test command completed with exit code: $exitCode" $GLOBAL_LOG
+    } catch {
+      $errorMsg = $_.Exception.Message
+      Log-Line "❌ Test execution failed: $errorMsg" $GLOBAL_LOG
+      if ($errorMsg -match "timed out") {
+        Log-Line "⚠️ Test execution timed out after $testTimeout seconds. Check BrowserStack dashboard for test status." $GLOBAL_LOG
+      }
+      throw
+    }
 
   } finally {
     Pop-Location

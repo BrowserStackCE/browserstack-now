@@ -175,7 +175,7 @@ jobs:
   test-windows:
     name: Test win/run.ps1 on Windows
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     environment: BrowserStack
     env:
       ACTIONS_STEP_DEBUG: true
