@@ -32,6 +32,11 @@ $script:PSScriptRootResolved = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # ===== Main flow (baseline steps then run) =====
 try {
+  # Set silent mode early if --silent is detected
+  if ($RunMode -match "--silent") {
+    Set-SilentMode -Enabled $true
+  }
+  
   # Get test type and tech stack before logging
   if ($RunMode -match "--silent|--debug") {
     $textInfo = (Get-Culture).TextInfo

@@ -288,6 +288,13 @@ function Invoke-Py {
 
 function Show-Spinner {
   param([Parameter(Mandatory)][System.Diagnostics.Process]$Process)
+  
+  # Skip spinner in silent mode
+  if (Get-SilentMode) {
+    $Process.WaitForExit()
+    return
+  }
+  
   $spin = @('|','/','-','\')
   $i = 0
   $ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")

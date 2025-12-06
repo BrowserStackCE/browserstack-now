@@ -4,6 +4,10 @@ if (-not (Get-Variable -Name NOW_RUN_LOG_FILE -Scope Script -ErrorAction Silentl
   $script:NOW_RUN_LOG_FILE = ""
 }
 
+if (-not (Get-Variable -Name SILENT_MODE -Scope Script -ErrorAction SilentlyContinue)) {
+  $script:SILENT_MODE = $false
+}
+
 function Set-RunLogFile {
   param([string]$Path)
   $script:NOW_RUN_LOG_FILE = $Path
@@ -18,6 +22,15 @@ function Get-RunLogFile {
   return $script:NOW_RUN_LOG_FILE
 }
 
+function Set-SilentMode {
+  param([bool]$Enabled)
+  $script:SILENT_MODE = $Enabled
+}
+
+function Get-SilentMode {
+  return $script:SILENT_MODE
+}
+
 function Log-Line {
   param(
     [Parameter(Mandatory=$true)][AllowEmptyString()][string]$Message,
@@ -29,7 +42,13 @@ function Log-Line {
 
   $ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
   $line = "[$ts] $Message"
-  Write-Host $line
+  
+  # Only write to console if not in silent mode
+  if (-not $script:SILENT_MODE) {
+    Write-Host $line
+  }
+  
+  # Always write to log file
   if ($DestFile) {
     $dir = Split-Path -Parent $DestFile
     if ($dir -and !(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
