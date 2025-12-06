@@ -151,7 +151,11 @@ function Setup-Web-Python {
     param($TargetDir, $Parallels)
     Set-Location $TargetDir
     Detect-Setup-Python-Env
-    Invoke-Py -Arguments @("-m","pip","install","--only-binary","grpcio","-r","requirements.txt") -LogFile $global:NOW_RUN_LOG_FILE
+
+    $pyExe = $script:PY_CMD[0]
+    Log-Line "ℹ️ Installing dependencies" $global:NOW_RUN_LOG_FILE
+    [void](Invoke-External -Exe $pyExe -Arguments @("-m","pip","install","-r","requirements.txt") -LogFile $global:NOW_RUN_LOG_FILE -WorkingDirectory $TargetDir)
+    Log-Line "✅ Dependencies installed" $global:NOW_RUN_LOG_FILE
     
     $configFile = Join-Path $TargetDir "browserstack.yml"
     $platformYaml = Generate-Web-Platforms -MaxTotalParallels $script:TEAM_PARALLELS_MAX_ALLOWED_WEB -Format "yaml"
@@ -178,7 +182,10 @@ function Setup-App-Python {
     param($TargetDir, $Parallels)
     Set-Location $TargetDir
     Detect-Setup-Python-Env
-    Invoke-Py -Arguments @("-m","pip","install","--only-binary","grpcio","-r","requirements.txt") -LogFile $global:NOW_RUN_LOG_FILE
+    $pyExe = $script:PY_CMD[0]
+    Log-Line "ℹ️ Installing dependencies" $global:NOW_RUN_LOG_FILE
+    [void](Invoke-External -Exe $pyExe -Arguments @("-m","pip","install","-r","requirements.txt") -LogFile $global:NOW_RUN_LOG_FILE -WorkingDirectory $TargetDir)
+    Log-Line "✅ Dependencies installed" $global:NOW_RUN_LOG_FILE
 
     $runDir = "android"
     if ($script:APP_PLATFORM -eq "ios") { $runDir = "ios" }

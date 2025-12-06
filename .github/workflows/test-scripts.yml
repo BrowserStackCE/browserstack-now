@@ -308,8 +308,19 @@ jobs:
 
             $logPath = Join-Path $logRoot "run_test_${testType}_${techStack}.log"
 
-            & $scriptPath --silent $testType $techStack 2>&1 | Tee-Object -FilePath $logPath -Append
-            $exitCode = $LASTEXITCODE
+            # Run with timeout (600 seconds)
+            $p = Start-Process -FilePath "pwsh" -ArgumentList "-File", $scriptPath, "--silent", $testType, $techStack -RedirectStandardOutput $logPath -RedirectStandardError $logPath -PassThru -NoNewWindow
+            
+            # Wait for 600 seconds (600000 ms)
+            $exited = $p.WaitForExit(600000)
+
+            if (-not $exited) {
+              Write-Host "⚠️ $testType / $techStack timed out after 600 seconds"
+              $p.Kill()
+              $exitCode = 124
+            } else {
+              $exitCode = $p.ExitCode
+            }
 
             if ($exitCode -eq 0) {
               Write-Host "✅ $testType / $techStack completed (exit code: $exitCode)"

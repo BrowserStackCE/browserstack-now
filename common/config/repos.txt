@@ -1,6 +1,6 @@
-web_java|now-testng-browserstack
-app_java|now-testng-appium-app-browserstack
-web_python|now-pytest-browserstack
-app_python|now-pytest-appium-app-browserstack
-web_nodejs|now-webdriverio-browserstack
-app_nodejs|now-webdriverio-appium-app-browserstack
+web_java|now-testng-browserstack|
+app_java|now-testng-appium-app-browserstack|
+web_python|now-pytest-browserstack|
+app_python|now-pytest-appium-app-browserstack|
+web_nodejs|now-webdriverio-browserstack|
+app_nodejs|now-webdriverio-appium-app-browserstack|
