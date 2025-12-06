@@ -39,18 +39,17 @@ function Log-Line {
         [string]$Message,
         [string]$LogFile
     )
-    #$ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    $line = $Message
-    
-    # Print to console if debug mode (or always, depending on usage in bash)
-    # Bash version: prints to console if RUN_MODE contains --debug
-    # But common-utils.sh log_msg_to also prints to console if debug.
-    # Here we just append to file if provided.
-    
-    if (-not [string]::IsNullOrWhiteSpace($LogFile)) {
-        $dir = Split-Path -Parent $LogFile
-        if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-        Add-Content -Path $LogFile -Value $line -Encoding UTF8
+    if (-not $DestFile) {
+    $DestFile = Get-RunLogFile
+    }
+
+    $ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+    $line = "$Message"
+    Write-Host $line
+    if ($DestFile) {
+        $dir = Split-Path -Parent $DestFile
+        if ($dir -and !(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
+        Add-Content -Path $DestFile -Value $line
     }
 }
 
