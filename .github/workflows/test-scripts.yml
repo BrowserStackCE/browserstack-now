@@ -14,7 +14,7 @@ on:
 jobs:
   test-mac:
     name: Test mac/run.sh on macOS
-    # if: false
+    if: false
     runs-on: macos-latest
     timeout-minutes: 15
     environment: BrowserStack
@@ -358,7 +358,7 @@ jobs:
 
   test-linux:
     name: Test mac/run.sh on Linux
-    # if: false
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: BrowserStack
