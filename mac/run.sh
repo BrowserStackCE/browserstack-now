@@ -30,6 +30,7 @@ TSTACK=$3  # Tech Stack from env (for silent mode)
 log_section "🧭 Setup Summary – BrowserStack NOW"
 log_info "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
 
+detect_os
 
 log_file=""
 if [[ "$RUN_MODE" == *"--silent"* || "$RUN_MODE" == *"--debug"* ]]; then
@@ -68,7 +69,6 @@ log_msg_to "Checking proxy in environment"
 set_proxy_in_env
 
 log_section "🧹 Getting Ready"
-detect_os
 log_info "Detected Operating system: $NOW_OS"
 log_info "Clearing old logs fron NOW Home Directory inside .browserstack"
 
