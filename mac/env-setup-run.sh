@@ -103,14 +103,7 @@ EOF
     mvn install -DskipTests >> "$NOW_RUN_LOG_FILE" 2>&1 || return 1
     log_success "Dependencies installed"
     
-    
-    log_section "Validate Environment Variables"
-    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
-    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
-    log_info "Web Application Endpoint: $CX_TEST_URL"
-    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
-    log_info "Parallels per platform: $BSTACK_PARALLELS"
-    log_info "Platforms: \n$BSTACK_PLATFORMS"
+    print_env_vars
     
     
     print_tests_running_log_section "mvn test -P sample-test"
@@ -170,13 +163,7 @@ EOF
     fi
     log_success "Dependencies installed"
     
-    log_section "Validate Environment Variables"
-    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
-    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
-    log_info "Native App Endpoint: $BROWSERSTACK_APP"
-    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
-    log_info "Parallels per platform: $BSTACK_PARALLELS"
-    log_info "Platforms: \n$BSTACK_PLATFORMS"
+    print_env_vars
     
     log_msg_to "🚀 Running 'mvn test -P sample-test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
     print_tests_running_log_section "mvn test -P sample-test"
@@ -200,7 +187,7 @@ setup_web_python() {
     
     clone_repository "$REPO" "$TARGET_DIR" ""
     
-    # detect_setup_python_env
+    detect_setup_python_env
     
     pip3 install --only-binary grpcio -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
     pip3 uninstall -y pytest-html pytest-rerunfailures >> "$NOW_RUN_LOG_FILE" 2>&1
@@ -229,15 +216,8 @@ EOF
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-web"
     
     report_bstack_local_status "$local_flag"
-    
-    log_section "Validate Environment Variables"
-    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
-    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
-    log_info "Web Application Endpoint: $CX_TEST_URL"
-    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
-    log_info "Parallels per platform: $BSTACK_PARALLELS"
-    log_info "Platforms: \n$BSTACK_PLATFORMS"
-    
+
+    print_env_vars    
     
     print_tests_running_log_section "browserstack-sdk pytest -s tests/*.py"
     log_msg_to "🚀 Running 'browserstack-sdk pytest -s tests/*.py'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
@@ -260,7 +240,7 @@ setup_app_python() {
     
     clone_repository "$REPO" "$TARGET_DIR"
     
-    # detect_setup_python_env
+    detect_setup_python_env
     
     # Install dependencies
     pip install --only-binary grpcio -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
@@ -291,13 +271,7 @@ EOF
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-app-python-pytest"
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-app"
     
-    log_section "Validate Environment Variables"
-    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
-    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
-    log_info "Native App Endpoint: $BROWSERSTACK_APP"
-    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
-    log_info "Parallels per platform: $BSTACK_PARALLELS"
-    log_info "Platforms: \n$BSTACK_PLATFORMS"
+    print_env_vars
     
     print_tests_running_log_section "cd $run_dir && browserstack-sdk pytest -s bstack-sample.py"
     # Run pytest with BrowserStack SDK from the chosen platform directory
@@ -346,13 +320,7 @@ setup_web_nodejs() {
     
     report_bstack_local_status "$local_flag"
     
-    log_section "Validate Environment Variables"
-    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
-    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
-    log_info "Web Application Endpoint: $CX_TEST_URL"
-    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
-    log_info "Parallels per platform: $BSTACK_PARALLELS"
-    log_info "Platforms: \n$BSTACK_CAPS_JSON"
+    print_env_vars
     
     # === 8️⃣ Run Tests ===
     log_msg_to "🚀 Running 'npm run test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
@@ -400,13 +368,7 @@ setup_app_nodejs() {
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-app-nodejs-wdio"
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-app"
     
-    log_section "Validate Environment Variables"
-    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
-    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
-    log_info "Native App Endpoint: $BROWSERSTACK_APP"
-    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
-    log_info "Parallels per platform: $BSTACK_PARALLELS"
-    log_info "Platforms: \n$BSTACK_CAPS_JSON"
+    print_env_vars
     
     # === 8️⃣ Run Tests ===
     log_msg_to "🚀 Running 'npm run test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
@@ -545,4 +507,25 @@ detect_setup_python_env() {
         source .venv/bin/activate
     fi
     log_success "Virtual environment created and activated."
+}
+
+print_env_vars() {
+    log_section "✅ Environment Variables"
+    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
+    log_info "BrowserStack Project Name: $BROWSERSTACK_PROJECT_NAME"
+    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
+    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
+    log_info "Parallels per platform: $BSTACK_PARALLELS"
+
+    if [ "$tech_stack" = "nodejs" ]; then
+        log_info "Capabilities JSON: \n$BSTACK_CAPS_JSON"
+    else
+        log_info "Platforms: \n$BSTACK_PLATFORMS"
+    fi
+    
+    if [ "$test_type" = "app" ]; then
+        log_info "Native App Endpoint: $BROWSERSTACK_APP"
+    else
+        log_info "Web Application Endpoint: $CX_TEST_URL"
+    fi
 }
