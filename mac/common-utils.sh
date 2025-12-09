@@ -102,13 +102,19 @@ handle_app_upload() {
                 case $opt in
                     "Use Sample App") choice="Use Sample App"; break ;;
                     "Upload my App (.apk/.ipa)") choice="Upload my App"; break ;;
-                    "Cancel") choice="Cancel"; break ;;
-                    *) echo "Invalid option";;
+                    "Cancel") choice="Cancel"; 
+                    log_error "App upload cancelled by user."; exit 1;;
+                    *) 
+                    log_error "App upload cancelled by user."; exit 1;;
+
                 esac
             done
         fi
-        
-        if [[ "$choice" == *"Use Sample App"* ]]; then
+
+        if [[ "$choice" == "" ]]; then
+            log_error "App upload cancelled by user."
+            exit 1
+        elif [[ "$choice" == *"Use Sample App"* ]]; then
             upload_sample_app
             app_platform="android"
             export APP_PLATFORM="$app_platform"
@@ -165,7 +171,8 @@ upload_custom_app() {
     
     if [ -z "$file_path" ]; then
         log_msg_to "❌ No file selected"
-        return 1
+        log_error "App upload cancelled by user. No .apk /.ipa file path provided."
+        exit 1
     fi
     
     log_info "Selected file: $file_path"

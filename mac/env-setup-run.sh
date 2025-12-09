@@ -17,7 +17,7 @@ setup_environment() {
         max_parallels=$TEAM_PARALLELS_MAX_ALLOWED_MOBILE
     fi
     
-    log_msg_to "Starting ${setup_type} setup for " "$tech_stack" "$NOW_RUN_LOG_FILE"
+    log_msg_to "Starting ${setup_type} setup for $tech_stack" "$NOW_RUN_LOG_FILE"
     
     local local_flag=false
     
