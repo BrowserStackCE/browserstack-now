@@ -31,6 +31,8 @@ log_section "🧭 Setup Summary – BrowserStack NOW"
 log_info "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
 
 detect_os
+setup_workspace
+get_browserstack_credentials "$RUN_MODE"
 
 log_file=""
 if [[ "$RUN_MODE" == *"--silent"* || "$RUN_MODE" == *"--debug"* ]]; then
@@ -47,8 +49,7 @@ fi
 
 log_info "Log file path: $log_file"
 export NOW_RUN_LOG_FILE="$log_file"
-setup_workspace
-get_browserstack_credentials "$RUN_MODE"
+
 
 log_section "⚙️ Platform & Tech Stack"
 log_info "Platform: ${TEST_TYPE:-N/A}"
