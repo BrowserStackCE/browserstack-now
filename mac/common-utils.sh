@@ -128,7 +128,7 @@ handle_app_upload() {
 }
 
 upload_sample_app() {
-    log_msg_to "⬆️ Uploading sample app to BrowserStack..."
+    log_info "Uploading sample app to BrowserStack"
     local upload_response
     upload_response=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
         -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
@@ -182,11 +182,11 @@ upload_custom_app() {
         elif [[ "$file_path" == *.apk ]]; then
         app_platform="android"
     else
-        log_msg_to "❌ Invalid file type. Must be .apk or .ipa"
-        return 1
+        log_error "❌ Invalid file type. Must be .apk or .ipa"
+        exit 1
     fi
     
-    log_msg_to "⬆️ Uploading app to BrowserStack..."
+    log_info "Uploading app to BrowserStack"
     local upload_response
     upload_response=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
         -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
@@ -195,8 +195,8 @@ upload_custom_app() {
     local app_url
     app_url=$(echo "$upload_response" | grep -o '"app_url":"[^"]*' | cut -d'"' -f4)
     if [ -z "$app_url" ]; then
-        log_msg_to "❌ Failed to upload app"
-        return 1
+        log_error "❌ Failed to upload app: $upload_response"
+        exit 1
     fi
     
     export BROWSERSTACK_APP=$app_url
