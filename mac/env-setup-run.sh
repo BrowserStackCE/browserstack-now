@@ -240,7 +240,7 @@ setup_app_python() {
     
     clone_repository "$REPO" "$TARGET_DIR"
     
-    detect_setup_python_env
+    # detect_setup_python_env
     
     # Install dependencies
     pip3 install --only-binary grpcio -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
