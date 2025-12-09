@@ -93,7 +93,7 @@ EOF
     
     export BSTACK_PARALLELS=$parallels
     export BSTACK_PLATFORMS=$platform_yaml
-    export BROWSERSTACK_LOCAL=$local_flag
+    export BROWSERSTACK_LOCAL_CUSTOM=$local_flag
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-web-java-testng"
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-web"
     
@@ -514,6 +514,8 @@ print_env_vars() {
     log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
     log_info "BrowserStack Project Name: $BROWSERSTACK_PROJECT_NAME"
     log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
+    
+    log_info "BrowserStack Custom Local Flag: $BROWSERSTACK_LOCAL_CUSTOM"
     log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
     log_info "Parallels per platform: $BSTACK_PARALLELS"
 
