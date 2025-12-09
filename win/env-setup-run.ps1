@@ -98,7 +98,7 @@ function Setup-Web-Python {
     $venvPy = Get-VenvPython -VenvDir $venv
     
     Log-Line "ℹ️ Installing dependencies" $GLOBAL_LOG
-    [void](Invoke-External -Exe $venvPy -Arguments @("-m","pip","install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
+    [void](Invoke-External -Exe $venvPy -Arguments @("-m","pip3","install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
     Log-Line "✅ Dependencies installed" $GLOBAL_LOG
     
     $env:PATH = (Join-Path $venv 'Scripts') + ";" + $env:PATH
@@ -314,7 +314,7 @@ function Setup-Mobile-Python {
     $venvPy = Get-VenvPython -VenvDir $venv
     
     Log-Line "ℹ️ Installing dependencies" $GLOBAL_LOG
-    [void](Invoke-External -Exe $venvPy -Arguments @("-m","pip","install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
+    [void](Invoke-External -Exe $venvPy -Arguments @("-m","pip3","install","-r","requirements.txt") -LogFile $LogFile -WorkingDirectory $TARGET)
     Log-Line "✅ Dependencies installed" $GLOBAL_LOG
     
     $env:PATH = (Join-Path $venv 'Scripts') + ";" + $env:PATH

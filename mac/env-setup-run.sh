@@ -243,7 +243,7 @@ setup_app_python() {
     detect_setup_python_env
     
     # Install dependencies
-    pip install --only-binary grpcio -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
+    pip3 install --only-binary grpcio -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
     log_success "Dependencies installed"
     
     local app_url=$BROWSERSTACK_APP
