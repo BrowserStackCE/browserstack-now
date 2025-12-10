@@ -30,6 +30,7 @@ TSTACK=$3  # Tech Stack from env (for silent mode)
 log_section "🧭 Setup Summary – BrowserStack NOW"
 log_info "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
 
+trap clean_env_vars EXIT  # runs cleanup on script exit
 clean_env_vars
 detect_os
 setup_workspace

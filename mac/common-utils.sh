@@ -301,6 +301,7 @@ is_private_ip() {
 }
 
 is_domain_private() {
+    local is_cx_domain_private=100
     domain=${CX_TEST_URL#*://}  # remove protocol
     domain=${domain%%/*}  # remove everything after first "/"
     log_msg_to "Website domain: $domain"
@@ -466,6 +467,8 @@ detect_os() {
 }
 
 print_env_vars() {
+    local test_type=$1
+    local tech_stack=$2
     log_section "✅ Environment Variables"
     log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
     log_info "BrowserStack Project Name: $BROWSERSTACK_PROJECT_NAME"
@@ -490,23 +493,24 @@ print_env_vars() {
 
 clean_env_vars() {
     log_section "✅ Clean Environment Variables"
-    export BROWSERSTACK_USERNAME=""
-    export BROWSERSTACK_ACCESS_KEY=""
-    export BROWSERSTACK_APP=""
-    export BSTACK_CAPS_JSON=""
-    export BSTACK_PLATFORMS=""
-    export CX_TEST_URL=""
-    export NOW_WEB_DOMAIN=""
-    export BROWSERSTACK_PROJECT_NAME=""
-    export BROWSERSTACK_BUILD_NAME=""
-    export BROWSERSTACK_LOCAL_CUSTOM=""
-    export BROWSERSTACK_LOCAL=""
-    export BSTACK_PARALLELS=""
-    export APP_PLATFORM=""
-    export NOW_PLATFORM=""
-    export BSTACK_CAPS_JSON=""
-    export BSTACK_PLATFORMS=""
-    export BROWSERSTACK_APP
+
+    # list of variables to unset
+    vars=(
+        BSTACK_CAPS_JSON
+        BSTACK_PLATFORMS
+        BROWSERSTACK_PROJECT_NAME
+        BROWSERSTACK_BUILD_NAME
+        BROWSERSTACK_LOCAL_CUSTOM
+        BROWSERSTACK_LOCAL
+    )
+
+    # unset each variable safely
+    for var in "${vars[@]}"; do
+        unset "$var"
+    done
 
     log_info "Cleared environment variables."
+    
+    log_info "Terminating any running BrowserStack Local instances."
+    pgrep '[B]rowserStack' | awk '{print $1}' | xargs kill -9 >/dev/null 2>&1 || true
 }
