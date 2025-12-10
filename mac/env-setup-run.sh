@@ -210,7 +210,7 @@ EOF
     
     
     export BSTACK_PARALLELS=1
-    export BROWSERSTACK_LOCAL=$local_flag
+    export BROWSERSTACK_LOCAL_CUSTOM=$local_flag
     export BSTACK_PLATFORMS=$platform_yaml
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-web-python-pytest"
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-web"
@@ -314,7 +314,7 @@ setup_web_nodejs() {
         local_flag=true
     fi
     
-    export BROWSERSTACK_LOCAL=$local_flag
+    export BROWSERSTACK_LOCAL_CUSTOM=$local_flag
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-web-nodejs-wdio"
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-web"
     
@@ -507,27 +507,4 @@ detect_setup_python_env() {
         source .venv/bin/activate
     fi
     log_success "Virtual environment created and activated."
-}
-
-print_env_vars() {
-    log_section "✅ Environment Variables"
-    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
-    log_info "BrowserStack Project Name: $BROWSERSTACK_PROJECT_NAME"
-    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
-    
-    log_info "BrowserStack Custom Local Flag: $BROWSERSTACK_LOCAL_CUSTOM"
-    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
-    log_info "Parallels per platform: $BSTACK_PARALLELS"
-
-    if [ "$tech_stack" = "nodejs" ]; then
-        log_info "Capabilities JSON: \n$BSTACK_CAPS_JSON"
-    else
-        log_info "Platforms: \n$BSTACK_PLATFORMS"
-    fi
-    
-    if [ "$test_type" = "app" ]; then
-        log_info "Native App Endpoint: $BROWSERSTACK_APP"
-    else
-        log_info "Web Application Endpoint: $CX_TEST_URL"
-    fi
 }

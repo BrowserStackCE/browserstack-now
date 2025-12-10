@@ -464,3 +464,49 @@ detect_os() {
     
     export NOW_OS=$response
 }
+
+print_env_vars() {
+    log_section "✅ Environment Variables"
+    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
+    log_info "BrowserStack Project Name: $BROWSERSTACK_PROJECT_NAME"
+    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
+    
+    log_info "BrowserStack Custom Local Flag: $BROWSERSTACK_LOCAL_CUSTOM"
+    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
+    log_info "Parallels per platform: $BSTACK_PARALLELS"
+
+    if [ "$tech_stack" = "nodejs" ]; then
+        log_info "Capabilities JSON: \n$BSTACK_CAPS_JSON"
+    else
+        log_info "Platforms: \n$BSTACK_PLATFORMS"
+    fi
+    
+    if [ "$test_type" = "app" ]; then
+        log_info "Native App Endpoint: $BROWSERSTACK_APP"
+    else
+        log_info "Web Application Endpoint: $CX_TEST_URL"
+    fi
+}
+
+clean_env_vars() {
+    log_section "✅ Clean Environment Variables"
+    export BROWSERSTACK_USERNAME=""
+    export BROWSERSTACK_ACCESS_KEY=""
+    export BROWSERSTACK_APP=""
+    export BSTACK_CAPS_JSON=""
+    export BSTACK_PLATFORMS=""
+    export CX_TEST_URL=""
+    export NOW_WEB_DOMAIN=""
+    export BROWSERSTACK_PROJECT_NAME=""
+    export BROWSERSTACK_BUILD_NAME=""
+    export BROWSERSTACK_LOCAL_CUSTOM=""
+    export BROWSERSTACK_LOCAL=""
+    export BSTACK_PARALLELS=""
+    export APP_PLATFORM=""
+    export NOW_PLATFORM=""
+    export BSTACK_CAPS_JSON=""
+    export BSTACK_PLATFORMS=""
+    export BROWSERSTACK_APP
+
+    log_info "Cleared environment variables."
+}
