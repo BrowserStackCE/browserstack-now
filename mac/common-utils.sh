@@ -496,18 +496,12 @@ clean_env_vars() {
 
     # list of variables to unset
     vars=(
-        BROWSERSTACK_APP
         BSTACK_CAPS_JSON
         BSTACK_PLATFORMS
-        CX_TEST_URL
-        NOW_WEB_DOMAIN
         BROWSERSTACK_PROJECT_NAME
         BROWSERSTACK_BUILD_NAME
         BROWSERSTACK_LOCAL_CUSTOM
         BROWSERSTACK_LOCAL
-        BSTACK_PARALLELS
-        APP_PLATFORM
-        NOW_PLATFORM
     )
 
     # unset each variable safely
