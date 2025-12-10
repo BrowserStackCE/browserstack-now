@@ -496,8 +496,6 @@ clean_env_vars() {
 
     # list of variables to unset
     vars=(
-        BROWSERSTACK_USERNAME
-        BROWSERSTACK_ACCESS_KEY
         BROWSERSTACK_APP
         BSTACK_CAPS_JSON
         BSTACK_PLATFORMS
