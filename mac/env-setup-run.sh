@@ -103,7 +103,7 @@ EOF
     mvn install -DskipTests >> "$NOW_RUN_LOG_FILE" 2>&1 || return 1
     log_success "Dependencies installed"
     
-    print_env_vars
+    print_env_vars "$test_type" "$tech_stack"
     
     
     print_tests_running_log_section "mvn test -P sample-test"
@@ -163,7 +163,7 @@ EOF
     fi
     log_success "Dependencies installed"
     
-    print_env_vars
+    print_env_vars "$test_type" "$tech_stack"
     
     log_msg_to "🚀 Running 'mvn test -P sample-test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
     print_tests_running_log_section "mvn test -P sample-test"
@@ -217,7 +217,7 @@ EOF
     
     report_bstack_local_status "$local_flag"
 
-    print_env_vars    
+    print_env_vars "$test_type" "$tech_stack"
     
     print_tests_running_log_section "browserstack-sdk pytest -s tests/*.py"
     log_msg_to "🚀 Running 'browserstack-sdk pytest -s tests/*.py'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
@@ -271,7 +271,7 @@ EOF
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-app-python-pytest"
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-app"
     
-    print_env_vars
+    print_env_vars "$test_type" "$tech_stack"
     
     print_tests_running_log_section "cd $run_dir && browserstack-sdk pytest -s bstack-sample.py"
     # Run pytest with BrowserStack SDK from the chosen platform directory
@@ -311,7 +311,8 @@ setup_web_nodejs() {
     export BSTACK_PARALLELS=$parallels
     
     if is_domain_private; then
-        local_flag=true
+        log_msg_to "Entered in Is domain private condition"
+        local_flag="true"
     fi
     
     export BROWSERSTACK_LOCAL_CUSTOM=$local_flag
@@ -320,7 +321,7 @@ setup_web_nodejs() {
     
     report_bstack_local_status "$local_flag"
     
-    print_env_vars
+    print_env_vars "$test_type" "$tech_stack"
     
     # === 8️⃣ Run Tests ===
     log_msg_to "🚀 Running 'npm run test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
@@ -368,7 +369,7 @@ setup_app_nodejs() {
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-app-nodejs-wdio"
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-app"
     
-    print_env_vars
+    print_env_vars "$test_type" "$tech_stack"
     
     # === 8️⃣ Run Tests ===
     log_msg_to "🚀 Running 'npm run test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
