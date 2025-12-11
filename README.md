@@ -82,4 +82,28 @@ $HOME/.browserstack/NOW/logs
 $HOME/.browserstack/NOW/logs
 ```
 
+## ✅ Test Coverage Matrix
+
+| OS      | Test Type | Framework     | URL / App | Functional | Accessibility | Visual |
+|---------|-----------|---------------|-----------|------------|---------------|--------|
+| **macOS – web** |
+|         | web       | java-testng   | public    | 🟢 | 🟢 | 🟢 |
+|         |           | java-testng   | private   | 🟢 | 🟢 | 🟢 | 
+|         |           | python-pytest | public    | 🟢 | ⚪️ | ⚪️ |
+|         |           | python-pytest | private   | 🟡 | ⚪️ | ⚪️ |
+|         |           | nodejs-wdio   | public    | 🟢 | 🟢 | 🟢 |
+|         |           | nodejs-wdio   | private   | 🟢 | 🟢 | 🟢 |
+| **macOS – app** |
+|         | app       | java-testng   | android   | 🟢 | 🟢 | 🟢 |
+|         |           | java-testng   | ios       | 🟢 | 🟢 | 🟢 |
+|         |           | python-pytest | android   | 🟢 | ⚪️ | ⚪️ |
+|         |           | python-pytest | ios       | 🟢 | ⚪️ | ⚪️ |
+|         |           | nodejs-wdio   | android   | 🟢 | ⚪️ | 🟢 |
+|         |           | nodejs-wdio   | ios       | 🟢 | ⚪️ | 🟢 |
+
+### **Status Legend**
+- **🟢 – Tests executing successfully and passing**  
+- **🟡 – Tests detected on the dashboard but failing**  
+- **⚪️ – Accessibility/visual reports generated, but no issues or snapshots captured**
+
 
