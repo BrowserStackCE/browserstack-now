@@ -187,7 +187,7 @@ setup_web_python() {
     
     clone_repository "$REPO" "$TARGET_DIR" ""
     
-    # detect_setup_python_env
+    setup_python_venv "$TARGET_DIR"
     
     pip3 install --only-binary grpcio -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
     pip3 uninstall -y pytest-html pytest-rerunfailures >> "$NOW_RUN_LOG_FILE" 2>&1
@@ -240,7 +240,7 @@ setup_app_python() {
     
     clone_repository "$REPO" "$TARGET_DIR"
     
-    # detect_setup_python_env
+    setup_python_venv "$TARGET_DIR"
     
     # Install dependencies
     pip install --only-binary grpcio -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
@@ -471,41 +471,25 @@ print_tests_running_log_section() {
 }
 
 
-detect_setup_python_env() {
+setup_python_venv() {
+    local virtual_env_dir="$1/.venv"
+
     log_info "Detecting latest Python environment"
-    
-    latest_python=$(
-        { ls -1 /usr/local/bin/python3.[0-9]* /usr/bin/python3.[0-9]* 2>/dev/null || true; } \
-        | grep -E 'python3\.[0-9]+$' \
-        | sort -V \
-        | tail -n 1
-    )
-    
-    if [[ -z "$latest_python" ]]; then
-        log_warn "No specific Python3.x version found. Falling back to system python3."
-        latest_python=$(command -v python3)
-    fi
-    
-    if [[ -z "$latest_python" ]]; then
-        log_error "Python3 not found on this system."
-        exit 1
-    fi
-    
-    echo "🐍 Switching to: $latest_python"
-    log_info "Using Python interpreter: $latest_python"
-    
-    "$latest_python" -m venv .venv || {
+    local latest_python="python3"
+    log_msg_to "Creating virtual environment at $virtual_env_dir" "$NOW_RUN_LOG_FILE"
+    log_info "Creating virtual environment at $virtual_env_dir"
+    "$latest_python" -m venv "$virtual_env_dir" || {
         log_error "Failed to create virtual environment."
         exit 1
     }
     
     # Activate virtual environment (handle Windows/Unix paths)
-    if [ -f ".venv/Scripts/activate" ]; then
+    if [ -f "$virtual_env_dir/Scripts/activate" ]; then
         # shellcheck source=/dev/null
-        source .venv/Scripts/activate
+        source "$virtual_env_dir"/Scripts/activate
     else
         # shellcheck source=/dev/null
-        source .venv/bin/activate
+        source "$virtual_env_dir"/bin/activate
     fi
     log_success "Virtual environment created and activated."
 }
