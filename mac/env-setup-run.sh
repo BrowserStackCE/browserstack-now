@@ -17,7 +17,7 @@ setup_environment() {
         max_parallels=$TEAM_PARALLELS_MAX_ALLOWED_MOBILE
     fi
     
-    log_msg_to "Starting ${setup_type} setup for " "$tech_stack" "$NOW_RUN_LOG_FILE"
+    log_msg_to "Starting ${setup_type} setup for $tech_stack" "$NOW_RUN_LOG_FILE"
     
     local local_flag=false
     
@@ -93,7 +93,7 @@ EOF
     
     export BSTACK_PARALLELS=$parallels
     export BSTACK_PLATFORMS=$platform_yaml
-    export BROWSERSTACK_LOCAL=$local_flag
+    export BROWSERSTACK_LOCAL_CUSTOM=$local_flag
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-web-java-testng"
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-web"
     
@@ -103,14 +103,7 @@ EOF
     mvn install -DskipTests >> "$NOW_RUN_LOG_FILE" 2>&1 || return 1
     log_success "Dependencies installed"
     
-    
-    log_section "Validate Environment Variables"
-    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
-    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
-    log_info "Web Application Endpoint: $CX_TEST_URL"
-    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
-    log_info "Parallels per platform: $BSTACK_PARALLELS"
-    log_info "Platforms: \n$BSTACK_PLATFORMS"
+    print_env_vars "$test_type" "$tech_stack"
     
     
     print_tests_running_log_section "mvn test -P sample-test"
@@ -170,13 +163,7 @@ EOF
     fi
     log_success "Dependencies installed"
     
-    log_section "Validate Environment Variables"
-    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
-    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
-    log_info "Native App Endpoint: $BROWSERSTACK_APP"
-    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
-    log_info "Parallels per platform: $BSTACK_PARALLELS"
-    log_info "Platforms: \n$BSTACK_PLATFORMS"
+    print_env_vars "$test_type" "$tech_stack"
     
     log_msg_to "🚀 Running 'mvn test -P sample-test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
     print_tests_running_log_section "mvn test -P sample-test"
@@ -200,7 +187,7 @@ setup_web_python() {
     
     clone_repository "$REPO" "$TARGET_DIR" ""
     
-    # detect_setup_python_env
+    setup_python_venv "$TARGET_DIR"
     
     pip3 install --only-binary grpcio -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
     pip3 uninstall -y pytest-html pytest-rerunfailures >> "$NOW_RUN_LOG_FILE" 2>&1
@@ -223,21 +210,14 @@ EOF
     
     
     export BSTACK_PARALLELS=1
-    export BROWSERSTACK_LOCAL=$local_flag
+    export BROWSERSTACK_LOCAL_CUSTOM=$local_flag
     export BSTACK_PLATFORMS=$platform_yaml
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-web-python-pytest"
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-web"
     
     report_bstack_local_status "$local_flag"
-    
-    log_section "Validate Environment Variables"
-    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
-    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
-    log_info "Web Application Endpoint: $CX_TEST_URL"
-    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
-    log_info "Parallels per platform: $BSTACK_PARALLELS"
-    log_info "Platforms: \n$BSTACK_PLATFORMS"
-    
+
+    print_env_vars "$test_type" "$tech_stack"
     
     print_tests_running_log_section "browserstack-sdk pytest -s tests/*.py"
     log_msg_to "🚀 Running 'browserstack-sdk pytest -s tests/*.py'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
@@ -260,7 +240,7 @@ setup_app_python() {
     
     clone_repository "$REPO" "$TARGET_DIR"
     
-    # detect_setup_python_env
+    setup_python_venv "$TARGET_DIR"
     
     # Install dependencies
     pip install --only-binary grpcio -r requirements.txt >> "$NOW_RUN_LOG_FILE" 2>&1
@@ -291,13 +271,7 @@ EOF
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-app-python-pytest"
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-app"
     
-    log_section "Validate Environment Variables"
-    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
-    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
-    log_info "Native App Endpoint: $BROWSERSTACK_APP"
-    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
-    log_info "Parallels per platform: $BSTACK_PARALLELS"
-    log_info "Platforms: \n$BSTACK_PLATFORMS"
+    print_env_vars "$test_type" "$tech_stack"
     
     print_tests_running_log_section "cd $run_dir && browserstack-sdk pytest -s bstack-sample.py"
     # Run pytest with BrowserStack SDK from the chosen platform directory
@@ -337,22 +311,17 @@ setup_web_nodejs() {
     export BSTACK_PARALLELS=$parallels
     
     if is_domain_private; then
-        local_flag=true
+        log_msg_to "Entered in Is domain private condition"
+        local_flag="true"
     fi
     
-    export BROWSERSTACK_LOCAL=$local_flag
+    export BROWSERSTACK_LOCAL_CUSTOM=$local_flag
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-web-nodejs-wdio"
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-web"
     
     report_bstack_local_status "$local_flag"
     
-    log_section "Validate Environment Variables"
-    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
-    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
-    log_info "Web Application Endpoint: $CX_TEST_URL"
-    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
-    log_info "Parallels per platform: $BSTACK_PARALLELS"
-    log_info "Platforms: \n$BSTACK_CAPS_JSON"
+    print_env_vars "$test_type" "$tech_stack"
     
     # === 8️⃣ Run Tests ===
     log_msg_to "🚀 Running 'npm run test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
@@ -400,13 +369,7 @@ setup_app_nodejs() {
     export BROWSERSTACK_BUILD_NAME="now-$NOW_OS-app-nodejs-wdio"
     export BROWSERSTACK_PROJECT_NAME="now-$NOW_OS-app"
     
-    log_section "Validate Environment Variables"
-    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
-    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
-    log_info "Native App Endpoint: $BROWSERSTACK_APP"
-    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
-    log_info "Parallels per platform: $BSTACK_PARALLELS"
-    log_info "Platforms: \n$BSTACK_CAPS_JSON"
+    print_env_vars "$test_type" "$tech_stack"
     
     # === 8️⃣ Run Tests ===
     log_msg_to "🚀 Running 'npm run test'. This could take a few minutes. Follow the Automaton build here: https://automation.browserstack.com/"
@@ -508,41 +471,25 @@ print_tests_running_log_section() {
 }
 
 
-detect_setup_python_env() {
+setup_python_venv() {
+    local virtual_env_dir="$1/.venv"
+
     log_info "Detecting latest Python environment"
-    
-    latest_python=$(
-        { ls -1 /usr/local/bin/python3.[0-9]* /usr/bin/python3.[0-9]* 2>/dev/null || true; } \
-        | grep -E 'python3\.[0-9]+$' \
-        | sort -V \
-        | tail -n 1
-    )
-    
-    if [[ -z "$latest_python" ]]; then
-        log_warn "No specific Python3.x version found. Falling back to system python3."
-        latest_python=$(command -v python3)
-    fi
-    
-    if [[ -z "$latest_python" ]]; then
-        log_error "Python3 not found on this system."
-        exit 1
-    fi
-    
-    echo "🐍 Switching to: $latest_python"
-    log_info "Using Python interpreter: $latest_python"
-    
-    "$latest_python" -m venv .venv || {
+    local latest_python="python3"
+    log_msg_to "Creating virtual environment at $virtual_env_dir" "$NOW_RUN_LOG_FILE"
+    log_info "Creating virtual environment at $virtual_env_dir"
+    "$latest_python" -m venv "$virtual_env_dir" || {
         log_error "Failed to create virtual environment."
         exit 1
     }
     
     # Activate virtual environment (handle Windows/Unix paths)
-    if [ -f ".venv/Scripts/activate" ]; then
+    if [ -f "$virtual_env_dir/Scripts/activate" ]; then
         # shellcheck source=/dev/null
-        source .venv/Scripts/activate
+        source "$virtual_env_dir"/Scripts/activate
     else
         # shellcheck source=/dev/null
-        source .venv/bin/activate
+        source "$virtual_env_dir"/bin/activate
     fi
     log_success "Virtual environment created and activated."
 }

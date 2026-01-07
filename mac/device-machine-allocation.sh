@@ -39,9 +39,7 @@ WEB_ALL=(
   "OS X|Chrome"
   "OS X|Safari"
   "OS X|Chrome"
-  "OS X|Safari"
   "OS X|Firefox"
-  "OS X|Safari"
     # Tier 1
   "ios|iPhone 1[234567]*"
   "android|Samsung Galaxy S*"
@@ -126,16 +124,24 @@ pick_terminal_devices() {
     else
       bVersionLiteral=""
     fi
-    bVersion="latest$bVersionLiteral"
+
+    bVersion="latest$bVersionLiteral" 
+  
+    if [[ "$suffixEntry" == "Safari" ]]; then
+      bVersion="latest"
+    else
+      bVersion=$(( hardcodedBVersion-i ))
+    fi   
+
     if [[ "$platformsListContentFormat" == "yaml" ]]; then
       if [[ "$prefixEntry" == "android" || "$prefixEntry" == "ios" ]]; then  
         yaml+="  - platformName: $prefixEntry
     deviceName: $suffixEntry
 "
       else
-        yaml+="  - osVersion: $prefixEntry
+        yaml+="  - os: $prefixEntry
     browserName: $suffixEntry
-    browserVersion: $(( hardcodedBVersion-i ))
+    browserVersion: $bVersion
 "
       fi
 

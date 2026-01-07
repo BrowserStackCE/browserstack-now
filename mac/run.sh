@@ -30,6 +30,11 @@ TSTACK=$3  # Tech Stack from env (for silent mode)
 log_section "🧭 Setup Summary – BrowserStack NOW"
 log_info "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
 
+trap clean_env_vars EXIT  # runs cleanup on script exit
+clean_env_vars
+detect_os
+setup_workspace
+get_browserstack_credentials "$RUN_MODE"
 
 log_file=""
 if [[ "$RUN_MODE" == *"--silent"* || "$RUN_MODE" == *"--debug"* ]]; then
@@ -46,8 +51,7 @@ fi
 
 log_info "Log file path: $log_file"
 export NOW_RUN_LOG_FILE="$log_file"
-setup_workspace
-get_browserstack_credentials "$RUN_MODE"
+
 
 log_section "⚙️ Platform & Tech Stack"
 log_info "Platform: ${TEST_TYPE:-N/A}"
@@ -68,7 +72,6 @@ log_msg_to "Checking proxy in environment"
 set_proxy_in_env
 
 log_section "🧹 Getting Ready"
-detect_os
 log_info "Detected Operating system: $NOW_OS"
 log_info "Clearing old logs fron NOW Home Directory inside .browserstack"
 

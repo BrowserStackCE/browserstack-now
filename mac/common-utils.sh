@@ -102,13 +102,19 @@ handle_app_upload() {
                 case $opt in
                     "Use Sample App") choice="Use Sample App"; break ;;
                     "Upload my App (.apk/.ipa)") choice="Upload my App"; break ;;
-                    "Cancel") choice="Cancel"; break ;;
-                    *) echo "Invalid option";;
+                    "Cancel") choice="Cancel"; 
+                    log_error "App upload cancelled by user."; exit 1;;
+                    *) 
+                    log_error "App upload cancelled by user."; exit 1;;
+
                 esac
             done
         fi
-        
-        if [[ "$choice" == *"Use Sample App"* ]]; then
+
+        if [[ "$choice" == "" ]]; then
+            log_error "App upload cancelled by user."
+            exit 1
+        elif [[ "$choice" == *"Use Sample App"* ]]; then
             upload_sample_app
             app_platform="android"
             export APP_PLATFORM="$app_platform"
@@ -122,7 +128,7 @@ handle_app_upload() {
 }
 
 upload_sample_app() {
-    log_msg_to "⬆️ Uploading sample app to BrowserStack..."
+    log_info "Uploading sample app to BrowserStack"
     local upload_response
     upload_response=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
         -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
@@ -165,7 +171,8 @@ upload_custom_app() {
     
     if [ -z "$file_path" ]; then
         log_msg_to "❌ No file selected"
-        return 1
+        log_error "App upload cancelled by user. No .apk /.ipa file path provided."
+        exit 1
     fi
     
     log_info "Selected file: $file_path"
@@ -175,11 +182,11 @@ upload_custom_app() {
         elif [[ "$file_path" == *.apk ]]; then
         app_platform="android"
     else
-        log_msg_to "❌ Invalid file type. Must be .apk or .ipa"
-        return 1
+        log_error "❌ Invalid file type. Must be .apk or .ipa"
+        exit 1
     fi
     
-    log_msg_to "⬆️ Uploading app to BrowserStack..."
+    log_info "Uploading app to BrowserStack"
     local upload_response
     upload_response=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
         -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
@@ -188,8 +195,8 @@ upload_custom_app() {
     local app_url
     app_url=$(echo "$upload_response" | grep -o '"app_url":"[^"]*' | cut -d'"' -f4)
     if [ -z "$app_url" ]; then
-        log_msg_to "❌ Failed to upload app"
-        return 1
+        log_error "❌ Failed to upload app: $upload_response"
+        exit 1
     fi
     
     export BROWSERSTACK_APP=$app_url
@@ -294,6 +301,7 @@ is_private_ip() {
 }
 
 is_domain_private() {
+    local is_cx_domain_private=100
     domain=${CX_TEST_URL#*://}  # remove protocol
     domain=${domain%%/*}  # remove everything after first "/"
     log_msg_to "Website domain: $domain"
@@ -456,4 +464,53 @@ detect_os() {
     esac
     
     export NOW_OS=$response
+}
+
+print_env_vars() {
+    local test_type=$1
+    local tech_stack=$2
+    log_section "✅ Environment Variables"
+    log_info "BrowserStack Username: $BROWSERSTACK_USERNAME"
+    log_info "BrowserStack Project Name: $BROWSERSTACK_PROJECT_NAME"
+    log_info "BrowserStack Build: $BROWSERSTACK_BUILD_NAME"
+    
+    log_info "BrowserStack Custom Local Flag: $BROWSERSTACK_LOCAL_CUSTOM"
+    log_info "BrowserStack Local Flag: $BROWSERSTACK_LOCAL"
+    log_info "Parallels per platform: $BSTACK_PARALLELS"
+
+    if [ "$tech_stack" = "nodejs" ]; then
+        log_info "Capabilities JSON: \n$BSTACK_CAPS_JSON"
+    else
+        log_info "Platforms: \n$BSTACK_PLATFORMS"
+    fi
+    
+    if [ "$test_type" = "app" ]; then
+        log_info "Native App Endpoint: $BROWSERSTACK_APP"
+    else
+        log_info "Web Application Endpoint: $CX_TEST_URL"
+    fi
+}
+
+clean_env_vars() {
+    log_section "✅ Clean Environment Variables"
+
+    # list of variables to unset
+    vars=(
+        BSTACK_CAPS_JSON
+        BSTACK_PLATFORMS
+        BROWSERSTACK_PROJECT_NAME
+        BROWSERSTACK_BUILD_NAME
+        BROWSERSTACK_LOCAL_CUSTOM
+        BROWSERSTACK_LOCAL
+    )
+
+    # unset each variable safely
+    for var in "${vars[@]}"; do
+        unset "$var"
+    done
+
+    log_info "Cleared environment variables."
+    
+    log_info "Terminating any running BrowserStack Local instances."
+    pgrep '[B]rowserStack' | awk '{print $1}' | xargs kill -9 >/dev/null 2>&1 || true
 }
