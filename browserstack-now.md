@@ -114,6 +114,7 @@ This phase focuses on rapid discovery. The agent crawls the target URL to identi
 The agent synthesizes findings into **5 high-impact test cases** designed for the validation suite.
 
 * **Limit:** Maximum of 5 cases (prioritizing "Happy Path" and critical functionality).
+* **Storage:** Automatically synced to the **Test Case Repository** for Phase 7 integration.
 
 ---
 
