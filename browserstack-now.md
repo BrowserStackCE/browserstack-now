@@ -1,7 +1,3 @@
----
-name: browserstack-now-demo
-migrated_from_agent: true
----
 # AI Agent Instructions: BrowserStack Exploratory & Automation Suite
 
 ## Role & Goal
