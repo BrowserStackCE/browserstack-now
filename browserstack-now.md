@@ -1,3 +1,7 @@
+---
+name: browserstack-now-demo
+migrated_from_agent: true
+---
 # AI Agent Instructions: BrowserStack Exploratory & Automation Suite
 
 ## Role & Goal
@@ -190,7 +194,7 @@ This phase ensures your BrowserStack account is ready to handle the scale define
 ---
 
 
-## 🛡️ Phase 6: Network Audit
+## 🛡️ Phase 5: Network Audit
 
 ### 1. VPN Detection
 **Command:** * **Unix:** `ifconfig | grep -iE "utun|tun|tap|ppp|wg"`
@@ -243,7 +247,7 @@ Instead of multiple curls, we’ll use one verbose check against the API to diag
 
 
 
-## 💳 Phase 5: Plan & Subscription Audit
+## 💳 Phase 6: Plan & Subscription Audit
 
 
 ### 1. Logic & Error Handling
@@ -254,7 +258,7 @@ Instead of multiple curls, we’ll use one verbose check against the API to diag
 * **Error Handling:** If the API returns a `4xx` error (indicating potential lack of product access or incorrect credentials), direct the user to get the correct set of credetials with steps and then if the issue still persists then ask the user to recheck their permissions and advise them to reach out to their admin or `support@browserstack.com`.
 
 * **Calculation Rule:** Configure the number of platforms in the browserstack.yml based on the plan details such that:
-  `Total Parallels = Platforms * Parallels Per Platform`
+  `Total Parallels = Platforms * parallelsPerPlatform (set in the SDK)`
 * **Buffer:** You are permitted to slightly increase the resulting parallels (up to 5 additional slots) to maximize the user's plan utilization and speed up execution. 
 **Also after execution don't attempt to fix any test cases all they need to do is connect to BrowserStack Automate and start the session. Only work on fixing integration errors and not test selector errors**
 
@@ -290,10 +294,10 @@ Once the plan is confirmed, the agent logs the following for the scaling logic i
 ## ## Phase 7: SDK Integration & Scaling Logic
 
 ### 1. Configuration Setup
-**Action:** Generate or update the configuration file (`browserstack.yml` or `browserstack.json` for Node.js) with the following parameters:
+**Action:** Generate or update the configuration file (`browserstack.yml` or `browserstack.json` for cypress) with the following parameters:
 
 * **Project Identity:** Set `projectName` to match your Test Management Project Name.
-* **Feature Flags:** Enable `accessibility: true` and `visualTesting: true`.
+* **Feature Flags:** Enable `accessibility: true` and `percy: true`.
 * **Mobile Browsers:** Specifically target **Automate Mobile** (iOS/Android browser combinations).
 * **Local Testing:** If the Phase 2 audit flagged the URL as private, set `browserstackLocal: true`.
 
